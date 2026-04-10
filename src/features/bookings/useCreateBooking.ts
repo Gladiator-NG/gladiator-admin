@@ -5,7 +5,11 @@ import type { CreateBookingInput, Booking } from '../../services/apiBooking';
 export function useCreateBooking() {
   const queryClient = useQueryClient();
 
-  const { mutate: create, isPending } = useMutation<Booking, Error, CreateBookingInput>({
+  const { mutate: create, isPending } = useMutation<
+    Booking,
+    Error,
+    CreateBookingInput
+  >({
     mutationFn: createBooking,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
   });

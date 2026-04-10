@@ -48,6 +48,7 @@ export interface Booking {
   boat?: { id: string; name: string; boat_type: string | null } | null;
   beach_house?: { id: string; name: string } | null;
   customer?: Customer | null;
+  parent_booking?: { id: string; reference_code: string; booking_type: string; start_date: string; end_date: string } | null;
 }
 
 export interface Customer {
@@ -95,7 +96,8 @@ const BOOKING_SELECT = `
   *,
   boat:boats(id, name, boat_type),
   beach_house:beach_houses(id, name),
-  customer:customers(*)
+  customer:customers(*),
+  parent_booking:bookings!parent_beach_house_booking_id(id, reference_code, booking_type, start_date, end_date)
 `;
 
 export async function getBookings(): Promise<Booking[]> {
@@ -108,7 +110,9 @@ export async function getBookings(): Promise<Booking[]> {
   return (data ?? []) as Booking[];
 }
 
-export async function createBooking(input: CreateBookingInput): Promise<Booking> {
+export async function createBooking(
+  input: CreateBookingInput,
+): Promise<Booking> {
   const { data, error } = await supabase
     .from('bookings')
     .insert(input)
@@ -119,7 +123,10 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   return data as Booking;
 }
 
-export async function updateBooking({ id, ...input }: UpdateBookingInput): Promise<Booking> {
+export async function updateBooking({
+  id,
+  ...input
+}: UpdateBookingInput): Promise<Booking> {
   const { data, error } = await supabase
     .from('bookings')
     .update(input)
@@ -170,7 +177,9 @@ export async function upsertCustomer(input: {
 
 export async function updateCustomer(
   id: string,
-  input: Partial<Pick<Customer, 'full_name' | 'email' | 'phone' | 'marketing_opt_in'>>,
+  input: Partial<
+    Pick<Customer, 'full_name' | 'email' | 'phone' | 'marketing_opt_in'>
+  >,
 ): Promise<Customer> {
   const { data, error } = await supabase
     .from('customers')
@@ -194,14 +203,24 @@ export async function checkAvailability(params: {
   endTime?: string | null;
   excludeBookingId?: string;
 }): Promise<{ available: boolean; conflictingBooking?: Booking }> {
-  const { resourceType, resourceId, startDate, endDate, startTime, endTime, excludeBookingId } = params;
+  const {
+    resourceType,
+    resourceId,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    excludeBookingId,
+  } = params;
 
   const startTs = `${startDate}T${startTime ?? '00:00:00'}`;
-  const endTs   = `${endDate}T${endTime   ?? '23:59:59'}`;
+  const endTs = `${endDate}T${endTime ?? '23:59:59'}`;
 
   let query = supabase
     .from('bookings')
-    .select('id, reference_code, customer_name, start_date, end_date, start_time, end_time, status')
+    .select(
+      'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status',
+    )
     .eq(resourceType === 'boat' ? 'boat_id' : 'beach_house_id', resourceId)
     .neq('status', 'cancelled')
     // Overlap: existing.start < requested.end AND existing.end > requested.start
@@ -217,7 +236,9 @@ export async function checkAvailability(params: {
   if (startDate === endDate && startTime && endTime) {
     query = supabase
       .from('bookings')
-      .select('id, reference_code, customer_name, start_date, end_date, start_time, end_time, status')
+      .select(
+        'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status',
+      )
       .eq(resourceType === 'boat' ? 'boat_id' : 'beach_house_id', resourceId)
       .neq('status', 'cancelled')
       .eq('start_date', startDate)
@@ -228,13 +249,17 @@ export async function checkAvailability(params: {
     if (excludeBookingId) query = query.neq('id', excludeBookingId);
   }
 
-  void startTs; void endTs; // used for documentation only; range logic is above
+  void startTs;
+  void endTs; // used for documentation only; range logic is above
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   if (data && data.length > 0) {
-    return { available: false, conflictingBooking: data[0] as unknown as Booking };
+    return {
+      available: false,
+      conflictingBooking: data[0] as unknown as Booking,
+    };
   }
   return { available: true };
 }

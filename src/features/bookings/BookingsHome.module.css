@@ -90,7 +90,9 @@
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .tab:hover {
@@ -151,7 +153,9 @@
   background: none;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
   white-space: nowrap;
 }
 
@@ -179,8 +183,14 @@
 }
 
 @keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dateInput {
@@ -235,7 +245,10 @@
   background-color: #fff;
   border: 1px solid var(--color-border);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 }
 
@@ -270,7 +283,9 @@
   background: none;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .pageNum:hover {
@@ -364,7 +379,10 @@
   background-color: #fff;
   border: 1px solid var(--color-border);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 }
 
@@ -541,7 +559,9 @@
   border-radius: 0.7rem;
   cursor: pointer;
   color: var(--color-text-muted);
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
   flex-shrink: 0;
 }
 
@@ -638,7 +658,9 @@
   font-weight: 600;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
+  transition:
+    opacity 0.15s,
+    transform 0.1s;
 }
 
 .quickStatusBtn:disabled {
@@ -694,7 +716,9 @@
   background: none;
   cursor: pointer;
   color: var(--color-text-muted);
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .actionBtn:hover {
@@ -970,6 +994,16 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.6rem;
+}
+
+.transportHint {
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  background-color: rgba(47, 140, 202, 0.06);
+  border: 1px solid rgba(47, 140, 202, 0.15);
+  border-radius: 0.8rem;
+  padding: 1rem 1.4rem;
+  line-height: 1.6;
 }
 
 .formSectionLabel {
