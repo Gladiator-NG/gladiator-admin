@@ -1,0 +1,196 @@
+.wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 44rem;
+  min-width: 0;
+}
+
+/* ── Search bar ─────────────────────────────────────── */
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10rem;
+  padding: 0 1.6rem;
+  height: 4rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.searchBarFocused {
+  border-color: var(--color-ocean-blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ocean-blue) 15%, transparent);
+}
+
+.searchIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinnerIcon {
+  color: var(--color-ocean-blue);
+  flex-shrink: 0;
+  animation: spin 0.7s linear infinite;
+}
+
+.input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: 1.3rem;
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ── Dropdown ───────────────────────────────────────── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 0.8rem);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+  z-index: 500;
+  overflow: hidden;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.empty {
+  padding: 1.8rem 1.6rem;
+  font-size: 1.3rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ── Section ────────────────────────────────────────── */
+.section {
+  padding: 0.6rem 0;
+}
+
+.section + .section {
+  border-top: 1px solid var(--color-border);
+}
+
+.sectionLabel {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding: 0.6rem 1.6rem 0.4rem;
+  margin: 0;
+}
+
+/* ── Result item ────────────────────────────────────── */
+.resultItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.8rem 1.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.1s;
+}
+
+.resultItemActive {
+  background-color: var(--color-surface-2);
+}
+
+.resultIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.7rem;
+  flex-shrink: 0;
+}
+
+/* Per-type icon tints */
+.icon_booking {
+  background: rgba(47, 140, 202, 0.12);
+  color: #2f8cca;
+}
+
+.icon_boat {
+  background: rgba(13, 148, 136, 0.12);
+  color: #0d9488;
+}
+
+.icon_beach_house {
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+
+.icon_user {
+  background: rgba(124, 58, 237, 0.12);
+  color: #7c3aed;
+}
+
+:global([data-theme='dark']) .icon_booking {
+  background: rgba(47, 140, 202, 0.18);
+  color: #71bce6;
+}
+
+:global([data-theme='dark']) .icon_boat {
+  background: rgba(13, 148, 136, 0.18);
+  color: #2dd4bf;
+}
+
+:global([data-theme='dark']) .icon_beach_house {
+  background: rgba(217, 119, 6, 0.18);
+  color: #fbbf24;
+}
+
+:global([data-theme='dark']) .icon_user {
+  background: rgba(124, 58, 237, 0.18);
+  color: #a78bfa;
+}
+
+.resultText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.resultLabel {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resultSub {
+  font-size: 1.15rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Hide on mobile (same breakpoint as header search) ─ */
+@media (max-width: 37.5em) {
+  .wrapper {
+    display: none;
+  }
+}

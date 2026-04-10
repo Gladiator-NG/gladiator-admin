@@ -17,11 +17,16 @@
 
   /* UI colours */
   --color-white: #ffffff;
+  --color-bg: #eef2f8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f6fb;
+  --color-sidebar: #ffffff;
   --color-text: #1e1e1e;
   --color-text-muted: #6b6b6b;
   --color-border: #e5e5e5;
   --color-card-bg: rgba(0, 0, 0, 0.02);
   --color-overlay: rgba(0, 0, 0, 0.3);
+  --color-input-bg: #f4f6fb;
 
   /* Semantic aliases */
   --color-primary: var(--color-ocean-blue);
@@ -41,6 +46,38 @@
   /* Misc */
   --border-radius: 0.8rem;
   --box-shadow: 0px 4px 19px 0px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Dark mode — sunset palette ─────────────────────────────────────────── */
+[data-theme='dark'] {
+  /* Brand — warm sunset accent (interactive elements only) */
+  --color-ocean-blue: #e07b38;
+  --color-sky-blue: #eda96a;
+  --color-sun-yellow: #fbbf24;
+  --color-sunset: #f87171;
+  --color-primary: #e07b38;
+  --color-primary-hover: #eda96a;
+  --color-danger: #f87171;
+
+  /* Backgrounds — very dark neutral charcoal, barely any tint */
+  --color-bg: #0e0e0e;
+  --color-surface: #181818;
+  --color-surface-2: #222222;
+  --color-sidebar: #111111;
+  --color-white: #181818;
+
+  /* Text */
+  --color-text: #e8e2d9;
+  --color-text-muted: #7a7068;
+
+  /* Borders & misc */
+  --color-border: #2c2c2c;
+  --color-card-bg: rgba(255, 255, 255, 0.03);
+  --color-overlay: rgba(0, 0, 0, 0.72);
+  --color-input-bg: #222222;
+
+  /* Shadows */
+  --box-shadow: 0px 4px 24px 0px rgba(0, 0, 0, 0.5);
 }
 
 /* ─── Reset ───────────────────────────────────────────────────────────────── */
@@ -69,6 +106,9 @@ body {
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Root div must fill viewport for the fixed layout to work */

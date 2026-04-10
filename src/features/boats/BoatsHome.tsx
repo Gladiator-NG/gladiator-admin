@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   Search,
@@ -301,12 +302,39 @@ function BoatsHome() {
   const { remove, isPending: isDeleting } = useDeleteBoat();
   const { toggle: toggleActive, isPending: isToggling } = useToggleBoatActive();
 
-  const [search, setSearch] = useState('');
-  const [periodMode, setPeriodMode] = useState<PeriodMode>('monthly');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('newest');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ── All view state lives in the URL ──────────────────────────────────────
+  const search = searchParams.get('q') ?? '';
+  const periodMode = (searchParams.get('period') ?? 'monthly') as PeriodMode;
+  const customFrom = searchParams.get('from') ?? '';
+  const customTo = searchParams.get('to') ?? '';
+  const sortKey = (searchParams.get('sort') ?? 'newest') as SortKey;
+  const statusFilter = (searchParams.get('status') ?? 'all') as StatusFilter;
+  const highlightedId = searchParams.get('highlight');
+
+  function sp(updates: Record<string, string | null>) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === null || v === '') next.delete(k);
+        else next.set(k, v);
+      }
+      return next;
+    }, { replace: true });
+  }
+
+  // Scroll to + flash highlighted card
+  useEffect(() => {
+    if (!highlightedId) return;
+    setTimeout(() => {
+      document.getElementById(`boat-card-${highlightedId}`)?.scrollIntoView({
+        behavior: 'smooth', block: 'center',
+      });
+    }, 150);
+    const t = setTimeout(() => sp({ highlight: null }), 2500);
+    return () => clearTimeout(t);
+  }, [highlightedId]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [isCreateBusy, setIsCreateBusy] = useState(false);
@@ -629,7 +657,7 @@ function BoatsHome() {
               className={styles.searchInput}
               placeholder="Search by name or type…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => sp({ q: e.target.value })}
             />
           </div>
           <Button
@@ -655,7 +683,7 @@ function BoatsHome() {
                 <button
                   key={m}
                   className={`${styles.periodPill} ${periodMode === m ? styles.periodPillActive : ''}`}
-                  onClick={() => setPeriodMode(m)}
+                  onClick={() => sp({ period: m, from: null, to: null })}
                 >
                   {m === 'monthly' && 'Monthly'}
                   {m === 'yearly' && 'Yearly'}
@@ -674,7 +702,7 @@ function BoatsHome() {
                   type="date"
                   className={styles.dateInput}
                   value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
+                  onChange={(e) => sp({ from: e.target.value })}
                 />
                 <span className={styles.dateSep}>to</span>
                 <input
@@ -682,7 +710,7 @@ function BoatsHome() {
                   className={styles.dateInput}
                   value={customTo}
                   min={customFrom}
-                  onChange={(e) => setCustomTo(e.target.value)}
+                  onChange={(e) => sp({ to: e.target.value })}
                 />
               </div>
             )}
@@ -778,7 +806,7 @@ function BoatsHome() {
                 <button
                   key={key}
                   className={`${styles.sortPill} ${sortKey === key ? styles.sortPillActive : ''}`}
-                  onClick={() => setSortKey(key)}
+                  onClick={() => sp({ sort: key })}
                 >
                   {label}
                 </button>
@@ -799,7 +827,7 @@ function BoatsHome() {
                 <button
                   key={key}
                   className={`${styles.sortPill} ${statusFilter === key ? styles.sortPillActive : ''}`}
-                  onClick={() => setStatusFilter(key)}
+                  onClick={() => sp({ status: key })}
                 >
                   {label}
                 </button>
@@ -817,7 +845,11 @@ function BoatsHome() {
       {!isLoading && filtered.length > 0 && (
         <div className={styles.grid}>
           {filtered.map((boat) => (
-            <div key={boat.id} className={styles.card}>
+            <div
+                key={boat.id}
+                id={`boat-card-${boat.id}`}
+                className={`${styles.card} ${highlightedId === boat.id ? styles.cardHighlighted : ''}`}
+              >
               <div className={styles.cardCover}>
                 <CoverPhoto boat={boat} />
                 {boat.is_available_for_transport && (

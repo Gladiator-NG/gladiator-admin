@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background-color: #fff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10rem;
   padding: 0 1.6rem;
@@ -71,7 +71,7 @@
 /* ── Filter tabs ──────────────────────────────────── */
 .filterTabs {
   display: flex;
-  background-color: #fff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10rem;
   overflow: hidden;
@@ -93,7 +93,7 @@
 }
 
 .filterTab:hover {
-  background-color: #f9fafb;
+  background-color: var(--color-surface-2);
   color: var(--color-text);
 }
 
@@ -125,7 +125,7 @@
 /* Period pill group */
 .periodPills {
   display: flex;
-  background-color: #fff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10rem;
   overflow: hidden;
@@ -153,7 +153,7 @@
 }
 
 .periodPill:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-2);
   color: var(--color-text);
 }
 
@@ -191,7 +191,7 @@
   font: inherit;
   font-size: 1.25rem;
   color: var(--color-text);
-  background-color: #fff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.8rem;
   padding: 0.5rem 1rem;
@@ -281,7 +281,7 @@
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--color-text-muted);
-  background-color: #fff;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   cursor: pointer;
   transition:
@@ -292,7 +292,7 @@
 }
 
 .sortPill:hover {
-  background-color: #f0f4f8;
+  background-color: var(--color-surface-2);
   color: var(--color-text);
   border-color: #d1d5db;
 }
@@ -353,7 +353,7 @@
 }
 
 .metricCard {
-  background-color: #fff;
+  background-color: var(--color-surface);
   border-radius: 1.6rem;
   border: 1px solid var(--color-border);
   padding: 2.2rem 2.4rem 2rem;
@@ -492,7 +492,7 @@
 
 /* ── Card ─────────────────────────────────────────── */
 .card {
-  background-color: #fff;
+  background-color: var(--color-surface);
   border-radius: var(--border-radius);
   overflow: hidden;
   display: flex;
@@ -504,11 +504,23 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
+.cardHighlighted {
+  outline: 2px solid var(--color-ocean-blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-ocean-blue) 18%, transparent);
+  animation: highlightFade 2.5s ease forwards;
+}
+
+@keyframes highlightFade {
+  0%, 60% { outline-color: var(--color-ocean-blue); }
+  100% { outline-color: transparent; box-shadow: none; }
+}
+
 /* Cover photo */
 .cardCover {
   position: relative;
   height: 18rem;
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-2);
   flex-shrink: 0;
 }
 
@@ -526,7 +538,7 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-muted);
-  background: linear-gradient(135deg, #f0f4f8, #e3ecf4);
+  background: var(--color-surface-2);
 }
 
 .cardBadge {
@@ -615,7 +627,7 @@
 }
 
 .amenityTag {
-  background-color: #f0f4f8;
+  background-color: var(--color-surface-2);
   color: var(--color-text);
   font-size: 1.1rem;
   padding: 0.3rem 0.9rem;
@@ -624,7 +636,7 @@
 }
 
 .amenityMore {
-  background-color: #e3ecf4;
+  background-color: var(--color-surface-2);
   color: var(--color-ocean-blue);
   font-size: 1.1rem;
   padding: 0.3rem 0.9rem;
@@ -660,7 +672,7 @@
 }
 
 .footerBtn:hover {
-  background-color: #f0f4f8;
+  background-color: var(--color-surface-2);
   color: var(--color-ocean-blue);
 }
 
@@ -750,7 +762,7 @@
 }
 
 .actionBtn:hover {
-  background-color: #f0f4f8;
+  background-color: var(--color-surface-2);
   color: var(--color-ocean-blue);
 }
 
@@ -773,7 +785,7 @@
 
 .modal {
   position: relative;
-  background-color: #fff;
+  background-color: var(--color-surface);
   border-radius: var(--border-radius);
   width: 100%;
   max-width: 62rem;
@@ -821,7 +833,7 @@
 }
 
 .closeBtn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-2);
 }
 
 /* ── Modal form ───────────────────────────────────── */
@@ -1025,7 +1037,7 @@
 }
 
 .tileBtn:hover {
-  background-color: #fff;
+  background-color: var(--color-surface);
 }
 
 .tileBtnDanger {

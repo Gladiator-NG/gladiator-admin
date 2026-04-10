@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   Search,
@@ -57,10 +58,38 @@ function UsersHome() {
   const { create, isPending: isCreating, error: createError } = useCreateUser();
   const { user: currentUser } = useUser();
 
-  const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [deletingUser, setDeletingUser] = useState<Profile | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+
+  // URL is the source of truth for search + highlight state
+  const [searchParams, setSearchParams] = useSearchParams();
+  function sp(updates: Record<string, string | null>) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === null || v === '') next.delete(k);
+        else next.set(k, v);
+      }
+      return next;
+    }, { replace: true });
+  }
+
+  const search = searchParams.get('q') ?? '';
+  const highlightedId = searchParams.get('highlight');
+
+  // Scroll to highlighted row and auto-clear after 2.5s
+  useEffect(() => {
+    if (!highlightedId) return;
+    setTimeout(() => {
+      document.getElementById(`user-row-${highlightedId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 200);
+    const t = setTimeout(() => sp({ highlight: null }), 2500);
+    return () => clearTimeout(t);
+  }, [highlightedId]);
 
   // Filtered list
   const filtered = useMemo(() => {
@@ -153,7 +182,7 @@ function UsersHome() {
               className={styles.searchInput}
               placeholder="Search by name or role…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => sp({ q: e.target.value })}
             />
           </div>
           <Button
@@ -202,7 +231,11 @@ function UsersHome() {
               </tr>
             )}
             {filtered.map((user) => (
-              <tr key={user.id} className={styles.tableRow}>
+              <tr
+                key={user.id}
+                id={`user-row-${user.id}`}
+                className={`${styles.tableRow} ${highlightedId === user.id ? styles.tableRowHighlighted : ''}`}
+              >
                 <td>
                   <div className={styles.userCell}>
                     <UserAvatar name={user.full_name} />

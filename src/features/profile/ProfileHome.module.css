@@ -32,7 +32,7 @@
 
 /* ── Profile banner ───────────────────────────────── */
 .banner {
-  background-color: #fff;
+  background-color: var(--color-surface);
   border-radius: var(--border-radius);
   padding: 3.2rem;
 
@@ -142,7 +142,7 @@
 
 /* ── Card ─────────────────────────────────────────── */
 .card {
-  background-color: #fff;
+  background-color: var(--color-surface);
   border-radius: var(--border-radius);
   padding: 3.2rem;
   display: flex;

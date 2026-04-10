@@ -1,4 +1,5 @@
 .page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -8,4 +9,46 @@
     var(--color-sky-blue) 0%,
     var(--color-ocean-blue) 100%
   );
+  transition: background 0.4s ease;
+}
+
+:global([data-theme='dark']) .page {
+  background: radial-gradient(ellipse at 50% 40%, #261810 0%, #0e0804 100%);
+}
+
+/* ── Theme toggle button ──────────────────────────── */
+.themeToggle {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
+  color: rgba(20, 20, 20, 0.8);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.themeToggle:hover {
+  background: rgba(255, 255, 255, 0.65);
+  transform: scale(1.08);
+}
+
+:global([data-theme='dark']) .themeToggle {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #c9bfb4;
+}
+
+:global([data-theme='dark']) .themeToggle:hover {
+  background: rgba(255, 255, 255, 0.14);
 }

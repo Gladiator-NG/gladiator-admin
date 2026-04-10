@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   Search,
@@ -158,12 +159,39 @@ function BeachHousesHome() {
   const { toggle: toggleActive, isPending: isToggling } =
     useToggleBeachHouseActive();
 
-  const [search, setSearch] = useState('');
-  const [periodMode, setPeriodMode] = useState<PeriodMode>('monthly');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('newest');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  // URL is the source of truth for all filter/sort state
+  const [searchParams, setSearchParams] = useSearchParams();
+  function sp(updates: Record<string, string | null>) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === null || v === '') next.delete(k);
+        else next.set(k, v);
+      }
+      return next;
+    }, { replace: true });
+  }
+
+  const search = searchParams.get('q') ?? '';
+  const periodMode = (searchParams.get('period') ?? 'monthly') as PeriodMode;
+  const customFrom = searchParams.get('from') ?? '';
+  const customTo = searchParams.get('to') ?? '';
+  const sortKey = (searchParams.get('sort') ?? 'newest') as SortKey;
+  const statusFilter = (searchParams.get('status') ?? 'all') as StatusFilter;
+  const highlightedId = searchParams.get('highlight');
+
+  // Scroll to highlighted card and auto-clear after 2.5s
+  useEffect(() => {
+    if (!highlightedId) return;
+    setTimeout(() => {
+      document.getElementById(`beach-house-card-${highlightedId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 200);
+    const t = setTimeout(() => sp({ highlight: null }), 2500);
+    return () => clearTimeout(t);
+  }, [highlightedId]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [isCreateBusy, setIsCreateBusy] = useState(false);
@@ -637,7 +665,7 @@ function BeachHousesHome() {
               className={styles.searchInput}
               placeholder="Search by name or location…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => sp({ q: e.target.value })}
             />
           </div>
           <Button
@@ -664,7 +692,7 @@ function BeachHousesHome() {
                 <button
                   key={m}
                   className={`${styles.periodPill} ${periodMode === m ? styles.periodPillActive : ''}`}
-                  onClick={() => setPeriodMode(m)}
+                  onClick={() => sp({ period: m, from: null, to: null })}
                 >
                   {m === 'monthly' && 'Monthly'}
                   {m === 'yearly' && 'Yearly'}
@@ -684,7 +712,7 @@ function BeachHousesHome() {
                   type="date"
                   className={styles.dateInput}
                   value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
+                  onChange={(e) => sp({ from: e.target.value })}
                 />
                 <span className={styles.dateSep}>to</span>
                 <input
@@ -692,7 +720,7 @@ function BeachHousesHome() {
                   className={styles.dateInput}
                   value={customTo}
                   min={customFrom}
-                  onChange={(e) => setCustomTo(e.target.value)}
+                  onChange={(e) => sp({ to: e.target.value })}
                 />
               </div>
             )}
@@ -794,7 +822,7 @@ function BeachHousesHome() {
                 <button
                   key={key}
                   className={`${styles.sortPill} ${sortKey === key ? styles.sortPillActive : ''}`}
-                  onClick={() => setSortKey(key)}
+                  onClick={() => sp({ sort: key })}
                 >
                   {label}
                 </button>
@@ -817,7 +845,7 @@ function BeachHousesHome() {
                 <button
                   key={key}
                   className={`${styles.sortPill} ${statusFilter === key ? styles.sortPillActive : ''}`}
-                  onClick={() => setStatusFilter(key)}
+                  onClick={() => sp({ status: key })}
                 >
                   {label}
                 </button>
@@ -835,7 +863,11 @@ function BeachHousesHome() {
       {!isLoading && filtered.length > 0 && (
         <div className={styles.grid}>
           {filtered.map((house) => (
-            <div key={house.id} className={styles.card}>
+            <div
+                key={house.id}
+                id={`beach-house-card-${house.id}`}
+                className={`${styles.card} ${highlightedId === house.id ? styles.cardHighlighted : ''}`}
+              >
               <div className={styles.cardCover}>
                 <CoverPhoto house={house} />
               </div>

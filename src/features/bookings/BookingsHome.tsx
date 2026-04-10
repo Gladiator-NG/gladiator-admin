@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   Search,
@@ -26,6 +27,9 @@ import {
   Home,
   Truck,
   CreditCard,
+  LayoutGrid,
+  Table2,
+  Download,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type {
@@ -55,6 +59,17 @@ type StatusFilter = 'all' | BookingStatus;
 type TypeFilter = 'all' | BookingType;
 type DatePreset = 'month' | 'quarter' | 'half' | 'year' | 'custom';
 type Tab = 'bookings' | 'customers';
+
+type CustomerSortKey =
+  | 'name_asc'
+  | 'name_desc'
+  | 'bookings_desc'
+  | 'bookings_asc'
+  | 'spent_desc'
+  | 'spent_asc'
+  | 'recent';
+type CustomerView = 'card' | 'table';
+const CUSTOMER_PAGE_SIZE = 12;
 
 const PAGE_SIZE = 15;
 
@@ -141,6 +156,7 @@ function BookingFormFields({
   boats,
   beachHouses,
   watchType,
+  watchTransportType,
   bookings,
 }: {
   formActions: {
@@ -151,6 +167,7 @@ function BookingFormFields({
   boats: { id: string; name: string }[];
   beachHouses: { id: string; name: string }[];
   watchType: BookingType;
+  watchTransportType: string;
   bookings: import('../../services/apiBooking').Booking[];
 }) {
   // Beach-house bookings available to link a transport sub-booking to
@@ -347,7 +364,13 @@ function BookingFormFields({
           <FormInput
             id="start_time"
             type="text"
-            label="Start Time (HH:MM)"
+            label={
+              watchType === 'transport' && watchTransportType === 'round_trip'
+                ? 'Outbound Pickup Time (HH:MM)'
+                : watchType === 'transport'
+                  ? 'Pickup Time (HH:MM)'
+                  : 'Start Time (HH:MM)'
+            }
             formActions={formActions}
             disabled={disabled}
             required={false}
@@ -356,7 +379,13 @@ function BookingFormFields({
           <FormInput
             id="end_time"
             type="text"
-            label="End Time (HH:MM)"
+            label={
+              watchType === 'transport' && watchTransportType === 'round_trip'
+                ? 'Return Pickup Time (HH:MM)'
+                : watchType === 'transport'
+                  ? 'Drop-off Time (HH:MM)'
+                  : 'End Time (HH:MM)'
+            }
             formActions={formActions}
             disabled={disabled}
             required={false}
@@ -432,12 +461,45 @@ function BookingsHome() {
   const { updateStatus, isPending: isStatusUpdating } =
     useUpdateBookingStatus();
 
-  const [activeTab, setActiveTab] = useState<Tab>('bookings');
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
-  const [sortKey, setSortKey] = useState<SortKey>('newest');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ── All view state lives in the URL ──────────────────────────────────────
+  const activeTab = (searchParams.get('tab') ?? 'bookings') as Tab;
+  const search = searchParams.get('q') ?? '';
+  const statusFilter = (searchParams.get('status') ?? 'all') as StatusFilter;
+  const typeFilter = (searchParams.get('type') ?? 'all') as TypeFilter;
+  const sortKey = (searchParams.get('sort') ?? 'newest') as SortKey;
+  const expandedId = searchParams.get('open');
+  const page = Number(searchParams.get('page') ?? '1');
+  const datePreset = (searchParams.get('period') ?? 'month') as DatePreset;
+  const customStart = searchParams.get('from') ?? '';
+  const customEnd = searchParams.get('to') ?? '';
+  const customerSearch = searchParams.get('cq') ?? '';
+  const customerSort = (searchParams.get('csort') ?? 'bookings_desc') as CustomerSortKey;
+  const customerView = (searchParams.get('cview') ?? 'card') as CustomerView;
+  const customerPage = Number(searchParams.get('cpage') ?? '1');
+
+  function sp(updates: Record<string, string | null>) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === null || v === '') next.delete(k);
+        else next.set(k, v);
+      }
+      return next;
+    }, { replace: true });
+  }
+
+  // Scroll to expanded booking when ?open= is present
+  useEffect(() => {
+    if (!expandedId) return;
+    setTimeout(() => {
+      document.getElementById(`booking-row-${expandedId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 150);
+  }, [expandedId]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [isCreateBusy, setIsCreateBusy] = useState(false);
@@ -451,13 +513,7 @@ function BookingsHome() {
 
   const [deletingBooking, setDeletingBooking] = useState<Booking | null>(null);
 
-  const [customerSearch, setCustomerSearch] = useState('');
-
-  const [datePreset, setDatePreset] = useState<DatePreset>('month');
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
-  const [page, setPage] = useState(1);
-
+  // UI-only state (not URL-driven) 
   // ── Date range ───────────────────────────────────────────────────────────
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -555,19 +611,89 @@ function BookingsHome() {
 
   const filteredCustomers = useMemo(() => {
     const q = customerSearch.toLowerCase().trim();
-    if (!q) return customers;
-    return customers.filter(
-      (c) =>
-        c.full_name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.phone.toLowerCase().includes(q),
-    );
-  }, [customers, customerSearch]);
+    let list = q
+      ? customers.filter(
+          (c) =>
+            c.full_name.toLowerCase().includes(q) ||
+            c.email.toLowerCase().includes(q) ||
+            c.phone.toLowerCase().includes(q),
+        )
+      : [...customers];
+    list.sort((a, b) => {
+      switch (customerSort) {
+        case 'name_asc':
+          return a.full_name.localeCompare(b.full_name);
+        case 'name_desc':
+          return b.full_name.localeCompare(a.full_name);
+        case 'bookings_asc':
+          return a.total_bookings - b.total_bookings;
+        case 'bookings_desc':
+          return b.total_bookings - a.total_bookings;
+        case 'spent_asc':
+          return Number(a.total_spent) - Number(b.total_spent);
+        case 'spent_desc':
+          return Number(b.total_spent) - Number(a.total_spent);
+        case 'recent':
+          return (b.last_booking_at ?? '').localeCompare(
+            a.last_booking_at ?? '',
+          );
+        default:
+          return 0;
+      }
+    });
+    return list;
+  }, [customers, customerSearch, customerSort]);
 
-  // ── Reset page when any filter/search changes ────────────────────────────
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter, typeFilter, datePreset, customStart, customEnd]);
+  const customerTotalPages = Math.max(
+    1,
+    Math.ceil(filteredCustomers.length / CUSTOMER_PAGE_SIZE),
+  );
+  const safeCP = Math.min(customerPage, customerTotalPages);
+  const paginatedCustomers = filteredCustomers.slice(
+    (safeCP - 1) * CUSTOMER_PAGE_SIZE,
+    safeCP * CUSTOMER_PAGE_SIZE,
+  );
+  const customerPageStart =
+    filteredCustomers.length === 0 ? 0 : (safeCP - 1) * CUSTOMER_PAGE_SIZE + 1;
+  const customerPageEnd = Math.min(
+    safeCP * CUSTOMER_PAGE_SIZE,
+    filteredCustomers.length,
+  );
+
+  function downloadCustomersCSV() {
+    const headers = [
+      'Name',
+      'Email',
+      'Phone',
+      'Bookings',
+      'Total Spent (NGN)',
+      'Last Booking',
+      'Marketing Opt-in',
+    ];
+    const rows = filteredCustomers.map((c) => [
+      c.full_name,
+      c.email,
+      c.phone,
+      c.total_bookings,
+      c.total_spent,
+      c.last_booking_at
+        ? new Date(c.last_booking_at).toLocaleDateString('en-GB')
+        : '',
+      c.marketing_opt_in ? 'Yes' : 'No',
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','),
+      )
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // ── Pagination ───────────────────────────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -594,6 +720,7 @@ function BookingsHome() {
   });
   const createFormActions = { register: createReg, errors: createErrors };
   const watchCreateType = createWatch('booking_type') as BookingType;
+  const watchCreateTransportType = createWatch('transport_type') as string;
 
   function openCreate() {
     resetCreate({
@@ -658,6 +785,7 @@ function BookingsHome() {
   } = useForm<BookingFields>();
   const editFormActions = { register: editReg, errors: editErrors };
   const watchEditType = editWatch('booking_type') as BookingType;
+  const watchEditTransportType = editWatch('transport_type') as string;
 
   function openEdit(b: Booking) {
     setEditingBooking(b);
@@ -746,7 +874,7 @@ function BookingsHome() {
                 className={styles.searchInput}
                 placeholder="Search ref, customer, listing…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => sp({ q: e.target.value, page: null })}
               />
             </div>
           )}
@@ -758,7 +886,7 @@ function BookingsHome() {
                 className={styles.searchInput}
                 placeholder="Search customers…"
                 value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
+                onChange={(e) => sp({ cq: e.target.value, cpage: null })}
               />
             </div>
           )}
@@ -778,14 +906,14 @@ function BookingsHome() {
       <div className={styles.tabs}>
         <button
           className={`${styles.tab} ${activeTab === 'bookings' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('bookings')}
+          onClick={() => sp({ tab: 'bookings' })}
         >
           <BookOpen size={15} /> Bookings
           <span className={styles.tabCount}>{bookings.length}</span>
         </button>
         <button
           className={`${styles.tab} ${activeTab === 'customers' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('customers')}
+          onClick={() => sp({ tab: 'customers' })}
         >
           <Users size={15} /> Customers
           <span className={styles.tabCount}>{customers.length}</span>
@@ -814,7 +942,7 @@ function BookingsHome() {
                   <button
                     key={key}
                     className={`${styles.periodPill} ${datePreset === key ? styles.periodPillActive : ''}`}
-                    onClick={() => setDatePreset(key)}
+                    onClick={() => sp({ period: key, page: null, from: null, to: null })}
                   >
                     {label}
                   </button>
@@ -826,14 +954,14 @@ function BookingsHome() {
                     type="date"
                     className={styles.dateInput}
                     value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
+                    onChange={(e) => sp({ from: e.target.value, page: null })}
                   />
                   <span className={styles.dateSep}>→</span>
                   <input
                     type="date"
                     className={styles.dateInput}
                     value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
+                    onChange={(e) => sp({ to: e.target.value, page: null })}
                   />
                 </div>
               ) : (
@@ -894,7 +1022,7 @@ function BookingsHome() {
                     <button
                       key={key}
                       className={`${styles.pill} ${sortKey === key ? styles.pillActive : ''}`}
-                      onClick={() => setSortKey(key)}
+                      onClick={() => sp({ sort: key, page: null })}
                     >
                       {label}
                     </button>
@@ -917,7 +1045,7 @@ function BookingsHome() {
                     <button
                       key={s}
                       className={`${styles.pill} ${statusFilter === s ? styles.pillActive : ''}`}
-                      onClick={() => setStatusFilter(s)}
+                      onClick={() => sp({ status: s, page: null })}
                     >
                       {s === 'all'
                         ? 'All'
@@ -941,7 +1069,7 @@ function BookingsHome() {
                     <button
                       key={key}
                       className={`${styles.pill} ${typeFilter === key ? styles.pillActive : ''}`}
-                      onClick={() => setTypeFilter(key)}
+                      onClick={() => sp({ type: key, page: null })}
                     >
                       {label}
                     </button>
@@ -977,12 +1105,13 @@ function BookingsHome() {
                 return (
                   <div
                     key={b.id}
+                    id={`booking-row-${b.id}`}
                     className={`${styles.bookingRow} ${isExpanded ? styles.bookingRowExpanded : ''}`}
                   >
                     {/* Summary row */}
                     <div
                       className={styles.rowSummary}
-                      onClick={() => setExpandedId(isExpanded ? null : b.id)}
+                      onClick={() => sp({ open: isExpanded ? null : b.id })}
                     >
                       <div className={styles.rowLeft}>
                         <div className={styles.typeIconWrap}>
@@ -995,6 +1124,18 @@ function BookingsHome() {
                           <span className={styles.resourceName}>
                             {resourceName}
                           </span>
+                          {b.booking_type === 'transport' && (
+                            <span className={styles.transportPill}>
+                              <Truck size={10} />
+                              {b.transport_type
+                                ? b.transport_type.replace('_', ' ')
+                                : 'transport'}
+                              {b.parent_beach_house_booking_id &&
+                              b.parent_booking?.reference_code
+                                ? ` · linked to ${b.parent_booking.reference_code}`
+                                : ''}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className={styles.rowMid}>
@@ -1071,19 +1212,48 @@ function BookingsHome() {
                             </div>
                             <div className={styles.detailBlock}>
                               <p className={styles.detailLabel}>Dates</p>
-                              <p className={styles.detailValue}>
-                                {formatDate(b.start_date)}
-                              </p>
-                              {b.start_date !== b.end_date && (
-                                <p className={styles.detailSub}>
-                                  → {formatDate(b.end_date)}
-                                </p>
-                              )}
-                              {b.start_time && (
-                                <p className={styles.detailSub}>
-                                  {b.start_time}
-                                  {b.end_time ? ` – ${b.end_time}` : ''}
-                                </p>
+                              {b.booking_type === 'transport' &&
+                              b.transport_type === 'round_trip' ? (
+                                <>
+                                  <p className={styles.detailValue}>Outbound</p>
+                                  <p className={styles.detailSub}>
+                                    {formatDate(b.start_date)}
+                                    {b.start_time
+                                      ? ` · ${b.start_time.slice(0, 5)}`
+                                      : ''}
+                                  </p>
+                                  <p
+                                    className={styles.detailValue}
+                                    style={{ marginTop: '0.6rem' }}
+                                  >
+                                    Return
+                                  </p>
+                                  <p className={styles.detailSub}>
+                                    {formatDate(b.end_date)}
+                                    {b.end_time
+                                      ? ` · ${b.end_time.slice(0, 5)}`
+                                      : ''}
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className={styles.detailValue}>
+                                    {formatDate(b.start_date)}
+                                  </p>
+                                  {b.start_date !== b.end_date && (
+                                    <p className={styles.detailSub}>
+                                      → {formatDate(b.end_date)}
+                                    </p>
+                                  )}
+                                  {b.start_time && (
+                                    <p className={styles.detailSub}>
+                                      {b.start_time.slice(0, 5)}
+                                      {b.end_time
+                                        ? ` – ${b.end_time.slice(0, 5)}`
+                                        : ''}
+                                    </p>
+                                  )}
+                                </>
                               )}
                             </div>
                             <div className={styles.detailBlock}>
@@ -1109,10 +1279,10 @@ function BookingsHome() {
                                 {b.guest_count !== 1 ? 's' : ''}
                               </p>
                             </div>
-                            {b.parent_booking && (
+                            {b.parent_booking?.id && (
                               <div className={styles.detailBlock}>
                                 <p className={styles.detailLabel}>
-                                  Linked Stay
+                                  Beach House Stay
                                 </p>
                                 <p className={styles.detailValue}>
                                   <span className={styles.refCode}>
@@ -1137,6 +1307,83 @@ function BookingsHome() {
                               </div>
                             )}
                           </div>
+
+                          {/* Transport sub-bookings linked to this beach house stay */}
+                          {b.booking_type === 'beach_house' &&
+                            (() => {
+                              const transports = bookings.filter(
+                                (t) => t.parent_beach_house_booking_id === b.id,
+                              );
+                              if (!transports.length) return null;
+                              return (
+                                <div className={styles.transportSection}>
+                                  <p className={styles.transportSectionLabel}>
+                                    <Anchor size={13} />
+                                    Transport booked for this stay
+                                  </p>
+                                  {transports.map((t) => (
+                                    <div
+                                      key={t.id}
+                                      className={styles.transportLinkRow}
+                                    >
+                                      <span className={styles.refCode}>
+                                        {t.reference_code}
+                                      </span>
+                                      <span
+                                        className={styles.transportLinkBoat}
+                                      >
+                                        {t.boat?.name ?? '—'}
+                                        {t.boat?.boat_type
+                                          ? ` · ${t.boat.boat_type}`
+                                          : ''}
+                                      </span>
+                                      <span className={styles.transportLinkDir}>
+                                        {t.transport_type
+                                          ? t.transport_type.replace('_', ' ')
+                                          : '—'}
+                                      </span>
+                                      {t.transport_type === 'round_trip' ? (
+                                        <>
+                                          <span
+                                            className={styles.transportLinkTime}
+                                          >
+                                            <Clock size={11} />
+                                            Out:{' '}
+                                            {t.start_time?.slice(0, 5) ?? '—'}
+                                          </span>
+                                          <span
+                                            className={styles.transportLinkTime}
+                                          >
+                                            <Clock size={11} />
+                                            Return:{' '}
+                                            {t.end_time?.slice(0, 5) ?? '—'}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        t.start_time && (
+                                          <span
+                                            className={styles.transportLinkTime}
+                                          >
+                                            <Clock size={11} />
+                                            {t.start_time.slice(0, 5)}
+                                            {t.end_time
+                                              ? ` – ${t.end_time.slice(0, 5)}`
+                                              : ''}
+                                          </span>
+                                        )
+                                      )}
+                                      <span
+                                        className={styles.transportLinkAmount}
+                                      >
+                                        {formatPrice(t.total_amount)}
+                                      </span>
+                                      <StatusBadge status={t.status} />
+                                      <PaymentBadge status={t.payment_status} />
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
 
                           {/* Quick status actions */}
                           <div className={styles.detailActions}>
@@ -1199,7 +1446,7 @@ function BookingsHome() {
             <div className={styles.pagination}>
               <button
                 className={styles.pageBtn}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => sp({ page: String(Math.max(1, page - 1)) })}
                 disabled={safeP === 1}
               >
                 ← Prev
@@ -1225,7 +1472,7 @@ function BookingsHome() {
                       <button
                         key={n}
                         className={`${styles.pageNum} ${safeP === n ? styles.pageNumActive : ''}`}
-                        onClick={() => setPage(n as number)}
+                        onClick={() => sp({ page: String(n) })}
                       >
                         {n}
                       </button>
@@ -1234,7 +1481,7 @@ function BookingsHome() {
               </div>
               <button
                 className={styles.pageBtn}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => sp({ page: String(Math.min(totalPages, page + 1)) })}
                 disabled={safeP === totalPages}
               >
                 Next →
@@ -1247,12 +1494,82 @@ function BookingsHome() {
       {/* ── CUSTOMERS TAB ──────────────────────────────────────────────── */}
       {activeTab === 'customers' && (
         <div className={styles.customerSection}>
+          {/* Toolbar */}
+          <div className={styles.customerToolbar}>
+            <div className={styles.customerToolbarLeft}>
+              <div className={styles.toolbarGroup}>
+                <ArrowUpDown size={13} className={styles.toolbarIcon} />
+                <span className={styles.toolbarLabel}>Sort</span>
+                <div className={styles.pills}>
+                  {(
+                    [
+                      { key: 'bookings_desc', label: 'Most Bookings' },
+                      { key: 'spent_desc', label: 'Most Spent' },
+                      { key: 'recent', label: 'Recent' },
+                      { key: 'name_asc', label: 'Name A–Z' },
+                      { key: 'name_desc', label: 'Name Z–A' },
+                    ] as { key: CustomerSortKey; label: string }[]
+                  ).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      className={`${styles.pill} ${customerSort === key ? styles.pillActive : ''}`}
+                      onClick={() => sp({ csort: key, cpage: null })}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className={styles.customerToolbarRight}>
+              <button
+                className={styles.csvBtn}
+                onClick={downloadCustomersCSV}
+                title="Download CSV"
+              >
+                <Download size={14} />
+                Export CSV
+              </button>
+              <div className={styles.viewToggle}>
+                <button
+                  className={`${styles.viewToggleBtn} ${customerView === 'card' ? styles.viewToggleBtnActive : ''}`}
+                  onClick={() => sp({ cview: 'card' })}
+                  title="Card view"
+                >
+                  <LayoutGrid size={14} />
+                </button>
+                <button
+                  className={`${styles.viewToggleBtn} ${customerView === 'table' ? styles.viewToggleBtnActive : ''}`}
+                  onClick={() => sp({ cview: 'table' })}
+                  title="Table view"
+                >
+                  <Table2 size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider / count */}
+          {filteredCustomers.length > 0 && (
+            <div className={styles.sectionDivider}>
+              <div className={styles.dividerLine} />
+              <span className={styles.dividerLabel}>
+                {filteredCustomers.length > CUSTOMER_PAGE_SIZE
+                  ? `${customerPageStart}–${customerPageEnd} of ${filteredCustomers.length} customers`
+                  : `${filteredCustomers.length} ${filteredCustomers.length === 1 ? 'customer' : 'customers'}`}
+              </span>
+              <div className={styles.dividerLine} />
+            </div>
+          )}
+
           {filteredCustomers.length === 0 && (
             <p className={styles.emptyMsg}>No customers found.</p>
           )}
-          {filteredCustomers.length > 0 && (
+
+          {/* ── Card view ─────────────────────────────────────────────── */}
+          {filteredCustomers.length > 0 && customerView === 'card' && (
             <div className={styles.customerGrid}>
-              {filteredCustomers.map((c) => (
+              {paginatedCustomers.map((c) => (
                 <div key={c.id} className={styles.customerCard}>
                   <div className={styles.customerAvatar}>
                     {c.full_name
@@ -1301,6 +1618,95 @@ function BookingsHome() {
               ))}
             </div>
           )}
+
+          {/* ── Table view ────────────────────────────────────────────── */}
+          {filteredCustomers.length > 0 && customerView === 'table' && (
+            <div className={styles.customerTableWrap}>
+              <table className={styles.customerTable}>
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th className={styles.thRight}>Bookings</th>
+                    <th className={styles.thRight}>Total Spent</th>
+                    <th>Last Booking</th>
+                    <th>Marketing</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedCustomers.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <div className={styles.tableCustomerName}>
+                          <div className={styles.tableAvatar}>
+                            {c.full_name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join('')
+                              .toUpperCase()}
+                          </div>
+                          {c.full_name}
+                        </div>
+                      </td>
+                      <td className={styles.tdMuted}>{c.email}</td>
+                      <td className={styles.tdMuted}>{c.phone || '—'}</td>
+                      <td className={styles.tdRight}>{c.total_bookings}</td>
+                      <td className={styles.tdRight}>
+                        {formatPrice(c.total_spent)}
+                      </td>
+                      <td className={styles.tdMuted}>
+                        {c.last_booking_at
+                          ? formatDate(c.last_booking_at)
+                          : '—'}
+                      </td>
+                      <td>
+                        {c.marketing_opt_in ? (
+                          <span className={styles.marketingBadge}>✓</span>
+                        ) : (
+                          <span className={styles.tdMuted}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {customerTotalPages > 1 && (
+            <div className={styles.pagination}>
+              <button
+                className={styles.pageBtn}
+                disabled={safeCP === 1}
+                onClick={() => setCustomerPage((p) => Math.max(1, p - 1))}
+              >
+                ←
+              </button>
+              {Array.from({ length: customerTotalPages }, (_, i) => i + 1).map(
+                (pg) => (
+                  <button
+                    key={pg}
+                    className={`${styles.pageBtn} ${safeCP === pg ? styles.pageBtnActive : ''}`}
+                    onClick={() => setCustomerPage(pg)}
+                  >
+                    {pg}
+                  </button>
+                ),
+              )}
+              <button
+                className={styles.pageBtn}
+                disabled={safeCP === customerTotalPages}
+                onClick={() =>
+                  setCustomerPage((p) => Math.min(customerTotalPages, p + 1))
+                }
+              >
+                →
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1346,6 +1752,7 @@ function BookingsHome() {
                     boats={boats}
                     beachHouses={beachHouses}
                     watchType={watchCreateType}
+                    watchTransportType={watchCreateTransportType ?? ''}
                     bookings={bookings}
                   />
                   {createSubmitError && (
@@ -1422,6 +1829,7 @@ function BookingsHome() {
                     boats={boats}
                     beachHouses={beachHouses}
                     watchType={watchEditType}
+                    watchTransportType={watchEditTransportType ?? ''}
                     bookings={bookings}
                   />
                   {editSubmitError && (

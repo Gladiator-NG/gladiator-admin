@@ -18,13 +18,16 @@
   font: inherit;
   font-size: var(--font-size-body);
   color: var(--color-text);
-  background-color: #f5f7fa;
+  background-color: var(--color-input-bg);
   border: 1.5px solid transparent;
   outline: 1.5px solid transparent;
   border-radius: var(--border-radius);
   padding: 1rem 1.4rem;
   width: 100%;
-  transition: border 0.2s, outline 0.2s, background-color 0.2s;
+  transition:
+    border 0.2s,
+    outline 0.2s,
+    background-color 0.2s;
 }
 
 .textarea {
@@ -47,7 +50,7 @@
 .select:focus {
   border: 1.5px solid var(--color-ocean-blue);
   outline: 1.5px solid var(--color-ocean-blue);
-  background-color: #fff;
+  background-color: var(--color-surface);
 }
 
 /* Error state */

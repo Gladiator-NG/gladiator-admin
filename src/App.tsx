@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { lazy, Suspense } from 'react';
 
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import AppLayout from './ui/AppLayout';
 import ProtectedRoutes from './ui/ProtectedRoutes';
 import SignIn from './pages/SignIn';
@@ -17,6 +18,7 @@ const BeachHousesHome = lazy(
 );
 const UsersHome = lazy(() => import('./features/users/UsersHome'));
 const ProfileHome = lazy(() => import('./features/profile/ProfileHome'));
+const HelpPage = lazy(() => import('./features/help/HelpPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,54 +30,68 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-        <BrowserRouter>
-          <Suspense fallback={null}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="signin" element={<SignIn />} />
-              <Route
-                element={
-                  <ProtectedRoutes>
-                    <AppLayout />
-                  </ProtectedRoutes>
-                }
-              >
-                <Route path="dashboard" element={<DashboardHome />} />
-                <Route path="bookings" element={<BookingsHome />} />
-                <Route path="boats" element={<BoatsHome />} />
-                <Route path="beach-houses" element={<BeachHousesHome />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+          <BrowserRouter>
+            <Suspense fallback={null}>
+              <Routes>
                 <Route
-                  path="users"
+                  path="/"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route path="signin" element={<SignIn />} />
+                <Route
                   element={
-                    <AdminRoute>
-                      <UsersHome />
-                    </AdminRoute>
+                    <ProtectedRoutes>
+                      <AppLayout />
+                    </ProtectedRoutes>
+                  }
+                >
+                  <Route path="dashboard" element={<DashboardHome />} />
+                  <Route path="bookings" element={<BookingsHome />} />
+                  <Route path="boats" element={<BoatsHome />} />
+                  <Route path="beach-houses" element={<BeachHousesHome />} />
+                  <Route
+                    path="users"
+                    element={
+                      <AdminRoute>
+                        <UsersHome />
+                      </AdminRoute>
+                    }
+                  />
+                  <Route path="profile" element={<ProfileHome />} />
+                </Route>
+                {/* Help — protected but no AppLayout wrapper */}
+                <Route
+                  path="help"
+                  element={
+                    <ProtectedRoutes>
+                      <HelpPage />
+                    </ProtectedRoutes>
                   }
                 />
-                <Route path="profile" element={<ProfileHome />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-        <Toaster
-          position="top-right"
-          gutter={12}
-          containerStyle={{ margin: '8px' }}
-          toastOptions={{
-            success: { duration: 3000 },
-            error: { duration: 5000 },
-            style: {
-              fontSize: '14px',
-              maxWidth: '500px',
-              padding: '14px 22px',
-            },
-          }}
-        />
-      </QueryClientProvider>
-    </AuthProvider>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+          <Toaster
+            position="top-right"
+            gutter={12}
+            containerStyle={{ margin: '8px' }}
+            toastOptions={{
+              success: { duration: 3000 },
+              error: { duration: 5000 },
+              style: {
+                fontSize: '14px',
+                maxWidth: '500px',
+                padding: '14px 22px',
+              },
+            }}
+          />
+        </QueryClientProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
