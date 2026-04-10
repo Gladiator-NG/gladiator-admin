@@ -154,7 +154,9 @@ function BookingFormFields({
   bookings: import('../../services/apiBooking').Booking[];
 }) {
   // Beach-house bookings available to link a transport sub-booking to
-  const houseBookings = bookings.filter((b) => b.booking_type === 'beach_house');
+  const houseBookings = bookings.filter(
+    (b) => b.booking_type === 'beach_house',
+  );
   return (
     <>
       <div className={styles.formRow}>
@@ -613,7 +615,8 @@ function BookingsHome() {
         booking_type: data.booking_type,
         boat_id: data.boat_id || null,
         beach_house_id: data.beach_house_id || null,
-        parent_beach_house_booking_id: data.parent_beach_house_booking_id || null,
+        parent_beach_house_booking_id:
+          data.parent_beach_house_booking_id || null,
         transport_type: (data.transport_type as never) || null,
         customer_name: data.customer_name,
         customer_email: data.customer_email,
@@ -692,7 +695,8 @@ function BookingsHome() {
         booking_type: data.booking_type,
         boat_id: data.boat_id || null,
         beach_house_id: data.beach_house_id || null,
-        parent_beach_house_booking_id: data.parent_beach_house_booking_id || null,
+        parent_beach_house_booking_id:
+          data.parent_beach_house_booking_id || null,
         transport_type: (data.transport_type as never) || null,
         customer_name: data.customer_name,
         customer_email: data.customer_email,
@@ -1107,13 +1111,18 @@ function BookingsHome() {
                             </div>
                             {b.parent_booking && (
                               <div className={styles.detailBlock}>
-                                <p className={styles.detailLabel}>Linked Stay</p>
+                                <p className={styles.detailLabel}>
+                                  Linked Stay
+                                </p>
                                 <p className={styles.detailValue}>
-                                  <span className={styles.refCode}>{b.parent_booking.reference_code}</span>
+                                  <span className={styles.refCode}>
+                                    {b.parent_booking.reference_code}
+                                  </span>
                                 </p>
                                 <p className={styles.detailSub}>
                                   {formatDate(b.parent_booking.start_date)}
-                                  {b.parent_booking.start_date !== b.parent_booking.end_date
+                                  {b.parent_booking.start_date !==
+                                  b.parent_booking.end_date
                                     ? ` → ${formatDate(b.parent_booking.end_date)}`
                                     : ''}
                                 </p>

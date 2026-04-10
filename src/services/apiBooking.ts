@@ -48,7 +48,13 @@ export interface Booking {
   boat?: { id: string; name: string; boat_type: string | null } | null;
   beach_house?: { id: string; name: string } | null;
   customer?: Customer | null;
-  parent_booking?: { id: string; reference_code: string; booking_type: string; start_date: string; end_date: string } | null;
+  parent_booking?: {
+    id: string;
+    reference_code: string;
+    booking_type: string;
+    start_date: string;
+    end_date: string;
+  } | null;
 }
 
 export interface Customer {

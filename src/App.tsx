@@ -1,18 +1,22 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import { lazy, Suspense } from 'react';
 
 import { AuthProvider } from './context/AuthContext';
 import AppLayout from './ui/AppLayout';
 import ProtectedRoutes from './ui/ProtectedRoutes';
 import SignIn from './pages/SignIn';
-import DashboardHome from './features/dashboard/DashboardHome';
-import BookingsHome from './features/bookings/BookingsHome';
-import BoatsHome from './features/boats/BoatsHome';
-import BeachHousesHome from './features/beach-houses/BeachHousesHome';
-import UsersHome from './features/users/UsersHome';
-import ProfileHome from './features/profile/ProfileHome';
 import AdminRoute from './ui/AdminRoute';
+
+const DashboardHome = lazy(() => import('./features/dashboard/DashboardHome'));
+const BookingsHome = lazy(() => import('./features/bookings/BookingsHome'));
+const BoatsHome = lazy(() => import('./features/boats/BoatsHome'));
+const BeachHousesHome = lazy(
+  () => import('./features/beach-houses/BeachHousesHome'),
+);
+const UsersHome = lazy(() => import('./features/users/UsersHome'));
+const ProfileHome = lazy(() => import('./features/profile/ProfileHome'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,31 +32,33 @@ function App() {
       <QueryClientProvider client={queryClient}>
         {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="signin" element={<SignIn />} />
-            <Route
-              element={
-                <ProtectedRoutes>
-                  <AppLayout />
-                </ProtectedRoutes>
-              }
-            >
-              <Route path="dashboard" element={<DashboardHome />} />
-              <Route path="bookings" element={<BookingsHome />} />
-              <Route path="boats" element={<BoatsHome />} />
-              <Route path="beach-houses" element={<BeachHousesHome />} />
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="signin" element={<SignIn />} />
               <Route
-                path="users"
                 element={
-                  <AdminRoute>
-                    <UsersHome />
-                  </AdminRoute>
+                  <ProtectedRoutes>
+                    <AppLayout />
+                  </ProtectedRoutes>
                 }
-              />
-              <Route path="profile" element={<ProfileHome />} />
-            </Route>
-          </Routes>
+              >
+                <Route path="dashboard" element={<DashboardHome />} />
+                <Route path="bookings" element={<BookingsHome />} />
+                <Route path="boats" element={<BoatsHome />} />
+                <Route path="beach-houses" element={<BeachHousesHome />} />
+                <Route
+                  path="users"
+                  element={
+                    <AdminRoute>
+                      <UsersHome />
+                    </AdminRoute>
+                  }
+                />
+                <Route path="profile" element={<ProfileHome />} />
+              </Route>
+            </Routes>
+          </Suspense>
         </BrowserRouter>
         <Toaster
           position="top-right"
