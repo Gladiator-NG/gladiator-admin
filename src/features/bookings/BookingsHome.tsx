@@ -30,6 +30,7 @@ import {
   LayoutGrid,
   Table2,
   Download,
+  Flag,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type {
@@ -48,9 +49,18 @@ import { useCreateBooking } from './useCreateBooking';
 import { useUpdateBooking } from './useUpdateBooking';
 import { useDeleteBooking } from './useDeleteBooking';
 import { useUpdateBookingStatus } from './useUpdateBookingStatus';
+import { useAvailabilityCheck } from './useAvailabilityCheck';
+import type {
+  AvailabilityParams,
+  AvailabilityState,
+} from './useAvailabilityCheck';
 import { useBoats } from '../boats/useBoats';
 import { useBeachHouses } from '../beach-houses/useBeachHouses';
 import { useCustomers } from './useCustomers';
+import { useLocations } from './useLocations';
+import { useTransportRoutes } from './useTransportRoutes';
+import { findRoutePrice } from '../../services/apiTransport';
+import type { TransportRoute } from '../../services/apiTransport';
 import styles from './BookingsHome.module.css';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -82,11 +92,15 @@ interface BookingFields {
   customer_email: string;
   customer_phone: string;
   guest_count: number;
+  hours?: number;
   start_date: string;
   end_date: string;
   start_time: string;
   end_time: string;
   transport_type: string;
+  pickup_location: string;
+  dropoff_location: string;
+  transport_route_id: string;
   total_amount: number;
   status: BookingStatus;
   payment_status: PaymentStatus;
@@ -103,6 +117,24 @@ function formatDate(d: string | null | undefined) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+// Minimum billable passengers for a transport booking
+const TRANSPORT_MIN_PASSENGERS = 4;
+
+// Given a HH:MM start time and a number of hours, returns the HH:MM end time.
+function computeEndTime(startTime: string, hours: number): string {
+  const [h, m] = startTime.split(':').map(Number);
+  const totalMinutes = h * 60 + m + Math.round(hours * 60);
+  const endH = Math.floor(totalMinutes / 60) % 24;
+  const endM = totalMinutes % 60;
+  return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+}
+
+// Payment status is always derived from booking status — not a manual choice.
+// confirmed / cancelled / expired all mean the customer paid at some point.
+function derivePaymentStatus(status: BookingStatus): PaymentStatus {
+  return status === 'pending' ? 'pending' : 'paid';
 }
 
 function parseBookingError(err: unknown): string {
@@ -126,6 +158,7 @@ function StatusBadge({ status }: { status: BookingStatus }) {
     confirmed: { label: 'Confirmed', cls: styles.badgeConfirmed },
     cancelled: { label: 'Cancelled', cls: styles.badgeCancelled },
     expired: { label: 'Expired', cls: styles.badgeExpired },
+    completed: { label: 'Completed', cls: styles.badgeCompleted },
   };
   const { label, cls } = map[status] ?? map.pending;
   return <span className={`${styles.badge} ${cls}`}>{label}</span>;
@@ -155,100 +188,102 @@ function BookingFormFields({
   disabled,
   boats,
   beachHouses,
+  locations,
   watchType,
   watchTransportType,
+  watchStatus,
+  watchBoatId,
+  watchParentBookingId,
+  watchBeachHouseId,
   bookings,
+  computedTotal,
+  availabilityState,
+  watchPickupLocation: _watchPickupLocation,
+  transportRoutes,
+  watchTransportRouteId,
 }: {
   formActions: {
     register: ReturnType<typeof useForm<BookingFields>>['register'];
     errors: ReturnType<typeof useForm<BookingFields>>['formState']['errors'];
   };
   disabled?: boolean;
-  boats: { id: string; name: string }[];
-  beachHouses: { id: string; name: string }[];
+  boats: {
+    id: string;
+    name: string;
+    price_per_hour?: number | null;
+    pickup_location?: string | null;
+    max_guests?: number | null;
+    is_available_for_transport?: boolean;
+  }[];
+  beachHouses: {
+    id: string;
+    name: string;
+    price_per_night?: number | null;
+    location?: string | null;
+    transport_price?: number | null;
+    max_guests?: number | null;
+  }[];
+  locations: { id: string; name: string }[];
   watchType: BookingType;
   watchTransportType: string;
+  watchStatus: BookingStatus;
+  watchBoatId: string;
+  watchParentBookingId: string;
+  watchBeachHouseId: string;
+  watchPickupLocation: string;
+  transportRoutes: TransportRoute[];
+  watchTransportRouteId: string;
   bookings: import('../../services/apiBooking').Booking[];
+  computedTotal: number | null;
+  availabilityState: AvailabilityState;
 }) {
-  // Beach-house bookings available to link a transport sub-booking to
   const houseBookings = bookings.filter(
     (b) => b.booking_type === 'beach_house',
   );
+  // Boarding location comes from the selected boat's jetty record
+  const selectedBoat = boats.find((b) => b.id === watchBoatId);
+  const boardingLocation = selectedBoat?.pickup_location ?? null;
+  // Linked beach house stay — drives the transport date display
+  const linkedStay =
+    houseBookings.find((b) => b.id === watchParentBookingId) ?? null;
+  // If linked, resolve the beach house record for its transport location + price
+  const linkedHouse = linkedStay
+    ? (beachHouses.find((h) => h.id === linkedStay.beach_house_id) ?? null)
+    : null;
+  // Payment reference is required to confirm a booking — it's the paper trail
+  const paymentRefRequired = watchStatus === 'confirmed';
+  const selectedBeachHouse =
+    watchType === 'beach_house'
+      ? (beachHouses.find((h) => h.id === watchBeachHouseId) ?? null)
+      : null;
+  const maxGuests =
+    watchType === 'boat_cruise' || watchType === 'transport'
+      ? (selectedBoat?.max_guests ?? null)
+      : watchType === 'beach_house'
+        ? (selectedBeachHouse?.max_guests ?? null)
+        : null;
+
   return (
     <>
-      <div className={styles.formRow}>
-        <FormInput
-          id="booking_type"
-          type="select"
-          label="Booking Type"
-          formActions={formActions}
-          disabled={disabled}
-        >
-          <option value="boat_cruise">Boat Cruise</option>
-          <option value="beach_house">Beach House</option>
-          <option value="transport">Transport (boat as shuttle)</option>
-        </FormInput>
-        <FormInput
-          id="source"
-          type="select"
-          label="Source"
-          formActions={formActions}
-          disabled={disabled}
-          required={false}
-        >
-          <option value="admin">Admin</option>
-          <option value="web">Web</option>
-          <option value="mobile">Mobile</option>
-        </FormInput>
-      </div>
+      <FormInput
+        id="booking_type"
+        type="select"
+        label="Booking Type"
+        formActions={formActions}
+        disabled={disabled}
+      >
+        <option value="boat_cruise">Boat Cruise</option>
+        <option value="beach_house">Beach House</option>
+        <option value="transport">Transport (boat as shuttle)</option>
+      </FormInput>
 
       {/* ── Boat Cruise ────────────────────────────────────── */}
       {watchType === 'boat_cruise' && (
-        <FormInput
-          id="boat_id"
-          type="select"
-          label="Boat"
-          formActions={formActions}
-          disabled={disabled}
-        >
-          <option value="">Select a boat…</option>
-          {boats.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </FormInput>
-      )}
-
-      {/* ── Beach House ────────────────────────────────────── */}
-      {watchType === 'beach_house' && (
-        <FormInput
-          id="beach_house_id"
-          type="select"
-          label="Beach House"
-          formActions={formActions}
-          disabled={disabled}
-        >
-          <option value="">Select a beach house…</option>
-          {beachHouses.map((h) => (
-            <option key={h.id} value={h.id}>
-              {h.name}
-            </option>
-          ))}
-        </FormInput>
-      )}
-
-      {/* ── Transport ──────────────────────────────────────── */}
-      {watchType === 'transport' && (
         <>
-          <p className={styles.transportHint}>
-            Transport bookings use a boat as a shuttle. Set the boat below. Link
-            to a beach house booking if this is a transfer for an existing stay.
-          </p>
           <FormInput
             id="boat_id"
             type="select"
-            label="Transport Boat"
+            label="Boat"
             formActions={formActions}
             disabled={disabled}
           >
@@ -256,54 +291,190 @@ function BookingFormFields({
             {boats.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
+                {b.max_guests ? ` (max ${b.max_guests})` : ''}
+                {b.price_per_hour
+                  ? ` — ₦${b.price_per_hour.toLocaleString()}/hr`
+                  : ''}
               </option>
             ))}
           </FormInput>
-          <div className={styles.formRow}>
-            <FormInput
-              id="transport_type"
-              type="select"
-              label="Direction"
-              formActions={formActions}
-              disabled={disabled}
-              required={false}
-            >
-              <option value="">Not specified</option>
-              <option value="outbound">Outbound (to venue)</option>
-              <option value="return">Return (from venue)</option>
-              <option value="round_trip">Round Trip</option>
-            </FormInput>
-            <FormInput
-              id="beach_house_id"
-              type="select"
-              label="Destination Beach House (optional)"
-              formActions={formActions}
-              disabled={disabled}
-              required={false}
-            >
-              <option value="">None / standalone transport</option>
-              {beachHouses.map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.name}
-                </option>
-              ))}
-            </FormInput>
-          </div>
+          {maxGuests !== null && (
+            <p className={styles.capacityHint}>
+              Max capacity: <strong>{maxGuests}</strong> guests (including
+              yourself)
+            </p>
+          )}
           <FormInput
-            id="parent_beach_house_booking_id"
+            id="hours"
+            type="number"
+            label="Number of Hours"
+            formActions={formActions}
+            disabled={disabled}
+            placeholder="e.g. 3"
+          />
+        </>
+      )}
+
+      {/* ── Beach House ────────────────────────────────────── */}
+      {watchType === 'beach_house' && (
+        <>
+          <FormInput
+            id="beach_house_id"
             type="select"
-            label="Linked Beach House Booking (optional)"
+            label="Beach House"
+            formActions={formActions}
+            disabled={disabled}
+          >
+            <option value="">Select a beach house…</option>
+            {beachHouses.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.name}
+                {h.max_guests ? ` (max ${h.max_guests})` : ''}
+                {h.price_per_night
+                  ? ` — ₦${h.price_per_night.toLocaleString()}/night`
+                  : ''}
+              </option>
+            ))}
+          </FormInput>
+          {maxGuests !== null && (
+            <p className={styles.capacityHint}>
+              Max capacity: <strong>{maxGuests}</strong> guests (including
+              yourself)
+            </p>
+          )}
+        </>
+      )}
+
+      {/* ── Transport ──────────────────────────────────────── */}
+      {watchType === 'transport' && (
+        <>
+          {/* Route selector: single dropdown; for linked stays filter to routes ending at the beach house */}
+          <FormInput
+            id="transport_route_id"
+            type="select"
+            label="Route"
+            formActions={formActions}
+            disabled={disabled}
+          >
+            <option value="">Select a route…</option>
+            {(linkedHouse
+              ? transportRoutes.filter(
+                  (r) => r.to_location?.name === linkedHouse.location,
+                )
+              : transportRoutes
+            ).map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.from_location?.name ?? '?'} → {r.to_location?.name ?? '?'}
+                {r.price_per_trip != null
+                  ? ` · ₦${r.price_per_trip.toLocaleString()}/person`
+                  : ''}
+              </option>
+            ))}
+          </FormInput>
+
+          {/* Hidden fields — auto-set by parent useEffect when route changes */}
+          <input type="hidden" {...formActions.register('pickup_location')} />
+          <input type="hidden" {...formActions.register('dropoff_location')} />
+
+          <p className={styles.transportPricingHint}>
+            Pricing is <strong>per person</strong> · minimum{' '}
+            <strong>{TRANSPORT_MIN_PASSENGERS} passengers</strong> applies per
+            trip
+          </p>
+
+          {/* Boat selector — only shown once a route is picked */}
+          {watchTransportRouteId
+            ? (() => {
+                const selectedRoute = transportRoutes.find(
+                  (r) => r.id === watchTransportRouteId,
+                );
+                const availableBoats = boats.filter(
+                  (b) =>
+                    b.is_available_for_transport &&
+                    b.pickup_location === selectedRoute?.from_location?.name,
+                );
+                if (availableBoats.length === 0) {
+                  return (
+                    <p className={styles.noBoatsMsg}>
+                      No transport boats depart from{' '}
+                      <strong>
+                        {selectedRoute?.from_location?.name ?? 'this location'}
+                      </strong>
+                      . Update a boat’s jetty in the Boats page to enable it.
+                    </p>
+                  );
+                }
+                return (
+                  <>
+                    <FormInput
+                      id="boat_id"
+                      type="select"
+                      label="Transport Boat"
+                      formActions={formActions}
+                      disabled={disabled}
+                    >
+                      <option value="">Select a boat…</option>
+                      {availableBoats.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                          {b.max_guests
+                            ? ` (${b.max_guests} passengers max)`
+                            : ''}
+                        </option>
+                      ))}
+                    </FormInput>
+                    {maxGuests !== null && (
+                      <p className={styles.capacityHint}>
+                        Transport capacity:{' '}
+                        <strong>{maxGuests}</strong> passengers
+                      </p>
+                    )}
+                  </>
+                );
+              })()
+            : null}
+
+          <FormInput
+            id="transport_type"
+            type="select"
+            label="Trip Type"
             formActions={formActions}
             disabled={disabled}
             required={false}
           >
-            <option value="">Not linked to an existing stay</option>
-            {houseBookings.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.reference_code} — {b.customer_name} ({b.start_date})
-              </option>
-            ))}
+            <option value="">Not specified</option>
+            <option value="outbound">One Way</option>
+            <option value="round_trip">Round Trip</option>
           </FormInput>
+
+          <div className={styles.linkedStaySection}>
+            <p className={styles.linkedStayHeading}>
+              Is this transport for a beach house stay? (optional)
+            </p>
+            <p className={styles.linkedStayHint}>
+              Link this transport to an existing beach house booking to keep
+              everything connected. The booking reference will appear in both
+              records.
+            </p>
+            <FormInput
+              id="parent_beach_house_booking_id"
+              type="select"
+              label="Beach House Booking"
+              formActions={formActions}
+              disabled={disabled}
+              required={false}
+            >
+              <option value="">No — standalone transport</option>
+              {houseBookings.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.reference_code} · {b.customer_name} · {b.start_date}
+                  {b.end_date && b.end_date !== b.start_date
+                    ? ` – ${b.end_date}`
+                    : ''}
+                </option>
+              ))}
+            </FormInput>
+          </div>
         </>
       )}
 
@@ -335,107 +506,260 @@ function BookingFormFields({
         <FormInput
           id="guest_count"
           type="number"
-          label="Guest Count"
+          label={
+            maxGuests !== null
+              ? `Guests (max ${maxGuests - 1} additional)`
+              : 'Guest Count'
+          }
           formActions={formActions}
           disabled={disabled}
           required={false}
+          min={watchType === 'transport' ? TRANSPORT_MIN_PASSENGERS : 0}
+          max={maxGuests !== null ? maxGuests - 1 : undefined}
+          validation={
+            maxGuests !== null
+              ? {
+                  max: {
+                    value: maxGuests - 1,
+                    message: `Max total capacity is ${maxGuests} (yourself + ${maxGuests - 1} guests)`,
+                  },
+                }
+              : {}
+          }
         />
       </div>
 
       <div className={styles.formSectionLabel}>Dates &amp; Times</div>
-      <div className={styles.formRow}>
-        <FormInput
-          id="start_date"
-          type="date"
-          label="Start Date"
-          formActions={formActions}
-          disabled={disabled}
-        />
-        <FormInput
-          id="end_date"
-          type="date"
-          label="End Date"
-          formActions={formActions}
-          disabled={disabled}
-        />
-      </div>
-      {watchType !== 'beach_house' && (
+
+      {/* Boat cruise: single date + pickup time only (duration is set by hours) */}
+      {watchType === 'boat_cruise' && (
         <div className={styles.formRow}>
           <FormInput
-            id="start_time"
-            type="text"
-            label={
-              watchType === 'transport' && watchTransportType === 'round_trip'
-                ? 'Outbound Pickup Time (HH:MM)'
-                : watchType === 'transport'
-                  ? 'Pickup Time (HH:MM)'
-                  : 'Start Time (HH:MM)'
-            }
+            id="start_date"
+            type="date"
+            label="Date"
             formActions={formActions}
             disabled={disabled}
-            required={false}
-            placeholder="09:00"
           />
           <FormInput
-            id="end_time"
-            type="text"
-            label={
-              watchType === 'transport' && watchTransportType === 'round_trip'
-                ? 'Return Pickup Time (HH:MM)'
-                : watchType === 'transport'
-                  ? 'Drop-off Time (HH:MM)'
-                  : 'End Time (HH:MM)'
-            }
+            id="start_time"
+            type="time"
+            label="Pickup Time"
             formActions={formActions}
             disabled={disabled}
             required={false}
-            placeholder="17:00"
           />
         </div>
       )}
 
+      {/* Beach house: check-in / check-out dates only */}
+      {watchType === 'beach_house' && (
+        <div className={styles.formRow}>
+          <FormInput
+            id="start_date"
+            type="date"
+            label="Check-in Date"
+            formActions={formActions}
+            disabled={disabled}
+          />
+          <FormInput
+            id="end_date"
+            type="date"
+            label="Check-out Date"
+            formActions={formActions}
+            disabled={disabled}
+          />
+        </div>
+      )}
+
+      {/* Transport: date set by linked stay (read-only), or manual entry */}
+      {watchType === 'transport' &&
+        (linkedStay ? (
+          <div className={styles.linkedTransportDateBox}>
+            {/* Hidden fields — parent syncs values from the linked booking */}
+            <input type="hidden" {...formActions.register('start_date')} />
+            {watchTransportType === 'round_trip' && (
+              <input type="hidden" {...formActions.register('end_date')} />
+            )}
+            {watchTransportType === 'round_trip' ? (
+              <>
+                <div className={styles.linkedTransportDateRow}>
+                  <span className={styles.linkedTransportDateLabel}>
+                    Outbound date
+                  </span>
+                  <span className={styles.linkedTransportDateValue}>
+                    {linkedStay.start_date}
+                  </span>
+                </div>
+                <div className={styles.linkedTransportDateRow}>
+                  <span className={styles.linkedTransportDateLabel}>
+                    Return date
+                  </span>
+                  <span className={styles.linkedTransportDateValue}>
+                    {linkedStay.end_date}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className={styles.linkedTransportDateRow}>
+                <span className={styles.linkedTransportDateLabel}>
+                  Transfer date
+                </span>
+                <span className={styles.linkedTransportDateValue}>
+                  {linkedStay.start_date}
+                </span>
+              </div>
+            )}
+            <p className={styles.linkedTransportNote}>
+              {watchTransportType === 'round_trip'
+                ? 'Dates are set to the check-in and check-out dates of the linked beach house stay.'
+                : 'Date is set to the check-in date of the linked beach house stay.'}
+              {' '}Remind guests to arrive at the jetty at least 1 hour before
+              {watchTransportType === 'round_trip' ? ' each departure.' : ' check-in time.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className={styles.formRow}>
+              <FormInput
+                id="start_date"
+                type="date"
+                label={
+                  watchTransportType === 'round_trip'
+                    ? 'Outbound Date'
+                    : 'Date'
+                }
+                formActions={formActions}
+                disabled={disabled}
+              />
+              <FormInput
+                id="start_time"
+                type="time"
+                label={
+                  watchTransportType === 'round_trip'
+                    ? 'Outbound Boarding Time'
+                    : 'Boarding Time'
+                }
+                formActions={formActions}
+                disabled={disabled}
+                required={false}
+              />
+            </div>
+            {watchTransportType === 'round_trip' && (
+              <div className={styles.formRow}>
+                <FormInput
+                  id="end_date"
+                  type="date"
+                  label="Return Date"
+                  formActions={formActions}
+                  disabled={disabled}
+                />
+                <FormInput
+                  id="end_time"
+                  type="time"
+                  label="Return Boarding Time"
+                  formActions={formActions}
+                  disabled={disabled}
+                  required={false}
+                />
+              </div>
+            )}
+          </>
+        ))}
+
+      {/* ── Availability feedback ──────────────────────────── */}
+      {availabilityState.status === 'checking' && (
+        <div
+          className={`${styles.availabilityBanner} ${styles.availabilityChecking}`}
+        >
+          <span className={styles.availabilityDot} />
+          Checking availability…
+        </div>
+      )}
+      {availabilityState.status === 'available' && (
+        <div
+          className={`${styles.availabilityBanner} ${styles.availabilityOk}`}
+        >
+          <CheckCircle2 size={14} />
+          This slot is available.
+        </div>
+      )}
+      {availabilityState.status === 'unavailable' && (
+        <div
+          className={`${styles.availabilityBanner} ${styles.availabilityBlocked}`}
+        >
+          <XCircle size={14} />
+          <span>
+            Already booked
+            {availabilityState.conflictRef
+              ? ` (${availabilityState.conflictRef}`
+              : ''}
+            {availabilityState.conflictCustomer
+              ? ` · ${availabilityState.conflictCustomer})`
+              : availabilityState.conflictRef
+                ? ')'
+                : ''}
+            . Choose different dates.
+          </span>
+        </div>
+      )}
+
       <div className={styles.formSectionLabel}>Payment</div>
-      <div className={styles.formRow}>
-        <FormInput
-          id="total_amount"
-          type="number"
-          label="Total Amount (₦)"
-          formActions={formActions}
-          disabled={disabled}
-        />
-        <FormInput
-          id="status"
-          type="select"
-          label="Booking Status"
-          formActions={formActions}
-          disabled={disabled}
-        >
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="expired">Expired</option>
-        </FormInput>
+
+      {/* Total is always computed — never a free-text input */}
+      <div className={styles.computedTotalBox}>
+        <span className={styles.computedTotalLabel}>Total Amount</span>
+        {computedTotal !== null ? (
+          <span className={styles.computedTotalValue}>
+            ₦{computedTotal.toLocaleString()}
+          </span>
+        ) : (
+          <span className={styles.computedTotalPlaceholder}>
+            {watchType === 'boat_cruise'
+              ? 'Select a boat and enter hours to calculate'
+              : watchType === 'beach_house'
+                ? 'Select a property and enter dates to calculate'
+                : 'Select pickup and drop-off locations to calculate'}
+          </span>
+        )}
       </div>
-      <div className={styles.formRow}>
-        <FormInput
-          id="payment_status"
-          type="select"
-          label="Payment Status"
-          formActions={formActions}
-          disabled={disabled}
-        >
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="failed">Failed</option>
-        </FormInput>
-        <FormInput
-          id="payment_reference"
-          label="Payment Reference"
-          formActions={formActions}
-          disabled={disabled}
-          required={false}
-        />
-      </div>
+
+      <FormInput
+        id="status"
+        type="select"
+        label="Booking Status"
+        formActions={formActions}
+        disabled={disabled}
+      >
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="expired">Expired</option>
+        <option value="completed">Completed</option>
+      </FormInput>
+      <p className={styles.paymentStatusHint}>
+        {watchStatus === 'pending'
+          ? 'Awaiting payment — confirm once payment is received.'
+          : watchStatus === 'confirmed'
+            ? 'Payment received — booking is confirmed.'
+            : watchStatus === 'cancelled'
+              ? 'Payment was received; booking has been cancelled.'
+              : watchStatus === 'completed'
+                ? 'Booking has been completed.'
+                : 'Payment was received; booking expired (no-show).'}
+      </p>
+      <FormInput
+        id="payment_reference"
+        label={
+          paymentRefRequired
+            ? 'Transfer / Bank Reference (required to confirm)'
+            : 'Transfer / Bank Reference (optional)'
+        }
+        formActions={formActions}
+        disabled={disabled}
+        required={paymentRefRequired}
+        placeholder="e.g. transfer receipt reference"
+      />
       <FormInput
         id="notes"
         type="textarea"
@@ -455,6 +779,8 @@ function BookingsHome() {
   const { customers } = useCustomers();
   const { boats } = useBoats();
   const { beachHouses } = useBeachHouses();
+  const { locations } = useLocations();
+  const { routes: transportRoutes } = useTransportRoutes();
   const { create, isPending: isCreating } = useCreateBooking();
   const { update, isPending: isUpdating } = useUpdateBooking();
   const { remove, isPending: isDeleting } = useDeleteBooking();
@@ -475,19 +801,23 @@ function BookingsHome() {
   const customStart = searchParams.get('from') ?? '';
   const customEnd = searchParams.get('to') ?? '';
   const customerSearch = searchParams.get('cq') ?? '';
-  const customerSort = (searchParams.get('csort') ?? 'bookings_desc') as CustomerSortKey;
+  const customerSort = (searchParams.get('csort') ??
+    'bookings_desc') as CustomerSortKey;
   const customerView = (searchParams.get('cview') ?? 'card') as CustomerView;
   const customerPage = Number(searchParams.get('cpage') ?? '1');
 
   function sp(updates: Record<string, string | null>) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      for (const [k, v] of Object.entries(updates)) {
-        if (v === null || v === '') next.delete(k);
-        else next.set(k, v);
-      }
-      return next;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [k, v] of Object.entries(updates)) {
+          if (v === null || v === '') next.delete(k);
+          else next.set(k, v);
+        }
+        return next;
+      },
+      { replace: true },
+    );
   }
 
   // Scroll to expanded booking when ?open= is present
@@ -513,7 +843,7 @@ function BookingsHome() {
 
   const [deletingBooking, setDeletingBooking] = useState<Booking | null>(null);
 
-  // UI-only state (not URL-driven) 
+  // UI-only state (not URL-driven)
   // ── Date range ───────────────────────────────────────────────────────────
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -709,25 +1039,152 @@ function BookingsHome() {
     formState: { errors: createErrors },
     reset: resetCreate,
     watch: createWatch,
+    setValue: createSetValue,
   } = useForm<BookingFields>({
     defaultValues: {
       booking_type: 'boat_cruise',
       status: 'pending',
       payment_status: 'pending',
-      source: 'admin',
+      hours: 1,
       guest_count: 1,
     },
   });
   const createFormActions = { register: createReg, errors: createErrors };
   const watchCreateType = createWatch('booking_type') as BookingType;
   const watchCreateTransportType = createWatch('transport_type') as string;
+  const watchCreateStatus = createWatch('status') as BookingStatus;
+  const watchCreateBoatId = createWatch('boat_id');
+  const watchCreateBeachHouseId = createWatch('beach_house_id');
+  const watchCreateParentBookingId =
+    createWatch('parent_beach_house_booking_id') ?? '';
+  const watchCreateHours = Number(createWatch('hours')) || 0;
+  const watchCreateStartDate = createWatch('start_date');
+  const watchCreateEndDate = createWatch('end_date');
+  const watchCreateStartTime = createWatch('start_time');
+  const watchCreatePickupLocation = createWatch('pickup_location');
+  const watchCreateDropoffLocation = createWatch('dropoff_location');
+  const watchCreateGuestCount = Number(createWatch('guest_count')) || 1;
+  const watchCreateTransportRouteId = createWatch('transport_route_id') ?? '';
+
+  // Compute total from asset price × quantity whenever relevant inputs change
+  const createComputedTotal = useMemo(() => {
+    if (watchCreateType === 'boat_cruise') {
+      const boat = boats?.find((b) => b.id === watchCreateBoatId);
+      if (boat?.price_per_hour && watchCreateHours > 0) {
+        return boat.price_per_hour * watchCreateHours;
+      }
+      return null;
+    }
+    if (watchCreateType === 'beach_house') {
+      const house = beachHouses?.find((h) => h.id === watchCreateBeachHouseId);
+      if (
+        house?.price_per_night &&
+        watchCreateStartDate &&
+        watchCreateEndDate
+      ) {
+        const nights = Math.round(
+          (new Date(watchCreateEndDate).getTime() -
+            new Date(watchCreateStartDate).getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+        if (nights > 0) return house.price_per_night * nights;
+      }
+      return null;
+    }
+    if (watchCreateType === 'transport') {
+      // If linked to a beach house stay, use that house's fixed transport price if set
+      // (not per-person — the override is a flat rate, but still doubled for round trips)
+      if (watchCreateParentBookingId) {
+        const stay = bookings?.find((b) => b.id === watchCreateParentBookingId);
+        const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
+        if (house?.transport_price) {
+          const tripMultiplier = watchCreateTransportType === 'round_trip' ? 2 : 1;
+          return house.transport_price * tripMultiplier;
+        }
+      }
+      if (watchCreatePickupLocation && watchCreateDropoffLocation) {
+        const routePrice = findRoutePrice(
+          transportRoutes,
+          watchCreatePickupLocation,
+          watchCreateDropoffLocation,
+        );
+        const billable = Math.max(watchCreateGuestCount, TRANSPORT_MIN_PASSENGERS);
+        const tripMultiplier = watchCreateTransportType === 'round_trip' ? 2 : 1;
+        return routePrice !== null ? routePrice * billable * tripMultiplier : null;
+      }
+      return null;
+    }
+    return null;
+  }, [
+    watchCreateType,
+    watchCreateBoatId,
+    watchCreateBeachHouseId,
+    watchCreateHours,
+    watchCreateStartDate,
+    watchCreateEndDate,
+    watchCreatePickupLocation,
+    watchCreateDropoffLocation,
+    watchCreateParentBookingId,
+    watchCreateGuestCount,
+    watchCreateTransportType,
+    boats,
+    beachHouses,
+    bookings,
+    transportRoutes,
+  ]);
+
+  // Sync computed total → form value so it is submitted correctly
+  useEffect(() => {
+    if (createComputedTotal !== null) {
+      createSetValue('total_amount', createComputedTotal);
+    }
+  }, [createComputedTotal, createSetValue]);
+
+  // When booking type switches to transport, ensure guest count meets the minimum
+  useEffect(() => {
+    if (watchCreateType === 'transport' && watchCreateGuestCount < TRANSPORT_MIN_PASSENGERS) {
+      createSetValue('guest_count', TRANSPORT_MIN_PASSENGERS);
+    }
+  }, [watchCreateType, watchCreateGuestCount, createSetValue]);
+
+  // When a route is selected on create, auto-set pickup + dropoff from the route
+  useEffect(() => {
+    if (watchCreateType !== 'transport' || !watchCreateTransportRouteId) return;
+    const route = transportRoutes?.find((r) => r.id === watchCreateTransportRouteId);
+    if (!route) return;
+    createSetValue('pickup_location', route.from_location?.name ?? '');
+    createSetValue('dropoff_location', route.to_location?.name ?? '');
+  }, [watchCreateTransportRouteId, watchCreateType, transportRoutes, createSetValue]);
+
+  // When a linked stay is selected (or trip type changes), sync dates + dropoff from the beach house
+  useEffect(() => {
+    if (watchCreateType !== 'transport' || !watchCreateParentBookingId) return;
+    const stay = bookings?.find((b) => b.id === watchCreateParentBookingId);
+    if (stay?.start_date) createSetValue('start_date', stay.start_date);
+    // For round trip: return date = check-out date; for one-way: clear end_date
+    if (watchCreateTransportType === 'round_trip' && stay?.end_date) {
+      createSetValue('end_date', stay.end_date);
+    } else {
+      createSetValue('end_date', stay?.start_date ?? '');
+    }
+    const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
+    if (house?.location) createSetValue('dropoff_location', house.location);
+  }, [
+    watchCreateParentBookingId,
+    watchCreateTransportType,
+    watchCreateType,
+    bookings,
+    beachHouses,
+    locations,
+    createSetValue,
+  ]);
 
   function openCreate() {
     resetCreate({
       booking_type: 'boat_cruise',
       status: 'pending',
       payment_status: 'pending',
-      source: 'admin',
+      hours: 1,
       guest_count: 1,
     });
     setCreateSubmitError(null);
@@ -745,19 +1202,40 @@ function BookingsHome() {
         parent_beach_house_booking_id:
           data.parent_beach_house_booking_id || null,
         transport_type: (data.transport_type as never) || null,
+        pickup_location: data.pickup_location || null,
+        dropoff_location: data.dropoff_location || null,
         customer_name: data.customer_name,
         customer_email: data.customer_email,
         customer_phone: data.customer_phone || '',
         guest_count: Number(data.guest_count) || 1,
         start_date: data.start_date,
-        end_date: data.end_date,
+        // Boat cruise: end_date matches start_date.
+        // Transport round trip: end_date = return date (check-out for linked stay).
+        // Transport one-way: end_date = start_date.
+        end_date:
+          data.booking_type === 'boat_cruise'
+            ? data.start_date
+            : data.booking_type === 'transport'
+              ? data.transport_type === 'round_trip' && data.end_date
+                ? data.end_date
+                : data.start_date
+              : data.end_date,
         start_time: data.start_time || null,
-        end_time: data.end_time || null,
+        end_time:
+          data.booking_type === 'boat_cruise' &&
+          data.start_time &&
+          Number(data.hours) > 0
+            ? computeEndTime(data.start_time, Number(data.hours))
+            : data.end_time || null,
+        hours:
+          data.booking_type === 'boat_cruise' && Number(data.hours) > 0
+            ? Number(data.hours)
+            : null,
         total_amount: Number(data.total_amount) || 0,
         status: data.status,
-        payment_status: data.payment_status,
+        payment_status: derivePaymentStatus(data.status),
         payment_reference: data.payment_reference || null,
-        source: data.source as never,
+        source: 'admin' as never,
         notes: data.notes || null,
       },
       {
@@ -782,10 +1260,212 @@ function BookingsHome() {
     formState: { errors: editErrors },
     reset: resetEdit,
     watch: editWatch,
+    setValue: editSetValue,
   } = useForm<BookingFields>();
   const editFormActions = { register: editReg, errors: editErrors };
   const watchEditType = editWatch('booking_type') as BookingType;
   const watchEditTransportType = editWatch('transport_type') as string;
+  const watchEditStatus = editWatch('status') as BookingStatus;
+  const watchEditBoatId = editWatch('boat_id');
+  const watchEditBeachHouseId = editWatch('beach_house_id');
+  const watchEditParentBookingId =
+    editWatch('parent_beach_house_booking_id') ?? '';
+  const watchEditHours = Number(editWatch('hours')) || 0;
+  const watchEditStartDate = editWatch('start_date');
+  const watchEditEndDate = editWatch('end_date');
+  const watchEditStartTime = editWatch('start_time');
+  const watchEditPickupLocation = editWatch('pickup_location');
+  const watchEditDropoffLocation = editWatch('dropoff_location');
+  const watchEditGuestCount = Number(editWatch('guest_count')) || 1;
+  const watchEditTransportRouteId = editWatch('transport_route_id') ?? '';
+
+  const editComputedTotal = useMemo(() => {
+    if (watchEditType === 'boat_cruise') {
+      const boat = boats?.find((b) => b.id === watchEditBoatId);
+      if (boat?.price_per_hour && watchEditHours > 0) {
+        return boat.price_per_hour * watchEditHours;
+      }
+      return null;
+    }
+    if (watchEditType === 'beach_house') {
+      const house = beachHouses?.find((h) => h.id === watchEditBeachHouseId);
+      if (house?.price_per_night && watchEditStartDate && watchEditEndDate) {
+        const nights = Math.round(
+          (new Date(watchEditEndDate).getTime() -
+            new Date(watchEditStartDate).getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+        if (nights > 0) return house.price_per_night * nights;
+      }
+      return null;
+    }
+    if (watchEditType === 'transport') {
+      // If linked to a beach house stay, use that house's fixed transport price if set
+      // (not per-person — the override is a flat rate, but still doubled for round trips)
+      if (watchEditParentBookingId) {
+        const stay = bookings?.find((b) => b.id === watchEditParentBookingId);
+        const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
+        if (house?.transport_price) {
+          const tripMultiplier = watchEditTransportType === 'round_trip' ? 2 : 1;
+          return house.transport_price * tripMultiplier;
+        }
+      }
+      if (watchEditPickupLocation && watchEditDropoffLocation) {
+        const routePrice = findRoutePrice(
+          transportRoutes,
+          watchEditPickupLocation,
+          watchEditDropoffLocation,
+        );
+        const billable = Math.max(watchEditGuestCount, TRANSPORT_MIN_PASSENGERS);
+        const tripMultiplier = watchEditTransportType === 'round_trip' ? 2 : 1;
+        return routePrice !== null ? routePrice * billable * tripMultiplier : null;
+      }
+      return null;
+    }
+    return null;
+  }, [
+    watchEditType,
+    watchEditBoatId,
+    watchEditBeachHouseId,
+    watchEditHours,
+    watchEditStartDate,
+    watchEditEndDate,
+    watchEditPickupLocation,
+    watchEditDropoffLocation,
+    watchEditParentBookingId,
+    watchEditGuestCount,
+    watchEditTransportType,
+    boats,
+    beachHouses,
+    bookings,
+    transportRoutes,
+  ]);
+
+  useEffect(() => {
+    if (editComputedTotal !== null) {
+      editSetValue('total_amount', editComputedTotal);
+    }
+  }, [editComputedTotal, editSetValue]);
+
+  // When booking type switches to transport, ensure guest count meets the minimum
+  useEffect(() => {
+    if (watchEditType === 'transport' && watchEditGuestCount < TRANSPORT_MIN_PASSENGERS) {
+      editSetValue('guest_count', TRANSPORT_MIN_PASSENGERS);
+    }
+  }, [watchEditType, watchEditGuestCount, editSetValue]);
+
+  // When a route is selected on edit, auto-set pickup + dropoff from the route
+  useEffect(() => {
+    if (watchEditType !== 'transport' || !watchEditTransportRouteId) return;
+    const route = transportRoutes?.find((r) => r.id === watchEditTransportRouteId);
+    if (!route) return;
+    editSetValue('pickup_location', route.from_location?.name ?? '');
+    editSetValue('dropoff_location', route.to_location?.name ?? '');
+  }, [watchEditTransportRouteId, watchEditType, transportRoutes, editSetValue]);
+
+  // When a linked stay is selected (or trip type changes), sync dates + dropoff from the beach house
+  useEffect(() => {
+    if (watchEditType !== 'transport' || !watchEditParentBookingId) return;
+    const stay = bookings?.find((b) => b.id === watchEditParentBookingId);
+    if (stay?.start_date) editSetValue('start_date', stay.start_date);
+    // For round trip: return date = check-out date; for one-way: clear end_date
+    if (watchEditTransportType === 'round_trip' && stay?.end_date) {
+      editSetValue('end_date', stay.end_date);
+    } else {
+      editSetValue('end_date', stay?.start_date ?? '');
+    }
+    const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
+    if (house?.location) editSetValue('dropoff_location', house.location);
+  }, [
+    watchEditParentBookingId,
+    watchEditTransportType,
+    watchEditType,
+    bookings,
+    beachHouses,
+    locations,
+    editSetValue,
+  ]);
+
+  // ── Availability checks ───────────────────────────────────────────────────
+  const createAvailabilityParams = useMemo((): AvailabilityParams | null => {
+    if (
+      watchCreateType === 'beach_house' &&
+      watchCreateBeachHouseId &&
+      watchCreateStartDate &&
+      watchCreateEndDate
+    )
+      return {
+        resourceType: 'beach_house',
+        resourceId: watchCreateBeachHouseId,
+        startDate: watchCreateStartDate,
+        endDate: watchCreateEndDate,
+      };
+    if (
+      watchCreateType === 'boat_cruise' &&
+      watchCreateBoatId &&
+      watchCreateStartDate
+    )
+      return {
+        resourceType: 'boat',
+        resourceId: watchCreateBoatId,
+        startDate: watchCreateStartDate,
+        endDate: watchCreateStartDate,
+        startTime: watchCreateStartTime || null,
+      };
+    return null;
+  }, [
+    watchCreateType,
+    watchCreateBeachHouseId,
+    watchCreateBoatId,
+    watchCreateStartDate,
+    watchCreateEndDate,
+    watchCreateStartTime,
+  ]);
+
+  const editAvailabilityParams = useMemo((): AvailabilityParams | null => {
+    if (
+      watchEditType === 'beach_house' &&
+      watchEditBeachHouseId &&
+      watchEditStartDate &&
+      watchEditEndDate
+    )
+      return {
+        resourceType: 'beach_house',
+        resourceId: watchEditBeachHouseId,
+        startDate: watchEditStartDate,
+        endDate: watchEditEndDate,
+        excludeBookingId: editingBooking?.id,
+      };
+    if (
+      watchEditType === 'boat_cruise' &&
+      watchEditBoatId &&
+      watchEditStartDate
+    )
+      return {
+        resourceType: 'boat',
+        resourceId: watchEditBoatId,
+        startDate: watchEditStartDate,
+        endDate: watchEditStartDate,
+        startTime: watchEditStartTime || null,
+        excludeBookingId: editingBooking?.id,
+      };
+    return null;
+  }, [
+    watchEditType,
+    watchEditBeachHouseId,
+    watchEditBoatId,
+    watchEditStartDate,
+    watchEditEndDate,
+    watchEditStartTime,
+    editingBooking?.id,
+  ]);
+
+  const createAvailability: AvailabilityState = useAvailabilityCheck(
+    createAvailabilityParams,
+  );
+  const editAvailability: AvailabilityState = useAvailabilityCheck(
+    editAvailabilityParams,
+  );
 
   function openEdit(b: Booking) {
     setEditingBooking(b);
@@ -796,10 +1476,21 @@ function BookingsHome() {
       beach_house_id: b.beach_house_id ?? '',
       parent_beach_house_booking_id: b.parent_beach_house_booking_id ?? '',
       transport_type: b.transport_type ?? '',
+      pickup_location: b.pickup_location ?? '',
+      dropoff_location: b.dropoff_location ?? '',
+      transport_route_id:
+        b.booking_type === 'transport'
+          ? (transportRoutes?.find(
+              (r) =>
+                r.from_location?.name === b.pickup_location &&
+                r.to_location?.name === b.dropoff_location,
+            )?.id ?? '')
+          : '',
       customer_name: b.customer_name,
       customer_email: b.customer_email,
       customer_phone: b.customer_phone ?? '',
       guest_count: b.guest_count,
+      hours: b.booking_type === 'boat_cruise' ? (b.hours ?? undefined) : undefined,
       start_date: b.start_date,
       end_date: b.end_date,
       start_time: b.start_time ?? '',
@@ -826,6 +1517,8 @@ function BookingsHome() {
         parent_beach_house_booking_id:
           data.parent_beach_house_booking_id || null,
         transport_type: (data.transport_type as never) || null,
+        pickup_location: data.pickup_location || null,
+        dropoff_location: data.dropoff_location || null,
         customer_name: data.customer_name,
         customer_email: data.customer_email,
         customer_phone: data.customer_phone || '',
@@ -833,10 +1526,19 @@ function BookingsHome() {
         start_date: data.start_date,
         end_date: data.end_date,
         start_time: data.start_time || null,
-        end_time: data.end_time || null,
+        end_time:
+          data.booking_type === 'boat_cruise' &&
+          data.start_time &&
+          Number(data.hours) > 0
+            ? computeEndTime(data.start_time, Number(data.hours))
+            : data.end_time || null,
+        hours:
+          data.booking_type === 'boat_cruise' && Number(data.hours) > 0
+            ? Number(data.hours)
+            : null,
         total_amount: Number(data.total_amount) || 0,
         status: data.status,
-        payment_status: data.payment_status,
+        payment_status: derivePaymentStatus(data.status),
         payment_reference: data.payment_reference || null,
         source: data.source as never,
         notes: data.notes || null,
@@ -942,7 +1644,9 @@ function BookingsHome() {
                   <button
                     key={key}
                     className={`${styles.periodPill} ${datePreset === key ? styles.periodPillActive : ''}`}
-                    onClick={() => sp({ period: key, page: null, from: null, to: null })}
+                    onClick={() =>
+                      sp({ period: key, page: null, from: null, to: null })
+                    }
                   >
                     {label}
                   </button>
@@ -1038,6 +1742,7 @@ function BookingsHome() {
                       'all',
                       'pending',
                       'confirmed',
+                      'completed',
                       'cancelled',
                       'expired',
                     ] as StatusFilter[]
@@ -1147,6 +1852,9 @@ function BookingsHome() {
                           {b.start_date !== b.end_date
                             ? ` → ${formatDate(b.end_date)}`
                             : ''}
+                          {b.booking_type === 'boat_cruise' && b.hours
+                            ? ` · ${b.hours}hr${b.hours !== 1 ? 's' : ''}`
+                            : ''}
                         </span>
                       </div>
                       <div className={styles.rowRight}>
@@ -1253,9 +1961,27 @@ function BookingsHome() {
                                         : ''}
                                     </p>
                                   )}
+                                  {b.booking_type === 'boat_cruise' &&
+                                    b.hours && (
+                                      <p className={styles.detailSub}>
+                                        {b.hours} hr{b.hours !== 1 ? 's' : ''}
+                                      </p>
+                                    )}
                                 </>
                               )}
                             </div>
+                            {b.booking_type === 'boat_cruise' && (
+                              <div className={styles.detailBlock}>
+                                <p className={styles.detailLabel}>Duration</p>
+                                {b.hours ? (
+                                  <p className={styles.detailValue}>
+                                    {b.hours} hr{b.hours !== 1 ? 's' : ''}
+                                  </p>
+                                ) : (
+                                  <p className={styles.detailSub}>—</p>
+                                )}
+                              </div>
+                            )}
                             <div className={styles.detailBlock}>
                               <p className={styles.detailLabel}>Payment</p>
                               <p className={styles.detailValue}>
@@ -1385,44 +2111,62 @@ function BookingsHome() {
                               );
                             })()}
 
-                          {/* Quick status actions */}
+                          {/* Quick status actions — hidden for completed bookings */}
                           <div className={styles.detailActions}>
-                            <span className={styles.detailActionsLabel}>
-                              Change status:
-                            </span>
-                            {(
-                              [
-                                'pending',
-                                'confirmed',
-                                'cancelled',
-                                'expired',
-                              ] as BookingStatus[]
-                            )
-                              .filter((s) => s !== b.status)
-                              .map((s) => (
-                                <button
-                                  key={s}
-                                  className={`${styles.quickStatusBtn} ${styles[`quickStatus_${s}`]}`}
-                                  onClick={() => handleQuickStatus(b, s)}
-                                  disabled={isStatusUpdating}
-                                >
-                                  {s === 'confirmed' && (
-                                    <CheckCircle2 size={13} />
-                                  )}
-                                  {s === 'cancelled' && <XCircle size={13} />}
-                                  {s === 'pending' && <AlertCircle size={13} />}
-                                  {s === 'expired' && <Clock size={13} />}
-                                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                                </button>
-                              ))}
+                            {b.status !== 'completed' && (
+                              <>
+                                <span className={styles.detailActionsLabel}>
+                                  Change status:
+                                </span>
+                                {(
+                                  [
+                                    'pending',
+                                    'confirmed',
+                                    'completed',
+                                    'cancelled',
+                                    'expired',
+                                  ] as BookingStatus[]
+                                )
+                                  .filter((s) => s !== b.status)
+                                  .map((s) => (
+                                    <button
+                                      key={s}
+                                      className={`${styles.quickStatusBtn} ${styles[`quickStatus_${s}`]}`}
+                                      onClick={() => handleQuickStatus(b, s)}
+                                      disabled={isStatusUpdating}
+                                    >
+                                      {s === 'confirmed' && (
+                                        <CheckCircle2 size={13} />
+                                      )}
+                                      {s === 'cancelled' && (
+                                        <XCircle size={13} />
+                                      )}
+                                      {s === 'pending' && (
+                                        <AlertCircle size={13} />
+                                      )}
+                                      {s === 'expired' && <Clock size={13} />}
+                                      {s === 'completed' && <Flag size={13} />}
+                                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                                    </button>
+                                  ))}
+                              </>
+                            )}
+                            {b.status === 'completed' && (
+                              <span className={styles.completedLockedNote}>
+                                <Flag size={13} /> This booking is completed and
+                                locked.
+                              </span>
+                            )}
                             <div className={styles.detailActionsRight}>
-                              <button
-                                className={styles.actionBtn}
-                                onClick={() => openEdit(b)}
-                                title="Edit"
-                              >
-                                <Pencil size={15} />
-                              </button>
+                              {b.status !== 'completed' && (
+                                <button
+                                  className={styles.actionBtn}
+                                  onClick={() => openEdit(b)}
+                                  title="Edit"
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                              )}
                               <button
                                 className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
                                 onClick={() => setDeletingBooking(b)}
@@ -1481,7 +2225,9 @@ function BookingsHome() {
               </div>
               <button
                 className={styles.pageBtn}
-                onClick={() => sp({ page: String(Math.min(totalPages, page + 1)) })}
+                onClick={() =>
+                  sp({ page: String(Math.min(totalPages, page + 1)) })
+                }
                 disabled={safeP === totalPages}
               >
                 Next →
@@ -1749,11 +2495,21 @@ function BookingsHome() {
                   <BookingFormFields
                     formActions={createFormActions}
                     disabled={isCreateBusy}
-                    boats={boats}
-                    beachHouses={beachHouses}
+                    boats={boats ?? []}
+                    beachHouses={beachHouses ?? []}
+                    locations={locations ?? []}
                     watchType={watchCreateType}
                     watchTransportType={watchCreateTransportType ?? ''}
-                    bookings={bookings}
+                    watchStatus={watchCreateStatus ?? 'pending'}
+                    watchBoatId={watchCreateBoatId ?? ''}
+                    watchParentBookingId={watchCreateParentBookingId ?? ''}
+                    watchBeachHouseId={watchCreateBeachHouseId ?? ''}
+                    watchPickupLocation={watchCreatePickupLocation ?? ''}
+                    transportRoutes={transportRoutes ?? []}
+                    watchTransportRouteId={watchCreateTransportRouteId}
+                    bookings={bookings ?? []}
+                    computedTotal={createComputedTotal}
+                    availabilityState={createAvailability}
                   />
                   {createSubmitError && (
                     <p className={styles.submitError}>{createSubmitError}</p>
@@ -1770,7 +2526,10 @@ function BookingsHome() {
                     <Button
                       variant="primary"
                       type="submit"
-                      disabled={isCreateBusy}
+                      disabled={
+                        isCreateBusy ||
+                        createAvailability.status === 'unavailable'
+                      }
                     >
                       {isCreating ? 'Creating…' : 'Create Booking'}
                     </Button>
@@ -1826,11 +2585,21 @@ function BookingsHome() {
                   <BookingFormFields
                     formActions={editFormActions}
                     disabled={isEditBusy}
-                    boats={boats}
-                    beachHouses={beachHouses}
+                    boats={boats ?? []}
+                    beachHouses={beachHouses ?? []}
+                    locations={locations ?? []}
                     watchType={watchEditType}
                     watchTransportType={watchEditTransportType ?? ''}
-                    bookings={bookings}
+                    watchStatus={watchEditStatus ?? 'pending'}
+                    watchBoatId={watchEditBoatId ?? ''}
+                    watchParentBookingId={watchEditParentBookingId ?? ''}
+                    watchBeachHouseId={watchEditBeachHouseId ?? ''}
+                    watchPickupLocation={watchEditPickupLocation ?? ''}
+                    transportRoutes={transportRoutes ?? []}
+                    watchTransportRouteId={watchEditTransportRouteId}
+                    bookings={bookings ?? []}
+                    computedTotal={editComputedTotal}
+                    availabilityState={editAvailability}
                   />
                   {editSubmitError && (
                     <p className={styles.submitError}>{editSubmitError}</p>
@@ -1847,7 +2616,9 @@ function BookingsHome() {
                     <Button
                       variant="primary"
                       type="submit"
-                      disabled={isEditBusy}
+                      disabled={
+                        isEditBusy || editAvailability.status === 'unavailable'
+                      }
                     >
                       {isUpdating ? 'Saving…' : 'Save Changes'}
                     </Button>

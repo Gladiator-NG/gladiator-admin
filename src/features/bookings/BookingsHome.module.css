@@ -772,6 +772,12 @@
   border-color: rgba(107, 114, 128, 0.25);
 }
 
+.quickStatus_completed {
+  background-color: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+  border-color: rgba(2, 132, 199, 0.25);
+}
+
 .detailActionsRight {
   margin-left: auto;
   display: flex;
@@ -835,6 +841,21 @@
 .badgeExpired {
   background-color: rgba(107, 114, 128, 0.1);
   color: #6b7280;
+}
+
+.badgeCompleted {
+  background-color: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+}
+
+/* ── Completed locked note ────────────────────────── */
+.completedLockedNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #0284c7;
 }
 
 /* Payment badges */
@@ -1238,6 +1259,102 @@
   line-height: 1.6;
 }
 
+/* ── Transport departure box ──────────────────────── */
+.departureBox {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1.6rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-2);
+}
+
+.departureLabel {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+.departureValue {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.departureMuted {
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* ── Linked beach house stay ──────────────────────── */
+.linkedStaySection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.4rem 1.6rem;
+  border-radius: 1rem;
+  border: 1px dashed var(--color-border);
+  background-color: rgba(47, 140, 202, 0.03);
+}
+
+.linkedStayHeading {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.linkedStayHint {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Linked transport date info ───────────────────── */
+.linkedTransportDateBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.4rem 1.6rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-2);
+}
+
+.linkedTransportDateRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.linkedTransportDateLabel {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+.linkedTransportDateValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.linkedTransportNote {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
 .formSectionLabel {
   font-size: 1.1rem;
   font-weight: 700;
@@ -1246,6 +1363,44 @@
   color: var(--color-text-muted);
   padding-top: 0.4rem;
   border-top: 1px solid var(--color-border);
+}
+
+.paymentStatusHint {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  padding: 0.6rem 0.2rem;
+  line-height: 1.5;
+}
+
+.computedTotalBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.4rem 1.6rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-2);
+  gap: 1.6rem;
+}
+
+.computedTotalLabel {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.computedTotalValue {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.computedTotalPlaceholder {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: right;
 }
 
 .modalActions {
@@ -1268,8 +1423,8 @@
 .modalBusyOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(4px);
   border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
@@ -1372,4 +1527,61 @@
   .formRow {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Capacity hint ────────────────────────────────── */
+.capacityHint {
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  margin: -0.4rem 0 0.4rem;
+  line-height: 1.5;
+}
+
+.transportPricingHint {
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border-radius: 0.6rem;
+  padding: 0.8rem 1.2rem;
+  line-height: 1.5;
+}
+
+.noBoatsMsg {
+  font-size: 1.25rem;
+  color: var(--color-sunset);
+  background: rgba(234, 72, 58, 0.06);
+  border-radius: 0.6rem;
+  padding: 0.9rem 1.2rem;
+  line-height: 1.5;
+}
+
+.availabilityBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.4rem;
+  border-radius: 0.8rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.availabilityChecking {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+.availabilityOk {
+  background: rgba(22, 163, 74, 0.08);
+  color: #16a34a;
+}
+.availabilityBlocked {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+.availabilityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+  flex-shrink: 0;
 }

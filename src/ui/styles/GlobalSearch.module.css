@@ -15,12 +15,15 @@
   border-radius: 10rem;
   padding: 0 1.6rem;
   height: 4rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .searchBarFocused {
   border-color: var(--color-ocean-blue);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ocean-blue) 15%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-ocean-blue) 15%, transparent);
 }
 
 .searchIcon {
@@ -29,7 +32,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinnerIcon {

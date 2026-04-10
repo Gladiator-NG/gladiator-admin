@@ -11,7 +11,10 @@ export function useCreateBooking() {
     CreateBookingInput
   >({
     mutationFn: createBooking,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    },
   });
 
   return { create, isPending };

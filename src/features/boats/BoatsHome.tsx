@@ -37,6 +37,7 @@ import { MetricCard } from '../../ui/MetricCard';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import { slugify, formatPrice } from '../../utils/format';
 import { useBoats } from './useBoats';
+import { useLocations } from '../bookings/useLocations';
 import { useCreateBoat } from './useCreateBoat';
 import { useUpdateBoat } from './useUpdateBoat';
 import { useDeleteBoat } from './useDeleteBoat';
@@ -159,6 +160,7 @@ function BoatFormFields({
   formActions,
   disabled,
   onNameChange,
+  locations,
 }: {
   formActions: {
     register: ReturnType<typeof useForm<BoatFields>>['register'];
@@ -166,6 +168,7 @@ function BoatFormFields({
   };
   disabled?: boolean;
   onNameChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  locations: { id: string; name: string }[];
 }) {
   return (
     <>
@@ -189,11 +192,19 @@ function BoatFormFields({
         />
         <FormInput
           id="pickup_location"
-          label="Pickup Location"
+          type="select"
+          label="Boarding / Jetty Location"
           formActions={formActions}
           disabled={disabled}
           required={false}
-        />
+        >
+          <option value="">Select jetty…</option>
+          {locations.map((l) => (
+            <option key={l.id} value={l.name}>
+              {l.name}
+            </option>
+          ))}
+        </FormInput>
       </div>
       <div className={styles.formRow3}>
         <FormInput
@@ -297,6 +308,7 @@ function BoatFormFields({
 function BoatsHome() {
   const queryClient = useQueryClient();
   const { boats, isLoading, error } = useBoats();
+  const { locations } = useLocations();
   const { create, isPending: isCreating } = useCreateBoat();
   const { update, isPending: isUpdating } = useUpdateBoat();
   const { remove, isPending: isDeleting } = useDeleteBoat();
@@ -314,14 +326,17 @@ function BoatsHome() {
   const highlightedId = searchParams.get('highlight');
 
   function sp(updates: Record<string, string | null>) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      for (const [k, v] of Object.entries(updates)) {
-        if (v === null || v === '') next.delete(k);
-        else next.set(k, v);
-      }
-      return next;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [k, v] of Object.entries(updates)) {
+          if (v === null || v === '') next.delete(k);
+          else next.set(k, v);
+        }
+        return next;
+      },
+      { replace: true },
+    );
   }
 
   // Scroll to + flash highlighted card
@@ -329,7 +344,8 @@ function BoatsHome() {
     if (!highlightedId) return;
     setTimeout(() => {
       document.getElementById(`boat-card-${highlightedId}`)?.scrollIntoView({
-        behavior: 'smooth', block: 'center',
+        behavior: 'smooth',
+        block: 'center',
       });
     }, 150);
     const t = setTimeout(() => sp({ highlight: null }), 2500);
@@ -846,10 +862,10 @@ function BoatsHome() {
         <div className={styles.grid}>
           {filtered.map((boat) => (
             <div
-                key={boat.id}
-                id={`boat-card-${boat.id}`}
-                className={`${styles.card} ${highlightedId === boat.id ? styles.cardHighlighted : ''}`}
-              >
+              key={boat.id}
+              id={`boat-card-${boat.id}`}
+              className={`${styles.card} ${highlightedId === boat.id ? styles.cardHighlighted : ''}`}
+            >
               <div className={styles.cardCover}>
                 <CoverPhoto boat={boat} />
                 {boat.is_available_for_transport && (
@@ -984,6 +1000,7 @@ function BoatsHome() {
                     formActions={createFormActions}
                     disabled={isCreateBusy}
                     onNameChange={handleCreateNameChange}
+                    locations={locations}
                   />
                   <EditImageGrid
                     images={createImages}
@@ -1064,6 +1081,7 @@ function BoatsHome() {
                   <BoatFormFields
                     formActions={editFormActions}
                     disabled={isEditBusy}
+                    locations={locations}
                   />
                   <EditImageGrid
                     images={editableImages}

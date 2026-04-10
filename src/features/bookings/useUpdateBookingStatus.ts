@@ -11,7 +11,10 @@ export function useUpdateBookingStatus() {
     { id: string; status: BookingStatus }
   >({
     mutationFn: ({ id, status }) => updateBooking({ id, status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    },
   });
 
   return { updateStatus, isPending };

@@ -65,14 +65,17 @@ function UsersHome() {
   // URL is the source of truth for search + highlight state
   const [searchParams, setSearchParams] = useSearchParams();
   function sp(updates: Record<string, string | null>) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      for (const [k, v] of Object.entries(updates)) {
-        if (v === null || v === '') next.delete(k);
-        else next.set(k, v);
-      }
-      return next;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [k, v] of Object.entries(updates)) {
+          if (v === null || v === '') next.delete(k);
+          else next.set(k, v);
+        }
+        return next;
+      },
+      { replace: true },
+    );
   }
 
   const search = searchParams.get('q') ?? '';

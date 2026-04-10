@@ -91,7 +91,6 @@ function HelpPage() {
 
         {/* ── Main content ─────────────────────────── */}
         <main className={styles.content}>
-
           {/* ══════════════════════════════════════════
               OVERVIEW
           ══════════════════════════════════════════ */}
@@ -261,9 +260,9 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Recent Bookings</h3>
               <p className={styles.subText}>
                 The bottom of the dashboard lists the 10 most recently created
-                bookings. Each row shows the customer name, booking type, amount,
-                status, and date. Click <strong>View all</strong> to jump to the
-                full bookings page.
+                bookings. Each row shows the customer name, booking type,
+                amount, status, and date. Click <strong>View all</strong> to
+                jump to the full bookings page.
               </p>
               <div className={styles.callout + ' ' + styles.calloutTip}>
                 <Lightbulb />
@@ -322,15 +321,15 @@ function HelpPage() {
                     <td>Pending</td>
                     <td>
                       A booking has been created but not yet confirmed. Revenue
-                      is still counted in metrics — only cancel to remove it from
-                      revenue.
+                      is still counted in metrics — only cancel to remove it
+                      from revenue.
                     </td>
                   </tr>
                   <tr>
                     <td>Confirmed</td>
                     <td>
-                      The booking has been confirmed and the customer has paid or
-                      is committed.
+                      The booking has been confirmed and the customer has paid
+                      or is committed.
                     </td>
                   </tr>
                   <tr>
@@ -398,10 +397,10 @@ function HelpPage() {
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Expanding a Booking</h3>
               <p className={styles.subText}>
-                Click any booking row to expand it and see the full detail
-                panel — including asset name, dates, amount, reference code,
-                status badge, and available actions. Click the row again to
-                collapse it. Only one booking can be expanded at a time.
+                Click any booking row to expand it and see the full detail panel
+                — including asset name, dates, amount, reference code, status
+                badge, and available actions. Click the row again to collapse
+                it. Only one booking can be expanded at a time.
               </p>
             </div>
 
@@ -497,8 +496,8 @@ function HelpPage() {
             </div>
             <p className={styles.sectionIntro}>
               The Customers tab lives inside the Bookings page. It aggregates
-              booking data to show you each unique customer's history and
-              value — no separate customer creation needed.
+              booking data to show you each unique customer's history and value
+              — no separate customer creation needed.
             </p>
 
             <div className={styles.subSection}>
@@ -526,7 +525,9 @@ function HelpPage() {
                   </tr>
                   <tr>
                     <td>Bookings count</td>
-                    <td>Total number of bookings (all statuses) for this customer.</td>
+                    <td>
+                      Total number of bookings (all statuses) for this customer.
+                    </td>
                   </tr>
                   <tr>
                     <td>Spent</td>
@@ -790,7 +791,9 @@ function HelpPage() {
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>2</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Enter name, email, and role</p>
+                    <p className={styles.stepHead}>
+                      Enter name, email, and role
+                    </p>
                     <p className={styles.stepDesc}>
                       Choose between Admin and Fleet Manager. The email must be
                       unique.
@@ -911,9 +914,9 @@ function HelpPage() {
               <p className={styles.subText}>
                 Use the browser's Back button or{' '}
                 <span className={styles.kbd}>Alt ←</span> (Windows) /{' '}
-                <span className={styles.kbd}>⌘ [</span> (Mac) to go back to
-                your previous view — the filters you had active will be restored
-                from the URL.
+                <span className={styles.kbd}>⌘ [</span> (Mac) to go back to your
+                previous view — the filters you had active will be restored from
+                the URL.
               </p>
             </div>
 

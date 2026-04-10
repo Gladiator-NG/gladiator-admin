@@ -3,7 +3,9 @@
   min-height: 100vh;
   background-color: var(--color-bg);
   color: var(--color-text);
-  transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
   font-size: 1.4rem;
 }
 
@@ -35,7 +37,9 @@
   border: 1px solid var(--color-border);
   border-radius: 0.8rem;
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .backBtn:hover {
@@ -83,7 +87,7 @@
 .tocHead {
   font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
   color: var(--color-text-muted);
   text-transform: uppercase;
   margin-bottom: 1.2rem;
@@ -110,7 +114,9 @@
   font-size: 1.3rem;
   color: var(--color-text-muted);
   text-decoration: none;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
   border-left: 2px solid transparent;
 }
 

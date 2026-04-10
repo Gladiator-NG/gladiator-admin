@@ -68,6 +68,7 @@ export interface BeachHouse {
   amenities: string[];
   is_active: boolean;
   cover_image_id: string | null;
+  transport_price: number | null;
   created_at: string;
   updated_at: string;
   // Joined from beach_house_images
@@ -88,6 +89,7 @@ export interface CreateBeachHouseInput {
   check_out_time?: string;
   amenities?: string[];
   is_active?: boolean;
+  transport_price?: number | null;
 }
 
 export type UpdateBeachHouseInput = Partial<CreateBeachHouseInput> & {

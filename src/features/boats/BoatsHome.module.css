@@ -462,13 +462,20 @@
 .cardHighlighted {
   outline: 2px solid var(--color-ocean-blue);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-ocean-blue) 18%, transparent);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--color-ocean-blue) 18%, transparent);
   animation: highlightFade 2.5s ease forwards;
 }
 
 @keyframes highlightFade {
-  0%, 60% { outline-color: var(--color-ocean-blue); }
-  100% { outline-color: transparent; box-shadow: none; }
+  0%,
+  60% {
+    outline-color: var(--color-ocean-blue);
+  }
+  100% {
+    outline-color: transparent;
+    box-shadow: none;
+  }
 }
 
 /* Cover photo */
@@ -813,8 +820,8 @@
 .modalBusyOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(4px);
   border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;

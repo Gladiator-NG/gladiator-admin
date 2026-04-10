@@ -1,4 +1,10 @@
-import type { FieldErrors, FieldValues, Path, RegisterOptions, UseFormRegister } from 'react-hook-form';
+import type {
+  FieldErrors,
+  FieldValues,
+  Path,
+  RegisterOptions,
+  UseFormRegister,
+} from 'react-hook-form';
 import styles from './styles/FormInput.module.css';
 
 // Generic FormActions type — works with any schema
@@ -15,7 +21,9 @@ interface BaseProps<T extends FieldValues> {
   defaultValue?: string | number;
   required?: boolean;
   disabled?: boolean;
-  onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+  onChange?: React.ChangeEventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >;
   validation?: RegisterOptions<T, Path<T>>;
   className?: string;
 }
@@ -27,8 +35,20 @@ type SelectProps<T extends FieldValues> = BaseProps<T> & {
 };
 
 type OtherProps<T extends FieldValues> = BaseProps<T> & {
-  type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'textarea' | 'date' | 'url' | 'search';
+  type?:
+    | 'text'
+    | 'number'
+    | 'email'
+    | 'password'
+    | 'tel'
+    | 'textarea'
+    | 'date'
+    | 'time'
+    | 'url'
+    | 'search';
   children?: never;
+  min?: number;
+  max?: number;
 };
 
 type FormInputProps<T extends FieldValues> = SelectProps<T> | OtherProps<T>;
@@ -46,12 +66,16 @@ function FormInput<T extends FieldValues>({
   validation = {},
   children,
   className,
+  min,
+  max,
 }: FormInputProps<T>) {
   const { register, errors } = formActions;
 
-  const baseRules = (required
-    ? { required: 'This field is required', ...validation }
-    : { ...validation }) as RegisterOptions<T, Path<T>>;
+  const baseRules = (
+    required
+      ? { required: 'This field is required', ...validation }
+      : { ...validation }
+  ) as RegisterOptions<T, Path<T>>;
 
   const emailRules = {
     ...baseRules,
@@ -92,7 +116,9 @@ function FormInput<T extends FieldValues>({
           disabled={disabled}
           className={`${styles.textarea} ${hasError ? styles.textareaError : ''}`}
           {...register(id, baseRules)}
-          onChange={onChange as React.ChangeEventHandler<HTMLTextAreaElement> | undefined}
+          {...(onChange !== undefined && {
+            onChange: onChange as React.ChangeEventHandler<HTMLTextAreaElement>,
+          })}
         />
         {hasError && (
           <p className={styles.warning} role="alert">
@@ -114,9 +140,10 @@ function FormInput<T extends FieldValues>({
           disabled={disabled}
           defaultValue={defaultValue}
           className={`${styles.select} ${hasError ? styles.selectError : ''}`}
-          {...(onChange
-            ? { onChange: onChange as React.ChangeEventHandler<HTMLSelectElement> }
-            : register(id, baseRules))}
+          {...register(id, baseRules)}
+          {...(onChange !== undefined && {
+            onChange: onChange as React.ChangeEventHandler<HTMLSelectElement>,
+          })}
         >
           {children}
         </select>
@@ -130,7 +157,13 @@ function FormInput<T extends FieldValues>({
   }
 
   const rulesForType =
-    type === 'email' ? emailRules : type === 'tel' ? telRules : type === 'url' ? urlRules : baseRules;
+    type === 'email'
+      ? emailRules
+      : type === 'tel'
+        ? telRules
+        : type === 'url'
+          ? urlRules
+          : baseRules;
 
   return (
     <fieldset className={`${styles.fieldset} ${className ?? ''}`}>
@@ -145,7 +178,11 @@ function FormInput<T extends FieldValues>({
         disabled={disabled}
         className={`${styles.input} ${hasError ? styles.inputError : ''}`}
         {...register(id, rulesForType)}
-        onChange={onChange as React.ChangeEventHandler<HTMLInputElement> | undefined}
+        {...(onChange !== undefined && {
+          onChange: onChange as React.ChangeEventHandler<HTMLInputElement>,
+        })}
+        {...(min !== undefined && { min })}
+        {...(max !== undefined && { max })}
       />
       {hasError && (
         <p className={styles.warning} role="alert">

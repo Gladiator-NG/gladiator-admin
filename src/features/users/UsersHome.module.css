@@ -107,13 +107,26 @@
 }
 
 .tableRowHighlighted {
-  background-color: color-mix(in srgb, var(--color-ocean-blue) 10%, transparent) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--color-ocean-blue) 10%,
+    transparent
+  ) !important;
   animation: rowHighlightFade 2.5s ease forwards;
 }
 
 @keyframes rowHighlightFade {
-  0%, 60% { background-color: color-mix(in srgb, var(--color-ocean-blue) 10%, transparent); }
-  100% { background-color: transparent; }
+  0%,
+  60% {
+    background-color: color-mix(
+      in srgb,
+      var(--color-ocean-blue) 10%,
+      transparent
+    );
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .tableRow td {

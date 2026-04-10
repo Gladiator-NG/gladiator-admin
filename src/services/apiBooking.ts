@@ -3,7 +3,12 @@ import supabase from './supabase';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type BookingType = 'boat_cruise' | 'beach_house' | 'transport';
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'expired';
+export type BookingStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'cancelled'
+  | 'expired'
+  | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
 export type TransportType = 'outbound' | 'return' | 'round_trip';
 export type BookingSource = 'admin' | 'web' | 'mobile';
@@ -28,8 +33,11 @@ export interface Booking {
   end_date: string;
   start_time: string | null;
   end_time: string | null;
+  hours: number | null;
 
   transport_type: TransportType | null;
+  pickup_location: string | null;
+  dropoff_location: string | null;
 
   total_amount: number;
   currency: string;
@@ -85,7 +93,10 @@ export interface CreateBookingInput {
   end_date: string;
   start_time?: string | null;
   end_time?: string | null;
+  hours?: number | null;
   transport_type?: TransportType | null;
+  pickup_location?: string | null;
+  dropoff_location?: string | null;
   total_amount: number;
   status?: BookingStatus;
   payment_status?: PaymentStatus;
@@ -116,12 +127,75 @@ export async function getBookings(): Promise<Booking[]> {
   return (data ?? []) as Booking[];
 }
 
+// ── Customer helper ──────────────────────────────────────────────────────────
+// Finds a customer by email (case-insensitive) and updates their name/phone,
+// or creates a new record if none exists.
+// Avoids ON CONFLICT so it works regardless of whether the unique index has
+// been promoted to a named constraint.
+async function findOrCreateCustomer(input: {
+  full_name: string;
+  email: string;
+  phone?: string;
+  marketing_opt_in?: boolean;
+}): Promise<Customer> {
+  const normalised = input.email.toLowerCase().trim();
+
+  // Try to find existing customer first
+  const { data: existing } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('email', normalised)
+    .maybeSingle();
+
+  if (existing) {
+    // Update name/phone in case they've changed, then return
+    const { data: updated, error } = await supabase
+      .from('customers')
+      .update({
+        full_name: input.full_name,
+        phone: input.phone ?? existing.phone,
+        ...(input.marketing_opt_in !== undefined && {
+          marketing_opt_in: input.marketing_opt_in,
+        }),
+      })
+      .eq('id', existing.id)
+      .select('*')
+      .single();
+    if (error) throw new Error(error.message);
+    return updated as Customer;
+  }
+
+  // No match — insert a new customer
+  const { data: created, error } = await supabase
+    .from('customers')
+    .insert({
+      full_name: input.full_name,
+      email: normalised,
+      phone: input.phone ?? '',
+      marketing_opt_in: input.marketing_opt_in ?? false,
+    })
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+  return created as Customer;
+}
+
 export async function createBooking(
   input: CreateBookingInput,
 ): Promise<Booking> {
+  // 1. Find or create the customer so every booking is linked to a customer record.
+  const customer = await findOrCreateCustomer({
+    full_name: input.customer_name,
+    email: input.customer_email,
+    phone: input.customer_phone,
+  });
+
+  // 2. Insert the booking with the resolved customer_id.
+  //    The DB trigger `bookings_sync_customer_stats` will update
+  //    total_bookings / total_spent / last_booking_at automatically.
   const { data, error } = await supabase
     .from('bookings')
-    .insert(input)
+    .insert({ ...input, customer_id: customer.id })
     .select(BOOKING_SELECT)
     .single();
 
@@ -133,9 +207,24 @@ export async function updateBooking({
   id,
   ...input
 }: UpdateBookingInput): Promise<Booking> {
+  // If customer email is supplied (edit form always sends it), upsert the
+  // customer so old unlinked bookings get a customer_id on first edit, and
+  // the DB trigger can then update their stats immediately.
+  let customerId: string | undefined;
+  if (input.customer_email) {
+    const customer = await findOrCreateCustomer({
+      full_name: input.customer_name ?? '',
+      email: input.customer_email,
+      phone: input.customer_phone,
+    }).catch(() => undefined);
+    if (customer) customerId = customer.id;
+  }
+
+  const payload = customerId ? { ...input, customer_id: customerId } : input;
+
   const { data, error } = await supabase
     .from('bookings')
-    .update(input)
+    .update(payload)
     .eq('id', id)
     .select(BOOKING_SELECT)
     .single();
@@ -146,6 +235,20 @@ export async function updateBooking({
 
 export async function deleteBooking(id: string): Promise<void> {
   const { error } = await supabase.from('bookings').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Marks all non-cancelled, non-expired bookings whose end_date is in the past
+ * as 'completed'. Called on app mount and by pg_cron in the database.
+ */
+export async function autoCompleteBookings(): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'completed' as BookingStatus })
+    .in('status', ['pending', 'confirmed'] as BookingStatus[])
+    .lt('end_date', today);
   if (error) throw new Error(error.message);
 }
 
@@ -161,24 +264,14 @@ export async function getCustomers(): Promise<Customer[]> {
   return (data ?? []) as Customer[];
 }
 
-/** Upsert by lower(email) — safe for web/mobile where customer may already exist. */
+/** Find or create a customer by email — exposed for use by web/mobile booking flows. */
 export async function upsertCustomer(input: {
   full_name: string;
   email: string;
   phone?: string;
   marketing_opt_in?: boolean;
 }): Promise<Customer> {
-  const { data, error } = await supabase
-    .from('customers')
-    .upsert(
-      { ...input, email: input.email.toLowerCase().trim() },
-      { onConflict: 'email', ignoreDuplicates: false },
-    )
-    .select('*')
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data as Customer;
+  return findOrCreateCustomer(input);
 }
 
 export async function updateCustomer(
@@ -222,13 +315,16 @@ export async function checkAvailability(params: {
   const startTs = `${startDate}T${startTime ?? '00:00:00'}`;
   const endTs = `${endDate}T${endTime ?? '23:59:59'}`;
 
+  // Only pending/confirmed block a slot — completed, expired, cancelled do not.
+  const activeStatuses: BookingStatus[] = ['pending', 'confirmed'];
+
   let query = supabase
     .from('bookings')
     .select(
       'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status',
     )
     .eq(resourceType === 'boat' ? 'boat_id' : 'beach_house_id', resourceId)
-    .neq('status', 'cancelled')
+    .in('status', activeStatuses)
     // Overlap: existing.start < requested.end AND existing.end > requested.start
     .lt('start_date', endDate)
     .gt('end_date', startDate)
@@ -246,7 +342,7 @@ export async function checkAvailability(params: {
         'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status',
       )
       .eq(resourceType === 'boat' ? 'boat_id' : 'beach_house_id', resourceId)
-      .neq('status', 'cancelled')
+      .in('status', activeStatuses)
       .eq('start_date', startDate)
       .lt('start_time', endTime)
       .gt('end_time', startTime)

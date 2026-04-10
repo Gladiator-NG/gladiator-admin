@@ -36,6 +36,7 @@ import { MetricCard } from '../../ui/MetricCard';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import { slugify, formatPrice } from '../../utils/format';
 import { useBeachHouses } from './useBeachHouses';
+import { useLocations } from '../bookings/useLocations';
 import { useCreateBeachHouse } from './useCreateBeachHouse';
 import { useUpdateBeachHouse } from './useUpdateBeachHouse';
 import { useDeleteBeachHouse } from './useDeleteBeachHouse';
@@ -64,6 +65,7 @@ interface HouseFields {
   check_out_time: string;
   amenities: string;
   is_active: boolean;
+  transport_price: number;
 }
 
 // ── Image edit helper ────────────────────────────────
@@ -153,6 +155,7 @@ function CoverPhoto({ house }: { house: BeachHouse }) {
 function BeachHousesHome() {
   const queryClient = useQueryClient();
   const { beachHouses, isLoading, error } = useBeachHouses();
+  const { locations } = useLocations();
   const { create, isPending: isCreating } = useCreateBeachHouse();
   const { update, isPending: isUpdating } = useUpdateBeachHouse();
   const { remove, isPending: isDeleting } = useDeleteBeachHouse();
@@ -162,14 +165,17 @@ function BeachHousesHome() {
   // URL is the source of truth for all filter/sort state
   const [searchParams, setSearchParams] = useSearchParams();
   function sp(updates: Record<string, string | null>) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      for (const [k, v] of Object.entries(updates)) {
-        if (v === null || v === '') next.delete(k);
-        else next.set(k, v);
-      }
-      return next;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [k, v] of Object.entries(updates)) {
+          if (v === null || v === '') next.delete(k);
+          else next.set(k, v);
+        }
+        return next;
+      },
+      { replace: true },
+    );
   }
 
   const search = searchParams.get('q') ?? '';
@@ -184,10 +190,12 @@ function BeachHousesHome() {
   useEffect(() => {
     if (!highlightedId) return;
     setTimeout(() => {
-      document.getElementById(`beach-house-card-${highlightedId}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
+      document
+        .getElementById(`beach-house-card-${highlightedId}`)
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
     }, 200);
     const t = setTimeout(() => sp({ highlight: null }), 2500);
     return () => clearTimeout(t);
@@ -341,6 +349,7 @@ function BeachHousesHome() {
         bedrooms: Number(data.bedrooms) || undefined,
         bathrooms: Number(data.bathrooms) || undefined,
         price_per_night: Number(data.price_per_night) || undefined,
+        transport_price: Number(data.transport_price) || null,
       },
       {
         onSuccess: async (newHouse) => {
@@ -421,6 +430,7 @@ function BeachHousesHome() {
       check_out_time: house.check_out_time ?? '',
       amenities: house.amenities?.join(', ') ?? '',
       is_active: house.is_active,
+      transport_price: house.transport_price ?? ('' as unknown as number),
     });
   }
 
@@ -449,6 +459,7 @@ function BeachHousesHome() {
         bedrooms: Number(data.bedrooms) || undefined,
         bathrooms: Number(data.bathrooms) || undefined,
         price_per_night: Number(data.price_per_night) || undefined,
+        transport_price: Number(data.transport_price) || null,
       },
       {
         onSuccess: async () => {
@@ -528,10 +539,12 @@ function BeachHousesHome() {
     formActions,
     disabled,
     onNameChange,
+    locations,
   }: {
     formActions: typeof createFormActions;
     disabled: boolean;
     onNameChange?: React.ChangeEventHandler<HTMLInputElement>;
+    locations: { id: string; name: string }[];
   }) {
     return (
       <>
@@ -562,11 +575,19 @@ function BeachHousesHome() {
         <div className={styles.formRow}>
           <FormInput
             id="location"
+            type="select"
             label="Location"
             formActions={formActions}
             disabled={disabled}
             required={false}
-          />
+          >
+            <option value="">Select location…</option>
+            {locations.map((l) => (
+              <option key={l.id} value={l.name}>
+                {l.name}
+              </option>
+            ))}
+          </FormInput>
           <FormInput
             id="address"
             label="Address"
@@ -647,6 +668,17 @@ function BeachHousesHome() {
           disabled={disabled}
           required={false}
         />
+        <div className={styles.formRow}>
+          <FormInput
+            id="transport_price"
+            type="number"
+            label="Transport Price Override (₦)"
+            formActions={formActions}
+            disabled={disabled}
+            required={false}
+            placeholder="Leave blank to use route rate"
+          />
+        </div>
       </>
     );
   }
@@ -864,10 +896,10 @@ function BeachHousesHome() {
         <div className={styles.grid}>
           {filtered.map((house) => (
             <div
-                key={house.id}
-                id={`beach-house-card-${house.id}`}
-                className={`${styles.card} ${highlightedId === house.id ? styles.cardHighlighted : ''}`}
-              >
+              key={house.id}
+              id={`beach-house-card-${house.id}`}
+              className={`${styles.card} ${highlightedId === house.id ? styles.cardHighlighted : ''}`}
+            >
               <div className={styles.cardCover}>
                 <CoverPhoto house={house} />
               </div>
@@ -1004,6 +1036,7 @@ function BeachHousesHome() {
                     formActions={createFormActions}
                     disabled={isCreateBusy}
                     onNameChange={handleCreateNameChange}
+                    locations={locations}
                   />
                   <EditImageGrid
                     images={createImages}
@@ -1084,6 +1117,7 @@ function BeachHousesHome() {
                   <HouseFormFields
                     formActions={editFormActions}
                     disabled={isEditBusy}
+                    locations={locations}
                   />
                   <EditImageGrid
                     images={editableImages}

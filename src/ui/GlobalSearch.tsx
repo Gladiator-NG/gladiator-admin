@@ -43,8 +43,10 @@ function resultLabel(r: SearchResult): string {
 
 function resultSub(r: SearchResult): string {
   if (r.kind === 'booking') return r.customer_name;
-  if (r.kind === 'boat') return r.boat_type ?? (r.is_active ? 'Active' : 'Inactive');
-  if (r.kind === 'beach_house') return r.location ?? (r.is_active ? 'Active' : 'Inactive');
+  if (r.kind === 'boat')
+    return r.boat_type ?? (r.is_active ? 'Active' : 'Inactive');
+  if (r.kind === 'beach_house')
+    return r.location ?? (r.is_active ? 'Active' : 'Inactive');
   return r.role ?? 'No role';
 }
 
@@ -67,12 +69,7 @@ export default function GlobalSearch() {
 
   // Build flat list for keyboard nav
   const flatResults: SearchResult[] = data
-    ? [
-        ...data.bookings,
-        ...data.boats,
-        ...data.beachHouses,
-        ...data.users,
-      ]
+    ? [...data.bookings, ...data.boats, ...data.beachHouses, ...data.users]
     : [];
 
   const hasResults = flatResults.length > 0;
@@ -81,7 +78,10 @@ export default function GlobalSearch() {
   // Close on outside click
   useEffect(() => {
     function handleMouseDown(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -122,9 +122,11 @@ export default function GlobalSearch() {
   // Group results back by section for display
   type Section = { kind: SearchResult['kind']; items: SearchResult[] };
   const sections: Section[] = [];
-  if (data?.bookings.length) sections.push({ kind: 'booking', items: data.bookings });
+  if (data?.bookings.length)
+    sections.push({ kind: 'booking', items: data.bookings });
   if (data?.boats.length) sections.push({ kind: 'boat', items: data.boats });
-  if (data?.beachHouses.length) sections.push({ kind: 'beach_house', items: data.beachHouses });
+  if (data?.beachHouses.length)
+    sections.push({ kind: 'beach_house', items: data.beachHouses });
   if (data?.users.length) sections.push({ kind: 'user', items: data.users });
 
   let flatIndex = -1; // running index for cursor tracking
@@ -181,11 +183,15 @@ export default function GlobalSearch() {
                     onMouseEnter={() => setCursor(idx)}
                     onClick={() => commit(r)}
                   >
-                    <span className={`${styles.resultIcon} ${styles[`icon_${r.kind}`]}`}>
+                    <span
+                      className={`${styles.resultIcon} ${styles[`icon_${r.kind}`]}`}
+                    >
                       <ResultIcon kind={r.kind} />
                     </span>
                     <span className={styles.resultText}>
-                      <span className={styles.resultLabel}>{resultLabel(r)}</span>
+                      <span className={styles.resultLabel}>
+                        {resultLabel(r)}
+                      </span>
                       <span className={styles.resultSub}>{resultSub(r)}</span>
                     </span>
                   </button>

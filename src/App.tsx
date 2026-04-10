@@ -19,6 +19,7 @@ const BeachHousesHome = lazy(
 const UsersHome = lazy(() => import('./features/users/UsersHome'));
 const ProfileHome = lazy(() => import('./features/profile/ProfileHome'));
 const HelpPage = lazy(() => import('./features/help/HelpPage'));
+const LocationsHome = lazy(() => import('./features/locations/LocationsHome'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,7 @@ function App() {
                     }
                   />
                   <Route path="profile" element={<ProfileHome />} />
+                  <Route path="locations" element={<LocationsHome />} />
                 </Route>
                 {/* Help — protected but no AppLayout wrapper */}
                 <Route

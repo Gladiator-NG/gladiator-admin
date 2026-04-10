@@ -1,5 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import { BarChart2, BookOpen, Ship, Home, Users, User, X } from 'lucide-react';
+import {
+  BarChart2,
+  BookOpen,
+  Ship,
+  Home,
+  Users,
+  User,
+  X,
+  MapPin,
+} from 'lucide-react';
 import SidebarLink from './SidebarLink';
 import { useIsAdmin } from '../features/authentication/useIsAdmin';
 import styles from './styles/Sidebar.module.css';
@@ -9,6 +18,7 @@ const baseLinks = [
   { icon: <BookOpen />, label: 'Bookings', to: '/bookings' },
   { icon: <Ship />, label: 'Boats', to: '/boats' },
   { icon: <Home />, label: 'Beach Houses', to: '/beach-houses' },
+  { icon: <MapPin />, label: 'Locations', to: '/locations' },
   { icon: <Users />, label: 'Users', to: '/users', adminOnly: true },
   { icon: <User />, label: 'Profile', to: '/profile' },
 ];

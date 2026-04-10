@@ -69,6 +69,12 @@
   opacity: 0.55;
 }
 
+/* Make the native calendar/clock picker icon visible in dark mode */
+.input[type='date'],
+.input[type='time'] {
+  color-scheme: dark;
+}
+
 .warning {
   font-size: 1.2rem;
   font-weight: 600;
