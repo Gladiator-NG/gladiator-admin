@@ -42,7 +42,6 @@ const TEAL = '#0d9488';
 const AMBER = '#d97706';
 const ROSE = '#e11d48';
 const VIOLET = '#7c3aed';
-const CYAN = '#22d3ee';
 const SLATE = '#64748b';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -468,12 +467,12 @@ function DashboardHome() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number, name: string) => {
+                  formatter={(value, name) => {
                     const total =
                       data?.byType.reduce((s, t) => s + t.revenue, 0) ?? 0;
                     const share =
-                      total > 0 ? Math.round((value / total) * 100) : 0;
-                    return [`${compactRevenue(value)} (${share}%)`, name];
+                      total > 0 ? Math.round((Number(value) / total) * 100) : 0;
+                    return [`${compactRevenue(Number(value))} (${share}%)`, name];
                   }}
                   contentStyle={tooltipStyle}
                 />
@@ -522,7 +521,7 @@ function DashboardHome() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => [value, 'Bookings']}
+                  formatter={(value) => [value, 'Bookings']}
                   contentStyle={tooltipStyle}
                 />
                 <Legend
@@ -563,7 +562,7 @@ function DashboardHome() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => [value, 'Bookings']}
+                  formatter={(value) => [value, 'Bookings']}
                   contentStyle={tooltipStyle}
                 />
                 <Legend
@@ -631,8 +630,8 @@ function DashboardHome() {
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: number) => [
-                    compactRevenue(value),
+                  formatter={(value) => [
+                    compactRevenue(Number(value)),
                     'Revenue',
                   ]}
                   contentStyle={tooltipStyle}

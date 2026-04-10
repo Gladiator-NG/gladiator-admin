@@ -26,6 +26,8 @@ interface BaseProps<T extends FieldValues> {
   >;
   validation?: RegisterOptions<T, Path<T>>;
   className?: string;
+  min?: number;
+  max?: number;
 }
 
 // Type discriminated union so select needs children, others don't
@@ -47,8 +49,6 @@ type OtherProps<T extends FieldValues> = BaseProps<T> & {
     | 'url'
     | 'search';
   children?: never;
-  min?: number;
-  max?: number;
 };
 
 type FormInputProps<T extends FieldValues> = SelectProps<T> | OtherProps<T>;

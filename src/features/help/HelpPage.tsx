@@ -11,13 +11,6 @@ import {
   Info,
   Lightbulb,
   AlertTriangle,
-  TrendingUp,
-  Filter,
-  PlusCircle,
-  ToggleRight,
-  Download,
-  Search,
-  ChevronDown,
 } from 'lucide-react';
 import styles from './HelpPage.module.css';
 

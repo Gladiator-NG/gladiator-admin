@@ -188,7 +188,6 @@ function BookingFormFields({
   disabled,
   boats,
   beachHouses,
-  locations,
   watchType,
   watchTransportType,
   watchStatus,
@@ -223,7 +222,6 @@ function BookingFormFields({
     transport_price?: number | null;
     max_guests?: number | null;
   }[];
-  locations: { id: string; name: string }[];
   watchType: BookingType;
   watchTransportType: string;
   watchStatus: BookingStatus;
@@ -240,9 +238,8 @@ function BookingFormFields({
   const houseBookings = bookings.filter(
     (b) => b.booking_type === 'beach_house',
   );
-  // Boarding location comes from the selected boat's jetty record
+  // Boarding location comes from the selected boat's jetty record (reserved for future use)
   const selectedBoat = boats.find((b) => b.id === watchBoatId);
-  const boardingLocation = selectedBoat?.pickup_location ?? null;
   // Linked beach house stay — drives the transport date display
   const linkedStay =
     houseBookings.find((b) => b.id === watchParentBookingId) ?? null;
@@ -2427,7 +2424,7 @@ function BookingsHome() {
               <button
                 className={styles.pageBtn}
                 disabled={safeCP === 1}
-                onClick={() => setCustomerPage((p) => Math.max(1, p - 1))}
+                onClick={() => sp({ cpage: String(Math.max(1, safeCP - 1)) })}
               >
                 ←
               </button>
@@ -2436,7 +2433,7 @@ function BookingsHome() {
                   <button
                     key={pg}
                     className={`${styles.pageBtn} ${safeCP === pg ? styles.pageBtnActive : ''}`}
-                    onClick={() => setCustomerPage(pg)}
+                    onClick={() => sp({ cpage: String(pg) })}
                   >
                     {pg}
                   </button>
@@ -2446,7 +2443,7 @@ function BookingsHome() {
                 className={styles.pageBtn}
                 disabled={safeCP === customerTotalPages}
                 onClick={() =>
-                  setCustomerPage((p) => Math.min(customerTotalPages, p + 1))
+                  sp({ cpage: String(Math.min(customerTotalPages, safeCP + 1)) })
                 }
               >
                 →
@@ -2497,7 +2494,6 @@ function BookingsHome() {
                     disabled={isCreateBusy}
                     boats={boats ?? []}
                     beachHouses={beachHouses ?? []}
-                    locations={locations ?? []}
                     watchType={watchCreateType}
                     watchTransportType={watchCreateTransportType ?? ''}
                     watchStatus={watchCreateStatus ?? 'pending'}
@@ -2587,7 +2583,6 @@ function BookingsHome() {
                     disabled={isEditBusy}
                     boats={boats ?? []}
                     beachHouses={beachHouses ?? []}
-                    locations={locations ?? []}
                     watchType={watchEditType}
                     watchTransportType={watchEditTransportType ?? ''}
                     watchStatus={watchEditStatus ?? 'pending'}
