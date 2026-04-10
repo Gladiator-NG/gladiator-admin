@@ -1,0 +1,413 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 2.4rem;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.6rem;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font-size: var(--font-size-h2);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+/* ── Header actions row ───────────────────────────── */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.addUserBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+/* ── Search ───────────────────────────────────────── */
+.searchWrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10rem;
+  padding: 0 1.6rem;
+  height: 4rem;
+  width: 32rem;
+  max-width: 100%;
+}
+
+.searchIcon {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: 1.3rem;
+  color: var(--color-text);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ── Table card ───────────────────────────────────── */
+.tableCard {
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+}
+
+.tableHead th {
+  padding: 1.4rem 2rem;
+  text-align: left;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--color-border);
+  background-color: #f9fafb;
+}
+
+.tableRow {
+  transition: background-color 0.15s;
+}
+
+.tableRow:not(:last-child) td {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tableRow:hover {
+  background-color: #f9fafb;
+}
+
+.tableRow td {
+  padding: 1.4rem 2rem;
+  vertical-align: middle;
+}
+
+/* ── User cell ────────────────────────────────────── */
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.avatar {
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-ocean-blue),
+    var(--color-sky-blue)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.userName {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.userId {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  margin-top: 0.1rem;
+  font-family: monospace;
+}
+
+/* ── Role badge ───────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1.2rem;
+  border-radius: 10rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badgeAdmin {
+  background-color: rgba(47, 140, 202, 0.12);
+  color: var(--color-ocean-blue);
+}
+
+.badgeStaff {
+  background-color: rgba(253, 202, 15, 0.15);
+  color: #b8860b;
+}
+
+.badgeNone {
+  background-color: #f3f4f6;
+  color: var(--color-text-muted);
+}
+
+/* ── Actions ──────────────────────────────────────── */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: var(--border-radius);
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.actionBtn svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.actionBtn:hover {
+  background-color: #f3f4f6;
+  color: var(--color-text);
+}
+
+.actionBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.actionBtnDanger:hover {
+  background-color: rgba(234, 72, 58, 0.08);
+  color: var(--color-sunset);
+}
+
+/* ── Empty / loading ──────────────────────────────── */
+.empty {
+  padding: 6rem 2rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 1.4rem;
+}
+
+/* ── Modal overlay ────────────────────────────────── */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.modal {
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  width: 100%;
+  max-width: 44rem;
+  padding: 3.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalTitle {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.modalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background-color 0.2s;
+}
+
+.modalCloseBtn:hover {
+  background-color: #f3f4f6;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.2rem;
+  margin-top: 0.4rem;
+}
+
+.modalError {
+  font-size: 1.3rem;
+  color: var(--color-sunset);
+  background-color: rgba(234, 72, 58, 0.08);
+  border-radius: 0.8rem;
+  padding: 1rem 1.4rem;
+}
+
+.defaultPasswordNotice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.2rem 1.4rem;
+  background-color: rgba(113, 188, 230, 0.1);
+  border: 1px solid rgba(113, 188, 230, 0.4);
+  border-radius: 0.8rem;
+  font-size: 1.3rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1.2rem 1.6rem;
+  background-color: #f9fafb;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+}
+
+/* ── Confirm dialog ───────────────────────────────── */
+.confirmModal {
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  width: 100%;
+  max-width: 38rem;
+  padding: 3.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  text-align: center;
+}
+
+.confirmIcon {
+  width: 5.2rem;
+  height: 5.2rem;
+  border-radius: 50%;
+  background-color: rgba(234, 72, 58, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  color: var(--color-sunset);
+}
+
+.confirmIcon svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.confirmTitle {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.confirmText {
+  font-size: 1.4rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 1.2rem;
+  margin-top: 0.8rem;
+}
+
+.confirmActions > * {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 56.25em) {
+  /* Hide less-important columns on tablet */
+  .colJoined {
+    display: none;
+  }
+}
+
+@media (max-width: 37.5em) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchWrapper {
+    width: 100%;
+  }
+}
+
+/* Mobile card list — unused, table scrolls horizontally instead */
+.mobileList {
+  display: none;
+}

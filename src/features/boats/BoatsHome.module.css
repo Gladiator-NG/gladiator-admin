@@ -1,0 +1,885 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 2.4rem;
+}
+
+/* ── Page header ──────────────────────────────────── */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.6rem;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font-size: var(--font-size-h2);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+/* ── Search ───────────────────────────────────────── */
+.searchWrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10rem;
+  padding: 0 1.6rem;
+  height: 4rem;
+  width: 28rem;
+  max-width: 100%;
+}
+
+.searchIcon {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: 1.3rem;
+  color: var(--color-text);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ── Metrics section wrapper ─────────────────────── */
+.metricsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.metricsHeader {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+
+/* Period pill group */
+.periodPills {
+  display: flex;
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10rem;
+  overflow: hidden;
+  padding: 0.3rem;
+  gap: 0.2rem;
+}
+
+.periodPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.4rem;
+  border-radius: 10rem;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+
+.periodPill:hover {
+  background-color: #f3f4f6;
+  color: var(--color-text);
+}
+
+.periodPillActive {
+  background-color: var(--color-ocean-blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.periodPillActive:hover {
+  background-color: var(--color-ocean-blue);
+  color: #fff;
+}
+
+/* Custom date inputs */
+.customRange {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  animation: fadeSlideIn 0.18s ease both;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dateInput {
+  font: inherit;
+  font-size: 1.25rem;
+  color: var(--color-text);
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.dateInput:focus {
+  border-color: var(--color-ocean-blue);
+}
+
+.dateSep {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.periodLabel {
+  margin-left: auto;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ── Section divider ─────────────────────────────── */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.dividerLabel {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+/* ── Cards toolbar (sort + filter) ───────────────── */
+.cardsToolbar {
+  display: flex;
+  align-items: center;
+  gap: 2.4rem;
+  flex-wrap: wrap;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.toolbarIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.toolbarGroupLabel {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.sortPills {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.sortPill {
+  padding: 0.45rem 1.2rem;
+  border-radius: 10rem;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+}
+
+.sortPill:hover {
+  background-color: #f0f4f8;
+  color: var(--color-text);
+  border-color: #d1d5db;
+}
+
+.sortPillActive {
+  background-color: var(--color-ocean-blue);
+  color: #fff;
+  border-color: var(--color-ocean-blue);
+  font-weight: 600;
+}
+
+.sortPillActive:hover {
+  background-color: var(--color-ocean-blue);
+  color: #fff;
+  border-color: var(--color-ocean-blue);
+}
+
+/* ── Metrics strip ────────────────────────────────── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.6rem;
+}
+
+@media (max-width: 1140px) {
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metricsHeader {
+    row-gap: 0.8rem;
+  }
+
+  .periodLabel {
+    margin-left: 0;
+    order: 3;
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .cardsToolbar {
+    gap: 1.2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .cardsToolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+.metricCard {
+  background-color: #fff;
+  border-radius: 1.6rem;
+  border: 1px solid var(--color-border);
+  padding: 2.2rem 2.4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.metricCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.09);
+}
+
+.metricCardFeatured {
+  background: linear-gradient(
+    145deg,
+    #1e6fa6 0%,
+    var(--color-ocean-blue) 55%,
+    #44aee8 100%
+  );
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(47, 140, 202, 0.35);
+}
+
+.metricCardFeatured:hover {
+  box-shadow: 0 8px 28px rgba(47, 140, 202, 0.45);
+}
+
+.metricTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.6rem;
+}
+
+.metricIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.8rem;
+  height: 3.8rem;
+  border-radius: 1.1rem;
+  background-color: var(--metric-icon-bg, rgba(47, 140, 202, 0.1));
+  color: var(--metric-accent, var(--color-ocean-blue));
+  flex-shrink: 0;
+}
+
+.metricCardFeatured .metricIcon {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.metricLabel {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  padding-top: 0.3rem;
+}
+
+.metricCardFeatured .metricLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.metricValue {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricCardFeatured .metricValue {
+  color: #fff;
+}
+
+.metricSub {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+}
+
+.metricCardFeatured .metricSub {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.metricBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  border-radius: 10rem;
+  width: fit-content;
+}
+
+.metricBadgeGreen {
+  background-color: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.metricBadgeSample {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Status / feedback ────────────────────────────── */
+.emptyMsg {
+  font-size: 1.4rem;
+  color: var(--color-text-muted);
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.errorMsg {
+  font-size: 1.4rem;
+  color: var(--color-sunset);
+  background-color: rgba(234, 72, 58, 0.07);
+  border: 1px solid rgba(234, 72, 58, 0.2);
+  border-radius: var(--border-radius);
+  padding: 1.2rem 1.6rem;
+}
+
+/* ── Card grid ────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
+  gap: 2rem;
+}
+
+/* ── Card ─────────────────────────────────────────── */
+.card {
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+  border: 1px solid var(--color-border);
+}
+
+.card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Cover photo */
+.cardCover {
+  position: relative;
+  height: 18rem;
+  background-color: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.coverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.coverPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: linear-gradient(135deg, #f0f4f8, #e3ecf4);
+}
+
+/* Transport badge overlaid on card cover */
+.transportBadge {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  border-radius: 10rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background-color: #0369a1;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Card body */
+.cardBody {
+  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  flex: 1;
+}
+
+.cardName {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.cardLocation {
+  font-size: 1.3rem;
+  color: var(--color-text-muted);
+  margin-top: -0.2rem;
+}
+
+.cardStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 0.4rem;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.3rem;
+  color: var(--color-text-muted);
+}
+
+.cardBookingHours {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  margin-top: 0.2rem;
+}
+
+.cardPrice {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-ocean-blue);
+  margin-top: 0.4rem;
+}
+
+.cardPrice span {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* Card footer */
+.cardFooter {
+  padding: 1.2rem 1.6rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--border-radius);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.footerBtn:hover {
+  background-color: #f0f4f8;
+  color: var(--color-ocean-blue);
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ── Active toggle ───────────────────────────────── */
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.9rem 0.4rem 0.5rem;
+  border-radius: 10rem;
+  border: none;
+  cursor: pointer;
+  font-size: 1.15rem;
+  font-weight: 600;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    opacity 0.15s;
+}
+
+.toggleBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.toggleBtnActive {
+  background-color: #16a34a;
+  color: #fff;
+}
+
+.toggleBtnInactive {
+  background-color: #6b7280;
+  color: #fff;
+}
+
+.toggleTrack {
+  position: relative;
+  display: inline-block;
+  width: 2.8rem;
+  height: 1.6rem;
+  background-color: rgba(255, 255, 255, 0.35);
+  border-radius: 10rem;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background-color: #fff;
+  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggleBtnActive .toggleThumb {
+  left: calc(100% - 1.4rem);
+}
+
+.toggleBtnInactive .toggleThumb {
+  left: 0.2rem;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: var(--border-radius);
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.actionBtn:hover {
+  background-color: #f0f4f8;
+  color: var(--color-ocean-blue);
+}
+
+.actionBtnDanger:hover {
+  background-color: rgba(234, 72, 58, 0.08);
+  color: var(--color-sunset);
+}
+
+/* ── Modal overlay ────────────────────────────────── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 100;
+}
+
+.modal {
+  position: relative;
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  width: 100%;
+  max-width: 62rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.modalBody {
+  overflow-y: auto;
+  padding: 2.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  flex: 1;
+}
+
+/* ── Modal header ─────────────────────────────────── */
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border: none;
+  background: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background-color 0.15s;
+}
+
+.closeBtn:hover {
+  background-color: #f3f4f6;
+}
+
+/* ── Modal form ───────────────────────────────────── */
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.6rem;
+}
+
+.formRow3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.6rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.2rem;
+  margin-top: 0.4rem;
+}
+
+.imageError {
+  font-size: 1.3rem;
+  color: var(--color-sunset);
+  background-color: rgba(234, 72, 58, 0.08);
+  border-radius: 0.8rem;
+  padding: 1rem 1.4rem;
+  margin-top: 0.4rem;
+}
+
+.submitError {
+  font-size: 1.3rem;
+  color: var(--color-sunset);
+  background-color: rgba(234, 72, 58, 0.08);
+  border: 1px solid rgba(234, 72, 58, 0.2);
+  border-radius: 0.8rem;
+  padding: 1rem 1.4rem;
+}
+
+/* ── Modal busy overlay ───────────────────────────── */
+.modalBusyOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(3px);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  z-index: 10;
+}
+
+.busySpinner {
+  width: 4rem;
+  height: 4rem;
+  border: 3px solid rgba(47, 140, 202, 0.2);
+  border-top-color: var(--color-ocean-blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.busyLabel {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-ocean-blue);
+}
+
+/* ── Confirm dialog ───────────────────────────────── */
+.confirmModal {
+  max-width: 44rem;
+}
+
+.confirmModal .modalBody {
+  text-align: center;
+  gap: 1.2rem;
+}
+
+.confirmIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.6rem;
+  height: 5.6rem;
+  border-radius: 50%;
+  background-color: rgba(234, 72, 58, 0.1);
+  color: var(--color-sunset);
+  margin: 0 auto;
+}
+
+.confirmIcon svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.confirmTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.confirmText {
+  font-size: 1.4rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-top: 0.8rem;
+}
+
+/* ── Image manager modal ──────────────────────────── */
+.imageModal {
+  max-width: 64rem;
+}

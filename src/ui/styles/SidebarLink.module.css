@@ -1,0 +1,40 @@
+.link {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1rem 1.2rem;
+  border-radius: var(--border-radius);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+  width: 100%;
+}
+
+.link svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  background-color: rgba(47, 140, 202, 0.08);
+  color: var(--color-ocean-blue);
+}
+
+.link.active {
+  background: linear-gradient(
+    90deg,
+    var(--color-ocean-blue) 0%,
+    var(--color-sky-blue) 100%
+  );
+  color: #fff;
+  font-weight: 700;
+}
+
+.link.active svg {
+  color: #fff;
+}

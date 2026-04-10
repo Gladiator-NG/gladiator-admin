@@ -1,0 +1,91 @@
+.metricCard {
+  background-color: #fff;
+  border-radius: 1.6rem;
+  border: 1px solid var(--color-border);
+  padding: 2.2rem 2.4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.metricCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.09);
+}
+
+.metricCardFeatured {
+  background: linear-gradient(
+    145deg,
+    #1e6fa6 0%,
+    var(--color-ocean-blue) 55%,
+    #44aee8 100%
+  );
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(47, 140, 202, 0.35);
+}
+
+.metricCardFeatured:hover {
+  box-shadow: 0 8px 28px rgba(47, 140, 202, 0.45);
+}
+
+.metricTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.6rem;
+}
+
+.metricIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.8rem;
+  height: 3.8rem;
+  border-radius: 1.1rem;
+  background-color: var(--metric-icon-bg, rgba(47, 140, 202, 0.1));
+  color: var(--metric-accent, var(--color-ocean-blue));
+  flex-shrink: 0;
+}
+
+.metricCardFeatured .metricIcon {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.metricLabel {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  padding-top: 0.3rem;
+}
+
+.metricCardFeatured .metricLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.metricValue {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricCardFeatured .metricValue {
+  color: #fff;
+}
+
+.metricSub {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+}
+
+.metricCardFeatured .metricSub {
+  color: rgba(255, 255, 255, 0.65);
+}

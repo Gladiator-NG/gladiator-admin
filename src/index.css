@@ -1,0 +1,222 @@
+/* ─── Google Font ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap');
+
+/* ─── Breakpoints (for reference)
+   phone:    37.5em  (600px)
+   tab-port: 56.25em (900px)
+   tab-land: 75em    (1200px)
+   big-desk: 112.5em (1800px)
+─────────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Brand colours */
+  --color-sky-blue: #71bce6;
+  --color-ocean-blue: #2f8cca;
+  --color-sun-yellow: #fdca0f;
+  --color-sunset: #ea483a;
+
+  /* UI colours */
+  --color-white: #ffffff;
+  --color-text: #1e1e1e;
+  --color-text-muted: #6b6b6b;
+  --color-border: #e5e5e5;
+  --color-card-bg: rgba(0, 0, 0, 0.02);
+  --color-overlay: rgba(0, 0, 0, 0.3);
+
+  /* Semantic aliases */
+  --color-primary: var(--color-ocean-blue);
+  --color-primary-hover: var(--color-sky-blue);
+  --color-danger: var(--color-sunset);
+
+  /* Typography scale (base: 1rem = 10px via html 62.5%) */
+  --font-size-h1: 4.8rem;
+  --font-size-h2: 3.6rem;
+  --font-size-h3: 2.8rem;
+  --font-size-h4: 2.4rem;
+  --font-size-h5: 2rem;
+  --font-size-h6: 1.8rem;
+  --font-size-body: 1.4rem;
+  --font-size-small: 1.2rem;
+
+  /* Misc */
+  --border-radius: 0.8rem;
+  --box-shadow: 0px 4px 19px 0px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Reset ───────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+html {
+  /* 1rem = 10px */
+  font-size: 62.5%;
+  height: 100%;
+}
+
+body {
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  height: 100%;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Root div must fill viewport for the fixed layout to work */
+#root {
+  height: 100%;
+}
+
+/* ─── Headings ────────────────────────────────────────────────────────────── */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Nunito Sans', sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+}
+
+h4 {
+  font-size: var(--font-size-h4);
+}
+
+h5 {
+  font-size: var(--font-size-h5);
+}
+
+h6 {
+  font-size: var(--font-size-h6);
+}
+
+/* ─── Responsive typography ───────────────────────────────────────────────── */
+
+/* tab-land: 1200px */
+@media only screen and (max-width: 75em) {
+  h1 {
+    font-size: 3.6rem;
+  }
+  h2 {
+    font-size: 2.8rem;
+  }
+  h3 {
+    font-size: 2.4rem;
+  }
+  h4 {
+    font-size: 2rem;
+  }
+  h5 {
+    font-size: 1.8rem;
+  }
+  h6 {
+    font-size: 1.6rem;
+  }
+}
+
+/* tab-port: 900px */
+@media only screen and (max-width: 56.25em) {
+  html {
+    font-size: 56.25%;
+  }
+
+  h1 {
+    font-size: 2.8rem;
+  }
+  h2 {
+    font-size: 2.4rem;
+  }
+  h3 {
+    font-size: 2rem;
+  }
+  h4 {
+    font-size: 1.8rem;
+  }
+  h5 {
+    font-size: 1.6rem;
+  }
+  h6 {
+    font-size: 1.4rem;
+  }
+}
+
+/* phone: 600px */
+@media only screen and (max-width: 37.5em) {
+  html {
+    font-size: 50%;
+  }
+
+  h1 {
+    font-size: 2.4rem;
+  }
+  h2 {
+    font-size: 2rem;
+  }
+  h3 {
+    font-size: 1.8rem;
+  }
+  h4 {
+    font-size: 1.6rem;
+  }
+  h5 {
+    font-size: 1.4rem;
+  }
+  h6 {
+    font-size: 1.2rem;
+  }
+}
+
+/* big-desk: 1800px */
+@media only screen and (min-width: 112.5em) {
+  html {
+    font-size: 75%;
+  }
+}
+
+/* ─── Links ───────────────────────────────────────────────────────────────── */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ─── Images ──────────────────────────────────────────────────────────────── */
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ─── Lists ───────────────────────────────────────────────────────────────── */
+ul,
+ol {
+  list-style: none;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}

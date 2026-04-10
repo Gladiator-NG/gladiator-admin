@@ -1,0 +1,48 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.rightSide {
+  margin-left: 22rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Only this container scrolls */
+.main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background-color: #eef2f8;
+  padding: 3.2rem;
+}
+
+/* ── Overlay (behind slide-in sidebar on mobile) ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  backdrop-filter: blur(1px);
+}
+
+@media (max-width: 56.25em) {
+  .rightSide {
+    margin-left: 0;
+  }
+
+  .main {
+    padding: 2.4rem 1.6rem;
+  }
+}
+
+@media (max-width: 37.5em) {
+  .main {
+    padding: 2rem 1.2rem;
+  }
+}

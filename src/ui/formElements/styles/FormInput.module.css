@@ -1,0 +1,73 @@
+.fieldset {
+  border: 0;
+  display: grid;
+  grid-template-rows: repeat(3, max-content);
+  row-gap: 0.6rem;
+}
+
+.label {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.input,
+.textarea,
+.select {
+  font: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background-color: #f5f7fa;
+  border: 1.5px solid transparent;
+  outline: 1.5px solid transparent;
+  border-radius: var(--border-radius);
+  padding: 1rem 1.4rem;
+  width: 100%;
+  transition: border 0.2s, outline 0.2s, background-color 0.2s;
+}
+
+.textarea {
+  height: 14rem;
+  resize: vertical;
+  border-radius: calc(var(--border-radius) * 1.2);
+}
+
+.select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b6b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.4rem center;
+  padding-right: 3.6rem;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border: 1.5px solid var(--color-ocean-blue);
+  outline: 1.5px solid var(--color-ocean-blue);
+  background-color: #fff;
+}
+
+/* Error state */
+.inputError,
+.textareaError,
+.selectError {
+  border: 1.5px solid var(--color-sunset) !important;
+  outline: 1.5px solid var(--color-sunset) !important;
+  background-color: rgba(234, 72, 58, 0.04);
+}
+
+.input:disabled,
+.textarea:disabled,
+.select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.warning {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-sunset);
+}

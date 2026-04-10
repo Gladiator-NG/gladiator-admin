@@ -1,0 +1,236 @@
+.button {
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  padding: 1rem;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--border-radius);
+  transition: all 0.35s cubic-bezier(0.25, 0.65, 0.76, 0.96);
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: var(--font-size-body);
+}
+
+.button svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+}
+
+/* ─── Shared ::after base (solid button variants) ─────────────────────────── */
+
+.primary::after,
+.secondary::after,
+.danger::after,
+.submit::after {
+  position: absolute;
+  content: '';
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  border-radius: var(--border-radius);
+  z-index: -1;
+  opacity: 0;
+  transform: scaleX(0) scaleY(1);
+  transition: all 0.2s cubic-bezier(0.25, 0.65, 0.76, 0.96);
+  transform-origin: left top;
+}
+
+.primary:hover::after,
+.secondary:hover::after,
+.danger:hover::after,
+.submit:hover::after {
+  opacity: 1;
+  transform: scaleX(1) scaleY(1);
+}
+
+/* ─── Variants ───────────────────────────────────────────────────────────── */
+
+.primary,
+.secondary,
+.danger,
+.submit {
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Primary — sunset gradient reveal on hover */
+.primary {
+  color: var(--color-white);
+  font-weight: 700;
+  justify-content: center;
+  background: var(--color-text);
+}
+
+.primary::after {
+  background: linear-gradient(
+    90deg,
+    var(--color-sun-yellow) 0%,
+    var(--color-sunset) 100%
+  );
+}
+
+/* Secondary — outlined, fills ocean-blue on hover */
+.secondary {
+  color: var(--color-ocean-blue);
+  border: 1.5px solid var(--color-ocean-blue);
+  font-weight: 600;
+}
+
+.secondary:hover {
+  color: #fff;
+}
+
+.secondary::after {
+  background-color: var(--color-ocean-blue);
+}
+
+/* Danger — sunset text, fills red on hover */
+.danger {
+  color: var(--color-sunset);
+  font-weight: 600;
+}
+
+.danger:hover {
+  color: #fff;
+}
+
+.danger::after {
+  background-color: var(--color-sunset);
+}
+
+/* Submit — full-width, sunset gradient always visible, darker on hover */
+.submit {
+  background: linear-gradient(
+    90deg,
+    var(--color-sun-yellow) 0%,
+    var(--color-sunset) 100%
+  );
+  color: #fff;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.submit::after {
+  background: linear-gradient(
+    90deg,
+    var(--color-sunset) 0%,
+    var(--color-sun-yellow) 100%
+  );
+}
+
+/* Ghost — subtle fill on hover, no ::after needed */
+.ghost {
+  padding: 1rem 1.4rem;
+  color: var(--color-text);
+}
+
+.ghost:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Icon-only */
+.icon {
+  padding: 0.8rem;
+  border-radius: 50%;
+}
+
+.icon:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ─── Link variants ───────────────────────────────────────────────────────── */
+
+/* Shared ::after bottom-line for link variants */
+.link-light::after,
+.link-dark::after {
+  position: absolute;
+  content: '';
+  width: 100%;
+  height: 1.5px;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  opacity: 0;
+  transform: scaleX(0) scaleY(0);
+  transition: all 0.12s cubic-bezier(0.25, 0.65, 0.76, 0.96);
+  transform-origin: left;
+}
+
+.link-light:hover::after,
+.link-dark:hover::after {
+  opacity: 1;
+  transform: scaleX(1) scaleY(1);
+}
+
+/* link-light — ocean-blue, underline reveals in ocean-blue */
+.link-light {
+  padding: 0;
+  padding-bottom: 0.4rem;
+  color: var(--color-ocean-blue);
+  border-radius: 0;
+}
+
+.link-light::after {
+  background-color: var(--color-ocean-blue);
+}
+
+/* link-dark — text color, underline reveals in ocean-blue */
+.link-dark {
+  padding: 0;
+  padding-bottom: 0.4rem;
+  color: var(--color-text-muted);
+  border-radius: 0;
+}
+
+.link-dark:hover {
+  color: var(--color-ocean-blue);
+}
+
+.link-dark::after {
+  background-color: var(--color-ocean-blue);
+}
+
+/* ─── Active states ───────────────────────────────────────────────────────── */
+
+.active-primary {
+  color: #fff;
+  background-color: var(--color-ocean-blue);
+}
+
+.active-secondary {
+  background-color: var(--color-ocean-blue);
+  color: #fff;
+}
+
+.active-ghost {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ─── Disabled ────────────────────────────────────────────────────────────── */
+
+.button:disabled,
+.disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  /* Strip colour — override gradient/color to flat muted grey */
+  background: #d1d5db !important;
+  background-color: #d1d5db !important;
+  color: #9ca3af !important;
+  border-color: transparent !important;
+  /* Kill transitions & pseudo-element animations */
+  transition: none !important;
+}
+
+.button:disabled::after,
+.disabled::after {
+  display: none;
+}
