@@ -36,6 +36,7 @@ export interface Booking {
   hours: number | null;
 
   transport_type: TransportType | null;
+  transport_route_id: string | null;
   pickup_location: string | null;
   dropoff_location: string | null;
 
@@ -62,6 +63,12 @@ export interface Booking {
     booking_type: string;
     start_date: string;
     end_date: string;
+  } | null;
+  transport_route?: {
+    id: string;
+    duration_hours: number | null;
+    from_location: { id: string; name: string } | null;
+    to_location: { id: string; name: string } | null;
   } | null;
 }
 
@@ -95,6 +102,7 @@ export interface CreateBookingInput {
   end_time?: string | null;
   hours?: number | null;
   transport_type?: TransportType | null;
+  transport_route_id?: string | null;
   pickup_location?: string | null;
   dropoff_location?: string | null;
   total_amount: number;
@@ -114,7 +122,8 @@ const BOOKING_SELECT = `
   boat:boats(id, name, boat_type),
   beach_house:beach_houses(id, name),
   customer:customers(*),
-  parent_booking:bookings!parent_beach_house_booking_id(id, reference_code, booking_type, start_date, end_date)
+  parent_booking:bookings!parent_beach_house_booking_id(id, reference_code, booking_type, start_date, end_date),
+  transport_route:transport_routes!transport_route_id(id, duration_hours, from_location:locations!from_location_id(id, name), to_location:locations!to_location_id(id, name))
 `;
 
 export async function getBookings(): Promise<Booking[]> {
@@ -291,6 +300,11 @@ export async function updateCustomer(
   return data as Customer;
 }
 
+export async function deleteCustomer(id: string): Promise<void> {
+  const { error } = await supabase.from('customers').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 // ── Availability check ────────────────────────────────────────────────────────
 
 export async function checkAvailability(params: {
@@ -312,56 +326,98 @@ export async function checkAvailability(params: {
     excludeBookingId,
   } = params;
 
-  const startTs = `${startDate}T${startTime ?? '00:00:00'}`;
-  const endTs = `${endDate}T${endTime ?? '23:59:59'}`;
-
   // Only pending/confirmed block a slot — completed, expired, cancelled do not.
   const activeStatuses: BookingStatus[] = ['pending', 'confirmed'];
 
-  let query = supabase
+  const idCol = resourceType === 'boat' ? 'boat_id' : 'beach_house_id';
+  const selectCols =
+    'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status';
+
+  // ── Time-range overlap for same-day boat bookings ────────────────────────
+  // We have both a startTime and endTime (endTime already includes the 1hr
+  // post-cruise buffer added by the caller). Use strict time-range overlap:
+  //   existing.start_time < requested.endTime
+  //   AND existing.end_time > requested.startTime
+  if (startDate === endDate && startTime && endTime) {
+    let q = supabase
+      .from('bookings')
+      .select(selectCols)
+      .eq(idCol, resourceId)
+      .in('status', activeStatuses)
+      .eq('start_date', startDate)
+      // existing booking starts before this one ends
+      .lt('start_time', endTime)
+      // existing booking ends after this one starts, OR has no end_time recorded
+      // (NULL end_time means the slot is still occupied — treat as blocking)
+      .or(`end_time.gt.${startTime},end_time.is.null`)
+      .limit(1);
+
+    if (excludeBookingId) q = q.neq('id', excludeBookingId);
+
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    if (data && data.length > 0)
+      return {
+        available: false,
+        conflictingBooking: data[0] as unknown as Booking,
+      };
+    return { available: true };
+  }
+
+  // ── Date-range overlap for multi-day / beach-house bookings ─────────────
+  // Overlap: existing.start_date < requested.end_date
+  //      AND existing.end_date   > requested.start_date
+  let q = supabase
     .from('bookings')
-    .select(
-      'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status',
-    )
-    .eq(resourceType === 'boat' ? 'boat_id' : 'beach_house_id', resourceId)
+    .select(selectCols)
+    .eq(idCol, resourceId)
     .in('status', activeStatuses)
-    // Overlap: existing.start < requested.end AND existing.end > requested.start
     .lt('start_date', endDate)
     .gt('end_date', startDate)
     .limit(1);
 
-  if (excludeBookingId) {
-    query = query.neq('id', excludeBookingId);
-  }
+  if (excludeBookingId) q = q.neq('id', excludeBookingId);
 
-  // Tighter time-based overlap for same-day bookings (boats)
-  if (startDate === endDate && startTime && endTime) {
-    query = supabase
-      .from('bookings')
-      .select(
-        'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status',
-      )
-      .eq(resourceType === 'boat' ? 'boat_id' : 'beach_house_id', resourceId)
-      .in('status', activeStatuses)
-      .eq('start_date', startDate)
-      .lt('start_time', endTime)
-      .gt('end_time', startTime)
-      .limit(1);
-
-    if (excludeBookingId) query = query.neq('id', excludeBookingId);
-  }
-
-  void startTs;
-  void endTs; // used for documentation only; range logic is above
-
-  const { data, error } = await query;
+  const { data, error } = await q;
   if (error) throw new Error(error.message);
-
-  if (data && data.length > 0) {
+  if (data && data.length > 0)
     return {
       available: false,
       conflictingBooking: data[0] as unknown as Booking,
     };
-  }
   return { available: true };
+}
+
+// ── Revenue by booking type ───────────────────────────────────────────────────
+// Returns confirmed/completed/pending revenue totals grouped by booking_type
+// for bookings whose start_date falls within [from, to] (YYYY-MM-DD strings).
+export interface RevenueByType {
+  boat_cruise: number;
+  beach_house: number;
+  transport: number;
+}
+
+export async function fetchRevenueByType(
+  from: string,
+  to: string,
+): Promise<RevenueByType> {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('booking_type, total_amount')
+    .eq('payment_status', 'paid')
+    .gte('start_date', from)
+    .lte('start_date', to);
+
+  if (error) throw new Error(error.message);
+
+  const result: RevenueByType = {
+    boat_cruise: 0,
+    beach_house: 0,
+    transport: 0,
+  };
+  for (const row of data ?? []) {
+    const t = row.booking_type as keyof RevenueByType;
+    if (t in result) result[t] += row.total_amount ?? 0;
+  }
+  return result;
 }

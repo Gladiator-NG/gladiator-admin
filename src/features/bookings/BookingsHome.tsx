@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
@@ -38,7 +38,11 @@ import type {
   BookingType,
   BookingStatus,
   PaymentStatus,
+  Customer,
 } from '../../services/apiBooking';
+import { updateCustomer, deleteCustomer } from '../../services/apiBooking';
+import { insertActivityLog } from '../../services/apiNotifications';
+import supabase from '../../services/supabase';
 import { MetricCard } from '../../ui/MetricCard';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import { formatPrice } from '../../utils/format';
@@ -59,6 +63,7 @@ import { useBeachHouses } from '../beach-houses/useBeachHouses';
 import { useCustomers } from './useCustomers';
 import { useLocations } from './useLocations';
 import { useTransportRoutes } from './useTransportRoutes';
+import { useSettings } from '../settings/useSettings';
 import { findRoutePrice } from '../../services/apiTransport';
 import type { TransportRoute } from '../../services/apiTransport';
 import styles from './BookingsHome.module.css';
@@ -107,6 +112,8 @@ interface BookingFields {
   payment_reference: string;
   source: string;
   notes: string;
+  // Virtual — linked round-trip transport only, not persisted directly
+  return_pickup_time?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -117,6 +124,17 @@ function formatDate(d: string | null | undefined) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+// Converts "HH:MM" or "HH:MM:SS" to "10:00 AM" / "2:30 PM".
+function formatTime12(t: string | null | undefined) {
+  if (!t) return null;
+  const [hStr, mStr] = t.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  const period = h < 12 ? 'AM' : 'PM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
 // Minimum billable passengers for a transport booking
@@ -131,8 +149,57 @@ function computeEndTime(startTime: string, hours: number): string {
   return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 }
 
-// Payment status is always derived from booking status — not a manual choice.
-// confirmed / cancelled / expired all mean the customer paid at some point.
+// Subtracts hours from a HH:MM time, wrapping past midnight.
+function subtractTime(time: string, hours: number): string {
+  const [h, m] = time.split(':').map(Number);
+  let totalMins = h * 60 + m - Math.round(hours * 60);
+  if (totalMins < 0) totalMins += 24 * 60;
+  const rH = Math.floor(totalMins / 60);
+  const rM = totalMins % 60;
+  return `${String(rH).padStart(2, '0')}:${String(rM).padStart(2, '0')}`;
+}
+
+// Returns the availability end time for a boat cruise: end of cruise + 1hr buffer.
+// The buffer accounts for docking, passenger disembarkation, refuelling, etc.
+const BOAT_BUFFER_HOURS = 1;
+function boatAvailabilityEndTime(
+  startTime: string,
+  cruiseHours: number,
+): string {
+  return computeEndTime(startTime, cruiseHours + BOAT_BUFFER_HOURS);
+}
+
+// Returns the latest allowed start time given a curfew and cruise duration.
+// latest start = curfew - (cruiseHours + buffer)
+function latestBoatStartTime(curfewTime: string, cruiseHours: number): string {
+  const [h, m] = curfewTime.split(':').map(Number);
+  const totalMinutes =
+    h * 60 + m - Math.round((cruiseHours + BOAT_BUFFER_HOURS) * 60);
+  if (totalMinutes <= 0) return '00:00';
+  const rH = Math.floor(totalMinutes / 60);
+  const rM = totalMinutes % 60;
+  return `${String(rH).padStart(2, '0')}:${String(rM).padStart(2, '0')}`;
+}
+
+// Returns the one-way duration for a route in hours, or null if not configured.
+function findRouteDuration(
+  routes: TransportRoute[],
+  routeId: string,
+): number | null {
+  return routes.find((r) => r.id === routeId)?.duration_hours ?? null;
+}
+
+// Returns the end time for a transport booking: start + (duration * legs) + 1hr buffer.
+// legs = 1 for outbound/return, 2 for round_trip.
+function transportEndTime(
+  startTime: string,
+  durationHours: number,
+  transportType: string,
+): string {
+  const legs = transportType === 'round_trip' ? 2 : 1;
+  return computeEndTime(startTime, durationHours * legs + BOAT_BUFFER_HOURS);
+}
+
 function derivePaymentStatus(status: BookingStatus): PaymentStatus {
   return status === 'pending' ? 'pending' : 'paid';
 }
@@ -200,6 +267,8 @@ function BookingFormFields({
   watchPickupLocation: _watchPickupLocation,
   transportRoutes,
   watchTransportRouteId,
+  watchHours,
+  watchReturnPickupTime,
 }: {
   formActions: {
     register: ReturnType<typeof useForm<BookingFields>>['register'];
@@ -212,6 +281,8 @@ function BookingFormFields({
     price_per_hour?: number | null;
     pickup_location?: string | null;
     max_guests?: number | null;
+    min_booking_hours?: number | null;
+    max_booking_hours?: number | null;
     is_available_for_transport?: boolean;
   }[];
   beachHouses: {
@@ -221,6 +292,8 @@ function BookingFormFields({
     location?: string | null;
     transport_price?: number | null;
     max_guests?: number | null;
+    check_in_time?: string | null;
+    check_out_time?: string | null;
   }[];
   watchType: BookingType;
   watchTransportType: string;
@@ -234,12 +307,27 @@ function BookingFormFields({
   bookings: import('../../services/apiBooking').Booking[];
   computedTotal: number | null;
   availabilityState: AvailabilityState;
+  watchHours: number;
+  watchReturnPickupTime: string;
 }) {
+  const { settings } = useSettings();
+  const curfewTime = settings?.boat_curfew_time ?? null;
   const houseBookings = bookings.filter(
     (b) => b.booking_type === 'beach_house',
   );
   // Boarding location comes from the selected boat's jetty record (reserved for future use)
   const selectedBoat = boats.find((b) => b.id === watchBoatId);
+  const boatMinHours = selectedBoat?.min_booking_hours ?? null;
+  const boatMaxHours = selectedBoat?.max_booking_hours ?? null;
+  // Latest allowed start time: curfew minus cruise duration + buffer
+  const maxStartTime =
+    watchType === 'boat_cruise' && curfewTime && watchHours > 0
+      ? latestBoatStartTime(curfewTime, watchHours)
+      : undefined;
+  // One-way duration for the selected transport route
+  const routeDuration =
+    transportRoutes.find((r) => r.id === watchTransportRouteId)
+      ?.duration_hours ?? null;
   // Linked beach house stay — drives the transport date display
   const linkedStay =
     houseBookings.find((b) => b.id === watchParentBookingId) ?? null;
@@ -308,7 +396,47 @@ function BookingFormFields({
             formActions={formActions}
             disabled={disabled}
             placeholder="e.g. 3"
+            min={boatMinHours ?? 1}
+            max={boatMaxHours ?? undefined}
+            validation={{
+              min: boatMinHours
+                ? {
+                    value: boatMinHours,
+                    message: `Minimum ${boatMinHours} hour${boatMinHours !== 1 ? 's' : ''} for this boat`,
+                  }
+                : { value: 1, message: 'Must be at least 1 hour' },
+              ...(boatMaxHours
+                ? {
+                    max: {
+                      value: boatMaxHours,
+                      message: `Maximum ${boatMaxHours} hours for this boat`,
+                    },
+                  }
+                : {}),
+            }}
           />
+          {(boatMinHours !== null || boatMaxHours !== null) && (
+            <p className={styles.capacityHint}>
+              Allowed duration:{' '}
+              {boatMinHours !== null && boatMaxHours !== null ? (
+                <>
+                  <strong>
+                    {boatMinHours}–{boatMaxHours}
+                  </strong>{' '}
+                  hrs
+                </>
+              ) : boatMinHours !== null ? (
+                <>
+                  min <strong>{boatMinHours}</strong> hr
+                  {boatMinHours !== 1 ? 's' : ''}
+                </>
+              ) : (
+                <>
+                  max <strong>{boatMaxHours}</strong> hrs
+                </>
+              )}
+            </p>
+          )}
         </>
       )}
 
@@ -422,8 +550,8 @@ function BookingFormFields({
                     </FormInput>
                     {maxGuests !== null && (
                       <p className={styles.capacityHint}>
-                        Transport capacity:{' '}
-                        <strong>{maxGuests}</strong> passengers
+                        Transport capacity: <strong>{maxGuests}</strong>{' '}
+                        passengers
                       </p>
                     )}
                   </>
@@ -545,6 +673,7 @@ function BookingFormFields({
             formActions={formActions}
             disabled={disabled}
             required={false}
+            max={maxStartTime}
           />
         </div>
       )}
@@ -575,9 +704,14 @@ function BookingFormFields({
           <div className={styles.linkedTransportDateBox}>
             {/* Hidden fields — parent syncs values from the linked booking */}
             <input type="hidden" {...formActions.register('start_date')} />
+            <input type="hidden" {...formActions.register('start_time')} />
             {watchTransportType === 'round_trip' && (
-              <input type="hidden" {...formActions.register('end_date')} />
+              <>
+                <input type="hidden" {...formActions.register('end_date')} />
+                <input type="hidden" {...formActions.register('end_time')} />
+              </>
             )}
+            {/* Date display */}
             {watchTransportType === 'round_trip' ? (
               <>
                 <div className={styles.linkedTransportDateRow}>
@@ -607,13 +741,61 @@ function BookingFormFields({
                 </span>
               </div>
             )}
-            <p className={styles.linkedTransportNote}>
-              {watchTransportType === 'round_trip'
-                ? 'Dates are set to the check-in and check-out dates of the linked beach house stay.'
-                : 'Date is set to the check-in date of the linked beach house stay.'}
-              {' '}Remind guests to arrive at the jetty at least 1 hour before
-              {watchTransportType === 'round_trip' ? ' each departure.' : ' check-in time.'}
-            </p>
+            {/* Outbound pickup — auto-derived from house check-in time */}
+            <div className={styles.linkedTransportDateRow}>
+              <span className={styles.linkedTransportDateLabel}>
+                Outbound pickup
+              </span>
+              <span className={styles.linkedTransportDateValue}>
+                {linkedHouse?.check_in_time && routeDuration
+                  ? formatTime12(
+                      subtractTime(linkedHouse.check_in_time, routeDuration),
+                    )
+                  : '—'}
+              </span>
+            </div>
+            {linkedHouse?.check_in_time && routeDuration ? (
+              <p className={styles.linkedTransportNote}>
+                Departs {routeDuration}hr before{' '}
+                {formatTime12(linkedHouse.check_in_time)} check-in.
+              </p>
+            ) : !routeDuration ? (
+              <p className={styles.linkedTransportNote}>
+                Set a route duration in Locations to auto-compute pickup times.
+              </p>
+            ) : null}
+            {/* Return pickup — defaults to checkout time, user can override */}
+            {watchTransportType === 'round_trip' && (
+              <>
+                <div className={styles.linkedTransportDateRow}>
+                  <span className={styles.linkedTransportDateLabel}>
+                    Return pickup
+                  </span>
+                  <span className={styles.linkedTransportDateValue}>
+                    {formatTime12(
+                      watchReturnPickupTime ||
+                        linkedHouse?.check_out_time ||
+                        null,
+                    ) ?? '—'}
+                  </span>
+                </div>
+                <div className={styles.formRow}>
+                  <FormInput
+                    id="return_pickup_time"
+                    type="time"
+                    label="Return pickup time (optional)"
+                    formActions={formActions}
+                    disabled={disabled}
+                    required={false}
+                  />
+                </div>
+                <p className={styles.linkedTransportNote}>
+                  {watchReturnPickupTime
+                    ? `Boat picks up guests at ${formatTime12(watchReturnPickupTime)} on the return date.`
+                    : `Defaults to ${linkedHouse?.check_out_time ? formatTime12(linkedHouse.check_out_time) + ' checkout time' : 'checkout time'} — set a time above to override.`}
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -622,9 +804,7 @@ function BookingFormFields({
                 id="start_date"
                 type="date"
                 label={
-                  watchTransportType === 'round_trip'
-                    ? 'Outbound Date'
-                    : 'Date'
+                  watchTransportType === 'round_trip' ? 'Outbound Date' : 'Date'
                 }
                 formActions={formActions}
                 disabled={disabled}
@@ -697,6 +877,17 @@ function BookingFormFields({
                 ? ')'
                 : ''}
             . Choose different dates.
+          </span>
+        </div>
+      )}
+      {availabilityState.status === 'curfew' && (
+        <div
+          className={`${styles.availabilityBanner} ${styles.availabilityBlocked}`}
+        >
+          <XCircle size={14} />
+          <span>
+            Booking exceeds the curfew time ({availabilityState.curfewTime}).
+            Please choose an earlier start time or reduce the number of hours.
           </span>
         </div>
       )}
@@ -778,6 +969,8 @@ function BookingsHome() {
   const { beachHouses } = useBeachHouses();
   const { locations } = useLocations();
   const { routes: transportRoutes } = useTransportRoutes();
+  const { settings } = useSettings();
+  const curfewTime = settings?.boat_curfew_time ?? null;
   const { create, isPending: isCreating } = useCreateBooking();
   const { update, isPending: isUpdating } = useUpdateBooking();
   const { remove, isPending: isDeleting } = useDeleteBooking();
@@ -800,7 +993,7 @@ function BookingsHome() {
   const customerSearch = searchParams.get('cq') ?? '';
   const customerSort = (searchParams.get('csort') ??
     'bookings_desc') as CustomerSortKey;
-  const customerView = (searchParams.get('cview') ?? 'card') as CustomerView;
+  const customerView = (searchParams.get('cview') ?? 'table') as CustomerView;
   const customerPage = Number(searchParams.get('cpage') ?? '1');
 
   function sp(updates: Record<string, string | null>) {
@@ -839,6 +1032,81 @@ function BookingsHome() {
   const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
 
   const [deletingBooking, setDeletingBooking] = useState<Booking | null>(null);
+
+  // ── Customer edit/delete ─────────────────────────────────────────────────
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(
+    null,
+  );
+  const [customerEditError, setCustomerEditError] = useState<string | null>(
+    null,
+  );
+
+  const {
+    register: customerReg,
+    handleSubmit: customerHandleSubmit,
+    reset: customerReset,
+    formState: { errors: customerErrors },
+  } = useForm<{
+    full_name: string;
+    email: string;
+    phone: string;
+    marketing_opt_in: boolean;
+  }>();
+  const customerFormActions = { register: customerReg, errors: customerErrors };
+
+  const { mutate: saveCustomer, isPending: isSavingCustomer } = useMutation({
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: Parameters<typeof updateCustomer>[1];
+    }) => updateCustomer(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setEditingCustomer(null);
+    },
+    onError: (err) =>
+      setCustomerEditError(err instanceof Error ? err.message : String(err)),
+  });
+
+  const { mutate: removeCustomer, isPending: isDeletingCustomer } = useMutation<
+    void,
+    Error,
+    { id: string; label?: string }
+  >({
+    mutationFn: ({ id }) => deleteCustomer(id),
+    onSuccess: async (_, { label }) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setDeletingCustomer(null);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const actor = user?.user_metadata?.full_name ?? user?.email ?? 'Staff';
+      await insertActivityLog({
+        type: 'delete_customer',
+        title: 'Customer Deleted',
+        message: label
+          ? `${actor} deleted customer ${label}`
+          : `${actor} deleted a customer`,
+        entity_type: 'customer',
+        actor_name: actor,
+      });
+    },
+    onError: (err) => alert(err instanceof Error ? err.message : String(err)),
+  });
+
+  function openEditCustomer(c: Customer) {
+    setCustomerEditError(null);
+    customerReset({
+      full_name: c.full_name,
+      email: c.email,
+      phone: c.phone ?? '',
+      marketing_opt_in: c.marketing_opt_in,
+    });
+    setEditingCustomer(c);
+  }
 
   // UI-only state (not URL-driven)
   // ── Date range ───────────────────────────────────────────────────────────
@@ -1062,6 +1330,7 @@ function BookingsHome() {
   const watchCreateDropoffLocation = createWatch('dropoff_location');
   const watchCreateGuestCount = Number(createWatch('guest_count')) || 1;
   const watchCreateTransportRouteId = createWatch('transport_route_id') ?? '';
+  const watchCreateReturnPickupTime = createWatch('return_pickup_time') ?? '';
 
   // Compute total from asset price × quantity whenever relevant inputs change
   const createComputedTotal = useMemo(() => {
@@ -1095,7 +1364,8 @@ function BookingsHome() {
         const stay = bookings?.find((b) => b.id === watchCreateParentBookingId);
         const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
         if (house?.transport_price) {
-          const tripMultiplier = watchCreateTransportType === 'round_trip' ? 2 : 1;
+          const tripMultiplier =
+            watchCreateTransportType === 'round_trip' ? 2 : 1;
           return house.transport_price * tripMultiplier;
         }
       }
@@ -1105,9 +1375,15 @@ function BookingsHome() {
           watchCreatePickupLocation,
           watchCreateDropoffLocation,
         );
-        const billable = Math.max(watchCreateGuestCount, TRANSPORT_MIN_PASSENGERS);
-        const tripMultiplier = watchCreateTransportType === 'round_trip' ? 2 : 1;
-        return routePrice !== null ? routePrice * billable * tripMultiplier : null;
+        const billable = Math.max(
+          watchCreateGuestCount,
+          TRANSPORT_MIN_PASSENGERS,
+        );
+        const tripMultiplier =
+          watchCreateTransportType === 'round_trip' ? 2 : 1;
+        return routePrice !== null
+          ? routePrice * billable * tripMultiplier
+          : null;
       }
       return null;
     }
@@ -1139,19 +1415,47 @@ function BookingsHome() {
 
   // When booking type switches to transport, ensure guest count meets the minimum
   useEffect(() => {
-    if (watchCreateType === 'transport' && watchCreateGuestCount < TRANSPORT_MIN_PASSENGERS) {
+    if (
+      watchCreateType === 'transport' &&
+      watchCreateGuestCount < TRANSPORT_MIN_PASSENGERS
+    ) {
       createSetValue('guest_count', TRANSPORT_MIN_PASSENGERS);
     }
   }, [watchCreateType, watchCreateGuestCount, createSetValue]);
 
+  // When boat changes on a cruise booking, clamp hours to the boat's allowed range
+  useEffect(() => {
+    if (watchCreateType !== 'boat_cruise' || !watchCreateBoatId) return;
+    const boat = boats?.find((b) => b.id === watchCreateBoatId);
+    if (!boat) return;
+    const min = boat.min_booking_hours ?? 1;
+    const max = boat.max_booking_hours ?? Infinity;
+    const current = watchCreateHours;
+    if (current < min) createSetValue('hours', min);
+    else if (current > max) createSetValue('hours', max);
+  }, [
+    watchCreateBoatId,
+    watchCreateType,
+    boats,
+    watchCreateHours,
+    createSetValue,
+  ]);
+
   // When a route is selected on create, auto-set pickup + dropoff from the route
   useEffect(() => {
     if (watchCreateType !== 'transport' || !watchCreateTransportRouteId) return;
-    const route = transportRoutes?.find((r) => r.id === watchCreateTransportRouteId);
+    const route = transportRoutes?.find(
+      (r) => r.id === watchCreateTransportRouteId,
+    );
     if (!route) return;
     createSetValue('pickup_location', route.from_location?.name ?? '');
     createSetValue('dropoff_location', route.to_location?.name ?? '');
-  }, [watchCreateTransportRouteId, watchCreateType, transportRoutes, createSetValue]);
+  }, [
+    watchCreateTransportRouteId,
+    watchCreateType,
+    transportRoutes,
+    createSetValue,
+  ]);
 
   // When a linked stay is selected (or trip type changes), sync dates + dropoff from the beach house
   useEffect(() => {
@@ -1176,6 +1480,36 @@ function BookingsHome() {
     createSetValue,
   ]);
 
+  // For linked transport: auto-compute start_time from check-in; end_time = return pickup or checkout.
+  useEffect(() => {
+    if (watchCreateType !== 'transport' || !watchCreateParentBookingId) return;
+    const stay = bookings?.find((b) => b.id === watchCreateParentBookingId);
+    const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
+    const dur = findRouteDuration(
+      transportRoutes ?? [],
+      watchCreateTransportRouteId,
+    );
+    const checkinTime = house?.check_in_time ?? null;
+    const checkoutTime = house?.check_out_time ?? null;
+    createSetValue(
+      'start_time',
+      checkinTime && dur ? subtractTime(checkinTime, dur) : '',
+    );
+    createSetValue(
+      'end_time',
+      watchCreateReturnPickupTime || checkoutTime || '',
+    );
+  }, [
+    watchCreateType,
+    watchCreateParentBookingId,
+    watchCreateReturnPickupTime,
+    watchCreateTransportRouteId,
+    transportRoutes,
+    bookings,
+    beachHouses,
+    createSetValue,
+  ]);
+
   function openCreate() {
     resetCreate({
       booking_type: 'boat_cruise',
@@ -1190,6 +1524,28 @@ function BookingsHome() {
 
   function handleCreateSubmit(data: BookingFields) {
     setCreateSubmitError(null);
+    // Hard curfew guard — fires even if the availability banner check was skipped
+    if (
+      data.booking_type === 'boat_cruise' &&
+      data.start_time &&
+      Number(data.hours) > 0 &&
+      curfewTime
+    ) {
+      const endT = boatAvailabilityEndTime(data.start_time, Number(data.hours));
+      const toMins = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+      const endMins = toMins(endT);
+      const sMins = toMins(data.start_time);
+      const effectiveEnd = endMins < sMins ? endMins + 24 * 60 : endMins;
+      if (effectiveEnd > toMins(curfewTime)) {
+        setCreateSubmitError(
+          `This cruise ends at ${endT} (including 1hr docking buffer), which is past the ${curfewTime} curfew. Please choose an earlier start time or reduce the hours.`,
+        );
+        return;
+      }
+    }
     setIsCreateBusy(true);
     create(
       {
@@ -1199,6 +1555,10 @@ function BookingsHome() {
         parent_beach_house_booking_id:
           data.parent_beach_house_booking_id || null,
         transport_type: (data.transport_type as never) || null,
+        transport_route_id:
+          data.booking_type === 'transport'
+            ? data.transport_route_id || null
+            : null,
         pickup_location: data.pickup_location || null,
         dropoff_location: data.dropoff_location || null,
         customer_name: data.customer_name,
@@ -1218,12 +1578,37 @@ function BookingsHome() {
                 : data.start_date
               : data.end_date,
         start_time: data.start_time || null,
-        end_time:
-          data.booking_type === 'boat_cruise' &&
-          data.start_time &&
-          Number(data.hours) > 0
-            ? computeEndTime(data.start_time, Number(data.hours))
-            : data.end_time || null,
+        end_time: (() => {
+          if (
+            data.booking_type === 'boat_cruise' &&
+            data.start_time &&
+            Number(data.hours) > 0
+          )
+            return computeEndTime(data.start_time, Number(data.hours));
+          // Linked transport: end_time = return pickup (checkout or override) — already in data.end_time via useEffect
+          if (
+            data.booking_type === 'transport' &&
+            data.parent_beach_house_booking_id
+          )
+            return data.end_time || null;
+          if (
+            data.booking_type === 'transport' &&
+            data.start_time &&
+            data.transport_route_id
+          ) {
+            const dur = findRouteDuration(
+              transportRoutes ?? [],
+              data.transport_route_id,
+            );
+            if (dur)
+              return transportEndTime(
+                data.start_time,
+                dur,
+                data.transport_type ?? 'outbound',
+              );
+          }
+          return data.end_time || null;
+        })(),
         hours:
           data.booking_type === 'boat_cruise' && Number(data.hours) > 0
             ? Number(data.hours)
@@ -1275,6 +1660,7 @@ function BookingsHome() {
   const watchEditDropoffLocation = editWatch('dropoff_location');
   const watchEditGuestCount = Number(editWatch('guest_count')) || 1;
   const watchEditTransportRouteId = editWatch('transport_route_id') ?? '';
+  const watchEditReturnPickupTime = editWatch('return_pickup_time') ?? '';
 
   const editComputedTotal = useMemo(() => {
     if (watchEditType === 'boat_cruise') {
@@ -1303,7 +1689,8 @@ function BookingsHome() {
         const stay = bookings?.find((b) => b.id === watchEditParentBookingId);
         const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
         if (house?.transport_price) {
-          const tripMultiplier = watchEditTransportType === 'round_trip' ? 2 : 1;
+          const tripMultiplier =
+            watchEditTransportType === 'round_trip' ? 2 : 1;
           return house.transport_price * tripMultiplier;
         }
       }
@@ -1313,9 +1700,14 @@ function BookingsHome() {
           watchEditPickupLocation,
           watchEditDropoffLocation,
         );
-        const billable = Math.max(watchEditGuestCount, TRANSPORT_MIN_PASSENGERS);
+        const billable = Math.max(
+          watchEditGuestCount,
+          TRANSPORT_MIN_PASSENGERS,
+        );
         const tripMultiplier = watchEditTransportType === 'round_trip' ? 2 : 1;
-        return routePrice !== null ? routePrice * billable * tripMultiplier : null;
+        return routePrice !== null
+          ? routePrice * billable * tripMultiplier
+          : null;
       }
       return null;
     }
@@ -1346,15 +1738,32 @@ function BookingsHome() {
 
   // When booking type switches to transport, ensure guest count meets the minimum
   useEffect(() => {
-    if (watchEditType === 'transport' && watchEditGuestCount < TRANSPORT_MIN_PASSENGERS) {
+    if (
+      watchEditType === 'transport' &&
+      watchEditGuestCount < TRANSPORT_MIN_PASSENGERS
+    ) {
       editSetValue('guest_count', TRANSPORT_MIN_PASSENGERS);
     }
   }, [watchEditType, watchEditGuestCount, editSetValue]);
 
+  // When boat changes on a cruise booking, clamp hours to the boat's allowed range
+  useEffect(() => {
+    if (watchEditType !== 'boat_cruise' || !watchEditBoatId) return;
+    const boat = boats?.find((b) => b.id === watchEditBoatId);
+    if (!boat) return;
+    const min = boat.min_booking_hours ?? 1;
+    const max = boat.max_booking_hours ?? Infinity;
+    const current = watchEditHours;
+    if (current < min) editSetValue('hours', min);
+    else if (current > max) editSetValue('hours', max);
+  }, [watchEditBoatId, watchEditType, boats, watchEditHours, editSetValue]);
+
   // When a route is selected on edit, auto-set pickup + dropoff from the route
   useEffect(() => {
     if (watchEditType !== 'transport' || !watchEditTransportRouteId) return;
-    const route = transportRoutes?.find((r) => r.id === watchEditTransportRouteId);
+    const route = transportRoutes?.find(
+      (r) => r.id === watchEditTransportRouteId,
+    );
     if (!route) return;
     editSetValue('pickup_location', route.from_location?.name ?? '');
     editSetValue('dropoff_location', route.to_location?.name ?? '');
@@ -1383,6 +1792,33 @@ function BookingsHome() {
     editSetValue,
   ]);
 
+  // For linked transport: auto-compute start_time from check-in; end_time = return pickup or checkout.
+  useEffect(() => {
+    if (watchEditType !== 'transport' || !watchEditParentBookingId) return;
+    const stay = bookings?.find((b) => b.id === watchEditParentBookingId);
+    const house = beachHouses?.find((h) => h.id === stay?.beach_house_id);
+    const dur = findRouteDuration(
+      transportRoutes ?? [],
+      watchEditTransportRouteId,
+    );
+    const checkinTime = house?.check_in_time ?? null;
+    const checkoutTime = house?.check_out_time ?? null;
+    editSetValue(
+      'start_time',
+      checkinTime && dur ? subtractTime(checkinTime, dur) : '',
+    );
+    editSetValue('end_time', watchEditReturnPickupTime || checkoutTime || '');
+  }, [
+    watchEditType,
+    watchEditParentBookingId,
+    watchEditReturnPickupTime,
+    watchEditTransportRouteId,
+    transportRoutes,
+    bookings,
+    beachHouses,
+    editSetValue,
+  ]);
+
   // ── Availability checks ───────────────────────────────────────────────────
   const createAvailabilityParams = useMemo((): AvailabilityParams | null => {
     if (
@@ -1408,7 +1844,37 @@ function BookingsHome() {
         startDate: watchCreateStartDate,
         endDate: watchCreateStartDate,
         startTime: watchCreateStartTime || null,
+        endTime:
+          watchCreateStartTime && watchCreateHours > 0
+            ? boatAvailabilityEndTime(watchCreateStartTime, watchCreateHours)
+            : null,
       };
+    if (
+      watchCreateType === 'transport' &&
+      watchCreateBoatId &&
+      watchCreateStartDate &&
+      watchCreateStartTime &&
+      watchCreateTransportRouteId
+    ) {
+      const dur = findRouteDuration(
+        transportRoutes ?? [],
+        watchCreateTransportRouteId,
+      );
+      return {
+        resourceType: 'boat',
+        resourceId: watchCreateBoatId,
+        startDate: watchCreateStartDate,
+        endDate: watchCreateStartDate,
+        startTime: watchCreateStartTime,
+        endTime: dur
+          ? transportEndTime(
+              watchCreateStartTime,
+              dur,
+              watchCreateTransportType,
+            )
+          : null,
+      };
+    }
     return null;
   }, [
     watchCreateType,
@@ -1417,6 +1883,10 @@ function BookingsHome() {
     watchCreateStartDate,
     watchCreateEndDate,
     watchCreateStartTime,
+    watchCreateHours,
+    watchCreateTransportRouteId,
+    watchCreateTransportType,
+    transportRoutes,
   ]);
 
   const editAvailabilityParams = useMemo((): AvailabilityParams | null => {
@@ -1444,8 +1914,35 @@ function BookingsHome() {
         startDate: watchEditStartDate,
         endDate: watchEditStartDate,
         startTime: watchEditStartTime || null,
+        endTime:
+          watchEditStartTime && watchEditHours > 0
+            ? boatAvailabilityEndTime(watchEditStartTime, watchEditHours)
+            : null,
         excludeBookingId: editingBooking?.id,
       };
+    if (
+      watchEditType === 'transport' &&
+      watchEditBoatId &&
+      watchEditStartDate &&
+      watchEditStartTime &&
+      watchEditTransportRouteId
+    ) {
+      const dur = findRouteDuration(
+        transportRoutes ?? [],
+        watchEditTransportRouteId,
+      );
+      return {
+        resourceType: 'boat',
+        resourceId: watchEditBoatId,
+        startDate: watchEditStartDate,
+        endDate: watchEditStartDate,
+        startTime: watchEditStartTime,
+        endTime: dur
+          ? transportEndTime(watchEditStartTime, dur, watchEditTransportType)
+          : null,
+        excludeBookingId: editingBooking?.id,
+      };
+    }
     return null;
   }, [
     watchEditType,
@@ -1454,7 +1951,11 @@ function BookingsHome() {
     watchEditStartDate,
     watchEditEndDate,
     watchEditStartTime,
+    watchEditHours,
+    watchEditTransportRouteId,
+    watchEditTransportType,
     editingBooking?.id,
+    transportRoutes,
   ]);
 
   const createAvailability: AvailabilityState = useAvailabilityCheck(
@@ -1476,22 +1977,23 @@ function BookingsHome() {
       pickup_location: b.pickup_location ?? '',
       dropoff_location: b.dropoff_location ?? '',
       transport_route_id:
-        b.booking_type === 'transport'
-          ? (transportRoutes?.find(
-              (r) =>
-                r.from_location?.name === b.pickup_location &&
-                r.to_location?.name === b.dropoff_location,
-            )?.id ?? '')
-          : '',
+        b.booking_type === 'transport' ? (b.transport_route_id ?? '') : '',
       customer_name: b.customer_name,
       customer_email: b.customer_email,
       customer_phone: b.customer_phone ?? '',
       guest_count: b.guest_count,
-      hours: b.booking_type === 'boat_cruise' ? (b.hours ?? undefined) : undefined,
+      hours:
+        b.booking_type === 'boat_cruise' ? (b.hours ?? undefined) : undefined,
       start_date: b.start_date,
       end_date: b.end_date,
       start_time: b.start_time ?? '',
       end_time: b.end_time ?? '',
+      return_pickup_time:
+        b.booking_type === 'transport' &&
+        b.parent_beach_house_booking_id &&
+        b.transport_type === 'round_trip'
+          ? (b.end_time ?? '')
+          : '',
       total_amount: b.total_amount,
       status: b.status,
       payment_status: b.payment_status,
@@ -1504,6 +2006,28 @@ function BookingsHome() {
   function handleEditSubmit(data: BookingFields) {
     if (!editingBooking) return;
     setEditSubmitError(null);
+    // Hard curfew guard
+    if (
+      data.booking_type === 'boat_cruise' &&
+      data.start_time &&
+      Number(data.hours) > 0 &&
+      curfewTime
+    ) {
+      const endT = boatAvailabilityEndTime(data.start_time, Number(data.hours));
+      const toMins = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+      const endMins = toMins(endT);
+      const sMins = toMins(data.start_time);
+      const effectiveEnd = endMins < sMins ? endMins + 24 * 60 : endMins;
+      if (effectiveEnd > toMins(curfewTime)) {
+        setEditSubmitError(
+          `This cruise ends at ${endT} (including 1hr docking buffer), which is past the ${curfewTime} curfew. Please choose an earlier start time or reduce the hours.`,
+        );
+        return;
+      }
+    }
     setIsEditBusy(true);
     update(
       {
@@ -1514,6 +2038,10 @@ function BookingsHome() {
         parent_beach_house_booking_id:
           data.parent_beach_house_booking_id || null,
         transport_type: (data.transport_type as never) || null,
+        transport_route_id:
+          data.booking_type === 'transport'
+            ? data.transport_route_id || null
+            : null,
         pickup_location: data.pickup_location || null,
         dropoff_location: data.dropoff_location || null,
         customer_name: data.customer_name,
@@ -1523,12 +2051,37 @@ function BookingsHome() {
         start_date: data.start_date,
         end_date: data.end_date,
         start_time: data.start_time || null,
-        end_time:
-          data.booking_type === 'boat_cruise' &&
-          data.start_time &&
-          Number(data.hours) > 0
-            ? computeEndTime(data.start_time, Number(data.hours))
-            : data.end_time || null,
+        end_time: (() => {
+          if (
+            data.booking_type === 'boat_cruise' &&
+            data.start_time &&
+            Number(data.hours) > 0
+          )
+            return computeEndTime(data.start_time, Number(data.hours));
+          // Linked transport: end_time = return pickup (checkout or override) – already in data.end_time via useEffect
+          if (
+            data.booking_type === 'transport' &&
+            data.parent_beach_house_booking_id
+          )
+            return data.end_time || null;
+          if (
+            data.booking_type === 'transport' &&
+            data.start_time &&
+            data.transport_route_id
+          ) {
+            const dur = findRouteDuration(
+              transportRoutes ?? [],
+              data.transport_route_id,
+            );
+            if (dur)
+              return transportEndTime(
+                data.start_time,
+                dur,
+                data.transport_type ?? 'outbound',
+              );
+          }
+          return data.end_time || null;
+        })(),
         hours:
           data.booking_type === 'boat_cruise' && Number(data.hours) > 0
             ? Number(data.hours)
@@ -1914,6 +2467,15 @@ function BookingsHome() {
                                 {b.transport_type &&
                                   ` · ${b.transport_type.replace('_', ' ')}`}
                               </p>
+                              {b.booking_type === 'transport' &&
+                                b.transport_route && (
+                                  <p className={styles.detailSub}>
+                                    {b.transport_route.from_location?.name ??
+                                      '—'}
+                                    {' → '}
+                                    {b.transport_route.to_location?.name ?? '—'}
+                                  </p>
+                                )}
                             </div>
                             <div className={styles.detailBlock}>
                               <p className={styles.detailLabel}>Dates</p>
@@ -1923,10 +2485,22 @@ function BookingsHome() {
                                   <p className={styles.detailValue}>Outbound</p>
                                   <p className={styles.detailSub}>
                                     {formatDate(b.start_date)}
-                                    {b.start_time
-                                      ? ` · ${b.start_time.slice(0, 5)}`
+                                    {formatTime12(b.start_time)
+                                      ? `, ${formatTime12(b.start_time)}`
                                       : ''}
                                   </p>
+                                  {b.start_time &&
+                                    b.transport_route?.duration_hours && (
+                                      <p className={styles.detailSub}>
+                                        Arrives:{' '}
+                                        {formatTime12(
+                                          computeEndTime(
+                                            b.start_time,
+                                            b.transport_route.duration_hours,
+                                          ),
+                                        )}
+                                      </p>
+                                    )}
                                   <p
                                     className={styles.detailValue}
                                     style={{ marginTop: '0.6rem' }}
@@ -1935,10 +2509,43 @@ function BookingsHome() {
                                   </p>
                                   <p className={styles.detailSub}>
                                     {formatDate(b.end_date)}
-                                    {b.end_time
-                                      ? ` · ${b.end_time.slice(0, 5)}`
+                                    {formatTime12(b.end_time)
+                                      ? `, ${formatTime12(b.end_time)}`
                                       : ''}
                                   </p>
+                                  {b.end_time &&
+                                    b.transport_route?.duration_hours && (
+                                      <p className={styles.detailSub}>
+                                        Arrives:{' '}
+                                        {formatTime12(
+                                          computeEndTime(
+                                            b.end_time,
+                                            b.transport_route.duration_hours,
+                                          ),
+                                        )}
+                                      </p>
+                                    )}
+                                </>
+                              ) : b.booking_type === 'transport' ? (
+                                <>
+                                  <p className={styles.detailValue}>
+                                    {formatDate(b.start_date)}
+                                    {formatTime12(b.start_time)
+                                      ? `, ${formatTime12(b.start_time)}`
+                                      : ''}
+                                  </p>
+                                  {b.start_time &&
+                                    b.transport_route?.duration_hours && (
+                                      <p className={styles.detailSub}>
+                                        Arrives:{' '}
+                                        {formatTime12(
+                                          computeEndTime(
+                                            b.start_time,
+                                            b.transport_route.duration_hours,
+                                          ),
+                                        )}
+                                      </p>
+                                    )}
                                 </>
                               ) : (
                                 <>
@@ -1952,9 +2559,9 @@ function BookingsHome() {
                                   )}
                                   {b.start_time && (
                                     <p className={styles.detailSub}>
-                                      {b.start_time.slice(0, 5)}
+                                      {formatTime12(b.start_time)}
                                       {b.end_time
-                                        ? ` – ${b.end_time.slice(0, 5)}`
+                                        ? ` – ${formatTime12(b.end_time)}`
                                         : ''}
                                     </p>
                                   )}
@@ -2071,29 +2678,31 @@ function BookingsHome() {
                                             className={styles.transportLinkTime}
                                           >
                                             <Clock size={11} />
-                                            Out:{' '}
-                                            {t.start_time?.slice(0, 5) ?? '—'}
+                                            Out: {formatDate(t.start_date)}
+                                            {t.start_time
+                                              ? ` ${t.start_time.slice(0, 5)}`
+                                              : ''}
                                           </span>
                                           <span
                                             className={styles.transportLinkTime}
                                           >
                                             <Clock size={11} />
-                                            Return:{' '}
-                                            {t.end_time?.slice(0, 5) ?? '—'}
+                                            Return: {formatDate(t.end_date)}
+                                            {t.end_time
+                                              ? ` ${t.end_time.slice(0, 5)}`
+                                              : ''}
                                           </span>
                                         </>
                                       ) : (
-                                        t.start_time && (
-                                          <span
-                                            className={styles.transportLinkTime}
-                                          >
-                                            <Clock size={11} />
-                                            {t.start_time.slice(0, 5)}
-                                            {t.end_time
-                                              ? ` – ${t.end_time.slice(0, 5)}`
-                                              : ''}
-                                          </span>
-                                        )
+                                        <span
+                                          className={styles.transportLinkTime}
+                                        >
+                                          <Clock size={11} />
+                                          {formatDate(t.start_date)}
+                                          {t.start_time
+                                            ? ` ${t.start_time.slice(0, 5)}`
+                                            : ''}
+                                        </span>
                                       )}
                                       <span
                                         className={styles.transportLinkAmount}
@@ -2357,6 +2966,22 @@ function BookingsHome() {
                   {c.marketing_opt_in && (
                     <span className={styles.marketingBadge}>Marketing ✓</span>
                   )}
+                  <div className={styles.customerCardActions}>
+                    <button
+                      className={styles.customerActionBtn}
+                      onClick={() => openEditCustomer(c)}
+                      title="Edit customer"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      className={`${styles.customerActionBtn} ${styles.customerActionBtnDanger}`}
+                      onClick={() => setDeletingCustomer(c)}
+                      title="Delete customer"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -2375,6 +3000,7 @@ function BookingsHome() {
                     <th className={styles.thRight}>Total Spent</th>
                     <th>Last Booking</th>
                     <th>Marketing</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2411,6 +3037,24 @@ function BookingsHome() {
                           <span className={styles.tdMuted}>—</span>
                         )}
                       </td>
+                      <td>
+                        <div className={styles.customerTableActions}>
+                          <button
+                            className={styles.customerActionBtn}
+                            onClick={() => openEditCustomer(c)}
+                            title="Edit customer"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            className={`${styles.customerActionBtn} ${styles.customerActionBtnDanger}`}
+                            onClick={() => setDeletingCustomer(c)}
+                            title="Delete customer"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -2443,7 +3087,9 @@ function BookingsHome() {
                 className={styles.pageBtn}
                 disabled={safeCP === customerTotalPages}
                 onClick={() =>
-                  sp({ cpage: String(Math.min(customerTotalPages, safeCP + 1)) })
+                  sp({
+                    cpage: String(Math.min(customerTotalPages, safeCP + 1)),
+                  })
                 }
               >
                 →
@@ -2506,6 +3152,8 @@ function BookingsHome() {
                     bookings={bookings ?? []}
                     computedTotal={createComputedTotal}
                     availabilityState={createAvailability}
+                    watchHours={watchCreateHours}
+                    watchReturnPickupTime={watchCreateReturnPickupTime}
                   />
                   {createSubmitError && (
                     <p className={styles.submitError}>{createSubmitError}</p>
@@ -2524,7 +3172,8 @@ function BookingsHome() {
                       type="submit"
                       disabled={
                         isCreateBusy ||
-                        createAvailability.status === 'unavailable'
+                        createAvailability.status === 'unavailable' ||
+                        createAvailability.status === 'curfew'
                       }
                     >
                       {isCreating ? 'Creating…' : 'Create Booking'}
@@ -2595,6 +3244,8 @@ function BookingsHome() {
                     bookings={bookings ?? []}
                     computedTotal={editComputedTotal}
                     availabilityState={editAvailability}
+                    watchHours={watchEditHours}
+                    watchReturnPickupTime={watchEditReturnPickupTime}
                   />
                   {editSubmitError && (
                     <p className={styles.submitError}>{editSubmitError}</p>
@@ -2612,7 +3263,9 @@ function BookingsHome() {
                       variant="primary"
                       type="submit"
                       disabled={
-                        isEditBusy || editAvailability.status === 'unavailable'
+                        isEditBusy ||
+                        editAvailability.status === 'unavailable' ||
+                        editAvailability.status === 'curfew'
                       }
                     >
                       {isUpdating ? 'Saving…' : 'Save Changes'}
@@ -2663,13 +3316,187 @@ function BookingsHome() {
                     variant="danger"
                     type="button"
                     onClick={() =>
-                      remove(deletingBooking.id, {
-                        onSuccess: () => setDeletingBooking(null),
-                      })
+                      remove(
+                        {
+                          id: deletingBooking.id,
+                          label: deletingBooking.customer_name,
+                        },
+                        {
+                          onSuccess: () => setDeletingBooking(null),
+                        },
+                      )
                     }
                     disabled={isDeleting}
                   >
                     {isDeleting ? 'Deleting…' : 'Delete'}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── EDIT CUSTOMER MODAL ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {editingCustomer && (
+          <motion.div
+            className={styles.backdrop}
+            {...backdropAnim}
+            onClick={(e) =>
+              !isSavingCustomer &&
+              e.target === e.currentTarget &&
+              setEditingCustomer(null)
+            }
+          >
+            <motion.div className={styles.modal} {...modalAnim}>
+              {isSavingCustomer && (
+                <div className={styles.modalBusyOverlay}>
+                  <div className={styles.busySpinner} />
+                  <p className={styles.busyLabel}>Saving…</p>
+                </div>
+              )}
+              <div className={styles.modalBody}>
+                <div className={styles.modalHeader}>
+                  <div>
+                    <h2 className={styles.modalTitle}>Edit Customer</h2>
+                    <p className={styles.modalSubtitle}>
+                      {editingCustomer.email}
+                    </p>
+                  </div>
+                  <button
+                    className={styles.closeBtn}
+                    onClick={() => setEditingCustomer(null)}
+                    disabled={isSavingCustomer}
+                  >
+                    <X />
+                  </button>
+                </div>
+                <form
+                  className={styles.modalForm}
+                  onSubmit={customerHandleSubmit((data) => {
+                    setCustomerEditError(null);
+                    saveCustomer({ id: editingCustomer.id, input: data });
+                  })}
+                >
+                  <p className={styles.formSectionLabel}>Customer Details</p>
+                  <div className={styles.formRow}>
+                    <FormInput
+                      id="full_name"
+                      label="Full Name"
+                      formActions={customerFormActions}
+                      disabled={isSavingCustomer}
+                      validation={{ required: 'Required' }}
+                    />
+                    <FormInput
+                      id="email"
+                      type="email"
+                      label="Email"
+                      formActions={customerFormActions}
+                      disabled={isSavingCustomer}
+                      validation={{ required: 'Required' }}
+                    />
+                  </div>
+                  <div className={styles.formRow}>
+                    <FormInput
+                      id="phone"
+                      type="tel"
+                      label="Phone"
+                      formActions={customerFormActions}
+                      disabled={isSavingCustomer}
+                      required={false}
+                    />
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>
+                        Marketing opt-in
+                      </label>
+                      <label className={styles.toggleLabel}>
+                        <input
+                          type="checkbox"
+                          className={styles.toggleCheckbox}
+                          {...customerReg('marketing_opt_in')}
+                          disabled={isSavingCustomer}
+                        />
+                        <span className={styles.toggleText}>
+                          Customer agreed to marketing communications
+                        </span>
+                      </label>
+                    </div>{' '}
+                  </div>
+                  {customerEditError && (
+                    <p className={styles.submitError}>{customerEditError}</p>
+                  )}
+                  <div className={styles.modalActions}>
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={() => setEditingCustomer(null)}
+                      disabled={isSavingCustomer}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      disabled={isSavingCustomer}
+                    >
+                      {isSavingCustomer ? 'Saving…' : 'Save Changes'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── DELETE CUSTOMER CONFIRM ────────────────────────────────────── */}
+      <AnimatePresence>
+        {deletingCustomer && (
+          <motion.div
+            className={styles.backdrop}
+            {...backdropAnim}
+            onClick={(e) =>
+              !isDeletingCustomer &&
+              e.target === e.currentTarget &&
+              setDeletingCustomer(null)
+            }
+          >
+            <motion.div
+              className={`${styles.modal} ${styles.confirmModal}`}
+              {...modalAnim}
+            >
+              <div className={styles.modalBody}>
+                <div className={styles.confirmIcon}>
+                  <AlertTriangle />
+                </div>
+                <h2 className={styles.confirmTitle}>Delete Customer?</h2>
+                <p className={styles.confirmText}>
+                  Are you sure you want to permanently delete{' '}
+                  <strong>{deletingCustomer.full_name}</strong> and all their
+                  data? This cannot be undone.
+                </p>
+                <div className={styles.confirmActions}>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => setDeletingCustomer(null)}
+                    disabled={isDeletingCustomer}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    type="button"
+                    onClick={() =>
+                      removeCustomer({
+                        id: deletingCustomer.id,
+                        label: deletingCustomer.full_name,
+                      })
+                    }
+                    disabled={isDeletingCustomer}
+                  >
+                    {isDeletingCustomer ? 'Deleting…' : 'Delete'}
                   </Button>
                 </div>
               </div>

@@ -192,7 +192,7 @@
   justify-content: center;
   gap: 0.6rem;
   cursor: pointer;
-  background-color: #fafafa;
+  background-color: var(--color-surface-2);
   transition:
     border-color 0.15s,
     background-color 0.15s;
@@ -202,7 +202,7 @@
 .dropZone:hover,
 .dropZone:focus-visible {
   border-color: var(--color-sky-blue);
-  background-color: #f0f7fc;
+  background-color: var(--color-surface);
 }
 
 .dropZoneDragging {
@@ -243,6 +243,12 @@
   background-color: rgba(234, 72, 58, 0.07);
   border-radius: 0.6rem;
   padding: 0.8rem 1.2rem;
+}
+
+/* ── Hint ────────────────────────────────────────── */
+.hint {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
 }
 
 /* ── Mobile ──────────────────────────────────────── */

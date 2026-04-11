@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../features/authentication/useUser';
 import { useSignOut } from '../hooks/useSignOut';
+import { useNotifications } from '../features/notifications/useNotifications';
+import NotificationPanel from '../features/notifications/NotificationPanel';
 import SettingsModal from './SettingsModal';
 import styles from './styles/Header.module.css';
 
@@ -16,8 +18,11 @@ function Header({ onMenuClick }: HeaderProps) {
   const { logout, isPending } = useSignOut();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
+  const { unreadCount } = useNotifications();
 
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
   const displayName =
@@ -50,9 +55,26 @@ function Header({ onMenuClick }: HeaderProps) {
 
         {/* Right actions */}
         <div className={styles.actions}>
-          <button className={styles.iconBtn} title="Notifications">
-            <Bell />
-          </button>
+          <div className={styles.notifWrapper}>
+            <button
+              ref={bellRef}
+              className={styles.iconBtn}
+              title="Notifications"
+              onClick={() => setNotifOpen((o) => !o)}
+            >
+              <Bell />
+            </button>
+            {unreadCount > 0 && (
+              <span className={styles.notifBadge}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+            <NotificationPanel
+              isOpen={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              bellRef={bellRef}
+            />
+          </div>
           <button
             className={`${styles.iconBtn} ${styles.hideMobile}`}
             title="Help"
@@ -67,6 +89,15 @@ function Header({ onMenuClick }: HeaderProps) {
           >
             <Settings />
           </button>
+          {/*
+          <button
+            className={`${styles.iconBtn} ${styles.hideMobile}`}
+            title="Settings (old)"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings />
+          </button>
+          */}
 
           <div className={styles.userInfoWrapper} ref={menuRef}>
             <div

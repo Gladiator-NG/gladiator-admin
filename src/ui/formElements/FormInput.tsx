@@ -26,8 +26,9 @@ interface BaseProps<T extends FieldValues> {
   >;
   validation?: RegisterOptions<T, Path<T>>;
   className?: string;
-  min?: number;
-  max?: number;
+  min?: number | string;
+  max?: number | string;
+  step?: number | string;
 }
 
 // Type discriminated union so select needs children, others don't
@@ -68,6 +69,7 @@ function FormInput<T extends FieldValues>({
   className,
   min,
   max,
+  step,
 }: FormInputProps<T>) {
   const { register, errors } = formActions;
 
@@ -183,6 +185,7 @@ function FormInput<T extends FieldValues>({
         })}
         {...(min !== undefined && { min })}
         {...(max !== undefined && { max })}
+        {...(step !== undefined && { step })}
       />
       {hasError && (
         <p className={styles.warning} role="alert">

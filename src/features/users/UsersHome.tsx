@@ -162,7 +162,10 @@ function UsersHome() {
   // ── Delete confirm ─────────────────────────────────
   function handleDelete() {
     if (!deletingUser) return;
-    remove(deletingUser.id, { onSuccess: () => setDeletingUser(null) });
+    remove(
+      { id: deletingUser.id, label: deletingUser.full_name ?? undefined },
+      { onSuccess: () => setDeletingUser(null) },
+    );
   }
 
   const joinedDate = (iso: string) =>

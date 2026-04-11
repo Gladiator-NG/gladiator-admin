@@ -73,6 +73,7 @@
 .tabs {
   display: flex;
   gap: 0.4rem;
+  flex-wrap: wrap;
   border-bottom: 2px solid var(--color-border);
 }
 
@@ -1165,6 +1166,48 @@
   width: fit-content;
 }
 
+/* ── Customer action buttons ──────────────────────── */
+.customerCardActions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.customerTableActions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.customerActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.customerActionBtn:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.customerActionBtnDanger:hover {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
 /* ── Modal overlay ────────────────────────────────── */
 .backdrop {
   position: fixed;
@@ -1363,6 +1406,44 @@
   color: var(--color-text-muted);
   padding-top: 0.4rem;
   border-top: 1px solid var(--color-border);
+}
+
+/* Shared form building blocks (used in inline modals not via FormInput) */
+.formGroup {
+  display: grid;
+  row-gap: 0.6rem;
+  flex: 1;
+}
+
+.formLabel {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  cursor: pointer;
+  padding: 1rem 1.4rem;
+  background-color: var(--color-input-bg);
+  border-radius: var(--border-radius);
+  border: 1.5px solid transparent;
+}
+
+.toggleCheckbox {
+  width: 1.6rem;
+  height: 1.6rem;
+  accent-color: var(--color-ocean-blue);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggleText {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
 }
 
 .paymentStatusHint {
@@ -1584,4 +1665,36 @@
   background: currentColor;
   opacity: 0.6;
   flex-shrink: 0;
+}
+
+/* ── Mobile header + search ─────────────────────── */
+@media (max-width: 56.25em) {
+  .pageTitle {
+    font-size: 2.6rem;
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .searchWrapper {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 37.5em) {
+  .pageTitle {
+    font-size: 2.2rem;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .addBtn {
+    width: 100%;
+    justify-content: center;
+  }
 }

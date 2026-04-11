@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Boat } from '../../services/apiBoat';
+import { fetchRevenueByType } from '../../services/apiBooking';
 import {
   uploadAndSaveBoatImages,
   updateBoatImagePositions,
@@ -376,24 +377,27 @@ function BoatsHome() {
     null,
   );
 
-  // ── Revenue period (dummy: 4 hrs/day × 15 days = 60 hrs/month) ──
-  const DUMMY_HOURS_PER_MONTH = 60;
-
-  const periodHours = useMemo(() => {
-    if (periodMode === 'monthly') return DUMMY_HOURS_PER_MONTH;
-    if (periodMode === 'yearly') return DUMMY_HOURS_PER_MONTH * 12;
-    if (customFrom && customTo) {
-      const days = Math.max(
-        0,
-        Math.round(
-          (new Date(customTo).getTime() - new Date(customFrom).getTime()) /
-            86_400_000,
-        ),
-      );
-      return Math.round((days / 30) * DUMMY_HOURS_PER_MONTH);
+  // ── Revenue period date range ────────────────────────────────────────
+  const periodRange = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    if (periodMode === 'monthly') {
+      return { from: iso(new Date(y, m, 1)), to: iso(new Date(y, m + 1, 0)) };
     }
-    return DUMMY_HOURS_PER_MONTH;
+    if (periodMode === 'yearly') {
+      return { from: `${y}-01-01`, to: `${y}-12-31` };
+    }
+    if (customFrom && customTo) return { from: customFrom, to: customTo };
+    const today = iso(now);
+    return { from: today, to: today };
   }, [periodMode, customFrom, customTo]);
+
+  const { data: revenueData } = useQuery({
+    queryKey: ['asset_revenue', periodRange.from, periodRange.to],
+    queryFn: () => fetchRevenueByType(periodRange.from, periodRange.to),
+  });
 
   const periodLabel = useMemo(() => {
     if (periodMode === 'monthly') return 'This month';
@@ -418,11 +422,8 @@ function BoatsHome() {
       (sum, b) => sum + (b.max_guests ?? 0),
       0,
     );
-    const estRevenue = boats
-      .filter((b) => b.is_active && b.price_per_hour)
-      .reduce((sum, b) => sum + (b.price_per_hour ?? 0) * periodHours, 0);
-    return { total, active, inactive, totalCapacity, estRevenue };
-  }, [boats, periodHours]);
+    return { total, active, inactive, totalCapacity };
+  }, [boats]);
 
   const filtered = useMemo(() => {
     let list = boats.filter((b) => {
@@ -618,7 +619,10 @@ function BoatsHome() {
   // ── Delete ──────────────────────────────────────────
   function handleDelete() {
     if (!deletingBoat) return;
-    remove(deletingBoat.id, { onSuccess: () => setDeletingBoat(null) });
+    remove(
+      { id: deletingBoat.id, label: deletingBoat.name },
+      { onSuccess: () => setDeletingBoat(null) },
+    );
   }
 
   function handleToggleActive(boat: Boat) {
@@ -776,8 +780,10 @@ function BoatsHome() {
               }
             />
             <MetricCard
-              label="Est. Revenue"
-              value={metrics.estRevenue}
+              label="Cruise & Transport Revenue"
+              value={
+                (revenueData?.boat_cruise ?? 0) + (revenueData?.transport ?? 0)
+              }
               renderValue={(v) => (v > 0 ? formatPrice(v) : '—')}
               icon={<TrendingUp size={18} />}
               featured
@@ -785,7 +791,7 @@ function BoatsHome() {
                 <span
                   className={`${styles.metricBadge} ${styles.metricBadgeSample}`}
                 >
-                  Sample data · {periodHours} hrs
+                  Paid · {periodLabel}
                 </span>
               }
             />

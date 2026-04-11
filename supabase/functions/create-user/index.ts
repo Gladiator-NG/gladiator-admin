@@ -42,6 +42,15 @@ Deno.serve(async (req) => {
       { onConflict: 'id' },
     );
 
+    // Insert a new_user notification for all admin users to see
+    await supabase.from('notifications').insert({
+      type: 'new_user',
+      title: 'New Staff Account',
+      message: `${fullName} joined as ${role}`,
+      entity_type: 'user',
+      metadata: { full_name: fullName, email, role },
+    });
+
     return new Response(JSON.stringify({ user: data.user }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

@@ -23,6 +23,7 @@ function getPreview(img: EditableImage): string {
 interface EditImageGridProps {
   images: EditableImage[];
   onChange: (images: EditableImage[]) => void;
+  min?: number;
   max?: number;
   disabled?: boolean;
 }
@@ -33,6 +34,7 @@ const MAX_RAW_MB = 20;
 export default function EditImageGrid({
   images,
   onChange,
+  min = 0,
   max = 6,
   disabled = false,
 }: EditImageGridProps) {
@@ -134,6 +136,7 @@ export default function EditImageGrid({
   }
 
   const canAdd = images.length < max && !disabled;
+  const isUnderMin = min > 0 && images.length < min;
 
   return (
     <div className={styles.root}>
@@ -145,7 +148,7 @@ export default function EditImageGrid({
           </span>
         </span>
         <span
-          className={`${styles.counter} ${images.length < 4 ? styles.counterWarn : styles.counterOk}`}
+          className={`${styles.counter} ${images.length < (min || 4) ? styles.counterWarn : styles.counterOk}`}
         >
           {images.length} / {max}
         </span>
@@ -246,6 +249,14 @@ export default function EditImageGrid({
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
+
+      {isUnderMin && (
+        <p className={styles.hint}>
+          Add at least {min - images.length} more photo
+          {min - images.length !== 1 ? 's' : ''} to continue. The starred image
+          will be the cover photo.
+        </p>
+      )}
     </div>
   );
 }

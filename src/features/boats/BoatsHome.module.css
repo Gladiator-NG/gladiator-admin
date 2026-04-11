@@ -902,3 +902,43 @@
 .imageModal {
   max-width: 64rem;
 }
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 56.25em) {
+  .pageTitle {
+    font-size: 2.6rem;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .searchWrapper {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 37.5em) {
+  .pageTitle {
+    font-size: 2.2rem;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .addBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+}

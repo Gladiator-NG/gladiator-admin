@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import {
@@ -9,6 +9,7 @@ import {
   MapPin,
   Route,
   AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -25,6 +26,7 @@ import { formatPrice } from '../../utils/format';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import FormInput from '../../ui/formElements/FormInput';
 import Button from '../../ui/Button';
+import { useSettings, useUpdateSetting } from '../settings/useSettings';
 import styles from './LocationsHome.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -40,6 +42,7 @@ interface RouteFields {
   from_location_id: string;
   to_location_id: string;
   price_per_trip: number;
+  duration_hours: number;
 }
 
 // ── Hooks ──────────────────────────────────────────────────────────────────────
@@ -79,9 +82,25 @@ function LocationsHome() {
   };
 
   // ── Active tab ──────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<'locations' | 'routes'>(
+  const [activeTab, setActiveTab] = useState<'locations' | 'routes' | 'curfew'>(
     'locations',
   );
+
+  // ── Curfew settings ─────────────────────────────────────────────────────
+  const { settings } = useSettings();
+  const { updateSetting, isPending: isSavingCurfew } = useUpdateSetting();
+  const [curfewInput, setCurfewInput] = useState<string>('');
+
+  useEffect(() => {
+    if (settings?.boat_curfew_time) {
+      setCurfewInput(settings.boat_curfew_time);
+    }
+  }, [settings?.boat_curfew_time]);
+
+  function handleCurfewSave() {
+    if (!curfewInput) return;
+    updateSetting({ key: 'boat_curfew_time', value: curfewInput });
+  }
 
   // ── Location create/edit ────────────────────────────────────────────────
   const [showLocationForm, setShowLocationForm] = useState(false);
@@ -166,6 +185,8 @@ function LocationsHome() {
         to_location_id: data.to_location_id,
         price_per_trip:
           data.price_per_trip != null ? Number(data.price_per_trip) : null,
+        duration_hours:
+          data.duration_hours != null ? Number(data.duration_hours) : null,
         is_active: true,
       }),
     onSuccess: () => {
@@ -191,6 +212,7 @@ function LocationsHome() {
       from_location_id: '',
       to_location_id: '',
       price_per_trip: undefined,
+      duration_hours: undefined,
     });
     setRouteError(null);
     setShowRouteForm(true);
@@ -202,6 +224,7 @@ function LocationsHome() {
       from_location_id: route.from_location_id,
       to_location_id: route.to_location_id,
       price_per_trip: route.price_per_trip ?? undefined,
+      duration_hours: route.duration_hours ?? undefined,
     });
     setRouteError(null);
     setShowRouteForm(true);
@@ -218,13 +241,17 @@ function LocationsHome() {
             and set prices between them.
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={activeTab === 'locations' ? openNewLocation : openNewRoute}
+        <div
+          style={{ visibility: activeTab === 'curfew' ? 'hidden' : 'visible' }}
         >
-          <Plus size={16} />
-          {activeTab === 'locations' ? 'Add Location' : 'Add Route'}
-        </Button>
+          <Button
+            variant="primary"
+            onClick={activeTab === 'locations' ? openNewLocation : openNewRoute}
+          >
+            <Plus size={16} />
+            {activeTab === 'locations' ? 'Add Location' : 'Add Route'}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -244,6 +271,13 @@ function LocationsHome() {
           <Route size={15} />
           Pricing Routes
           <span className={styles.tabBadge}>{routes.length}</span>
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'curfew' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('curfew')}
+        >
+          <Clock size={15} />
+          Transport Curfew
         </button>
       </div>
 
@@ -311,9 +345,10 @@ function LocationsHome() {
             <div className={styles.routesHint}>
               <AlertTriangle size={18} />
               <p>
-                No routes configured yet. Add a route to set the per-person price between
-                two locations — the booking form will then auto-calculate the
-                fare (× passenger count, minimum 4) when a customer selects those stops.
+                No routes configured yet. Add a route to set the per-person
+                price between two locations — the booking form will then
+                auto-calculate the fare (× passenger count, minimum 4) when a
+                customer selects those stops.
               </p>
             </div>
           )}
@@ -330,11 +365,21 @@ function LocationsHome() {
               </div>
               <div className={styles.routePrice}>
                 {route.price_per_trip != null ? (
-                  <>{formatPrice(route.price_per_trip)}<span className={styles.routePriceUnit}>/person</span></>
+                  <>
+                    {formatPrice(route.price_per_trip)}
+                    <span className={styles.routePriceUnit}>/person</span>
+                  </>
                 ) : (
                   <span className={styles.routePriceUnset}>Price not set</span>
                 )}
               </div>
+              {route.duration_hours != null && (
+                <div className={styles.routePrice}>
+                  <span className={styles.routePriceUnit}>
+                    {route.duration_hours}hr one-way
+                  </span>
+                </div>
+              )}
               <div className={styles.listRowActions}>
                 <button
                   className={styles.iconBtn}
@@ -355,6 +400,40 @@ function LocationsHome() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Curfew section ──────────────────────────────────────────────── */}
+      {activeTab === 'curfew' && (
+        <div className={styles.curfewSection}>
+          <div className={styles.curfewCard}>
+            <div className={styles.curfewCardIcon}>
+              <Clock size={20} />
+            </div>
+            <div className={styles.curfewCardBody}>
+              <p className={styles.curfewCardTitle}>Boat Curfew Time</p>
+              <p className={styles.curfewCardHint}>
+                Boats cannot be booked if the cruise (plus 1&nbsp;hr buffer)
+                ends after this time. Leave blank to disable the curfew.
+              </p>
+              <div className={styles.curfewRow}>
+                <input
+                  type="time"
+                  className={styles.curfewInput}
+                  value={curfewInput}
+                  onChange={(e) => setCurfewInput(e.target.value)}
+                  disabled={isSavingCurfew}
+                />
+                <Button
+                  variant="primary"
+                  onClick={handleCurfewSave}
+                  disabled={isSavingCurfew || !curfewInput}
+                >
+                  {isSavingCurfew ? 'Saving…' : 'Save'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -523,6 +602,17 @@ function LocationsHome() {
                     formActions={routeFormActions}
                     disabled={isSavingRoute}
                     placeholder="e.g. 25000"
+                  />
+                  <FormInput
+                    id="duration_hours"
+                    type="number"
+                    label="One-way Trip Duration (hours)"
+                    formActions={routeFormActions}
+                    disabled={isSavingRoute}
+                    required={false}
+                    placeholder="e.g. 2"
+                    min={0.5}
+                    step={0.5}
                   />
                   {routeError && (
                     <p className={styles.submitError}>{routeError}</p>

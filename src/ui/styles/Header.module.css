@@ -51,6 +51,7 @@
 
   .hamburger {
     display: flex;
+    margin-right: auto;
   }
 }
 
@@ -67,6 +68,30 @@
   align-items: center;
   gap: 0.4rem;
   flex-shrink: 0;
+}
+
+/* ── Notification bell wrapper ───────────────────── */
+.notifWrapper {
+  position: relative;
+}
+
+.notifBadge {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  padding: 0 0.4rem;
+  border-radius: 10rem;
+  background-color: var(--color-sunset);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  line-height: 1;
 }
 
 /* Hide secondary icons on phone */

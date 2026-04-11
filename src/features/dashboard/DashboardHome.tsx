@@ -266,13 +266,16 @@ function DashboardHome() {
   const kpi = data?.kpi;
 
   const gridColor = isDark ? '#2e2618' : '#f0f0f0';
+  const tooltipTextColor = isDark ? '#f0e4d0' : '#1e1e1e';
   const tooltipStyle = {
     fontSize: 12,
     borderRadius: 8,
     border: `1px solid ${isDark ? '#3d3020' : '#e5e5e5'}`,
     background: isDark ? '#1f1a13' : '#fff',
-    color: isDark ? '#f0e4d0' : '#1e1e1e',
+    color: tooltipTextColor,
   };
+  const tooltipLabelStyle = { color: tooltipTextColor, fontWeight: 600 };
+  const tooltipItemStyle = { color: tooltipTextColor };
 
   const revTrend = kpi ? pct(kpi.revenueThisMonth, kpi.revenueLastMonth) : 0;
   const bkTrend = kpi ? pct(kpi.bookingsThisMonth, kpi.bookingsLastMonth) : 0;
@@ -472,9 +475,14 @@ function DashboardHome() {
                       data?.byType.reduce((s, t) => s + t.revenue, 0) ?? 0;
                     const share =
                       total > 0 ? Math.round((Number(value) / total) * 100) : 0;
-                    return [`${compactRevenue(Number(value))} (${share}%)`, name];
+                    return [
+                      `${compactRevenue(Number(value))} (${share}%)`,
+                      name,
+                    ];
                   }}
                   contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
                 />
                 <Legend
                   iconType="circle"
@@ -523,6 +531,8 @@ function DashboardHome() {
                 <Tooltip
                   formatter={(value) => [value, 'Bookings']}
                   contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
                 />
                 <Legend
                   iconType="circle"
@@ -564,6 +574,8 @@ function DashboardHome() {
                 <Tooltip
                   formatter={(value) => [value, 'Bookings']}
                   contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
                 />
                 <Legend
                   iconType="circle"
@@ -635,6 +647,8 @@ function DashboardHome() {
                     'Revenue',
                   ]}
                   contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
                 />
                 <Bar dataKey="revenue" radius={[0, 6, 6, 0]} barSize={20}>
                   {data?.byAsset.map((entry) => (
@@ -686,7 +700,11 @@ function DashboardHome() {
                   width={28}
                   allowDecimals={false}
                 />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
+                />
                 <Line
                   dataKey="guests"
                   name="Guests"

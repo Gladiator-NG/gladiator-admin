@@ -170,3 +170,70 @@
   justify-content: flex-end;
   margin-top: 0.4rem;
 }
+
+/* ── Notification preferences ─────────────────────── */
+.notifPrefRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.notifPrefInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.notifPrefLabel {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.notifPrefHint {
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 4.4rem;
+  height: 2.4rem;
+  border-radius: 10rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggleOn {
+  background-color: var(--color-ocean-blue);
+}
+
+.toggleOff {
+  background-color: var(--color-border);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.3rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background-color: #fff;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(2rem);
+}

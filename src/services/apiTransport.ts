@@ -15,6 +15,7 @@ export interface TransportRoute {
   from_location_id: string;
   to_location_id: string;
   price_per_trip: number | null;
+  duration_hours: number | null; // one-way trip duration in hours
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -112,6 +113,7 @@ export async function upsertTransportRoute(input: {
   from_location_id: string;
   to_location_id: string;
   price_per_trip: number | null;
+  duration_hours?: number | null;
   is_active?: boolean;
 }): Promise<TransportRoute> {
   const { data, error } = await supabase

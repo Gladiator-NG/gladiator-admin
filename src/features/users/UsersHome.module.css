@@ -407,6 +407,10 @@
 
 /* ── Responsive ───────────────────────────────────── */
 @media (max-width: 56.25em) {
+  .pageTitle {
+    font-size: 2.6rem;
+  }
+
   /* Hide less-important columns on tablet */
   .colJoined {
     display: none;
@@ -414,6 +418,10 @@
 }
 
 @media (max-width: 37.5em) {
+  .pageTitle {
+    font-size: 2.2rem;
+  }
+
   .pageHeader {
     flex-direction: column;
     align-items: flex-start;

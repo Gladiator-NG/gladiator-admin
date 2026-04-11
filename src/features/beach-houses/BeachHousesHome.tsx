@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { BeachHouse } from '../../services/apiBeachHouse';
+import { fetchRevenueByType } from '../../services/apiBooking';
 import {
   uploadAndSaveImages,
   updateImagePositions,
@@ -226,26 +227,26 @@ function BeachHousesHome() {
   );
 
   // ── Portfolio metrics ──────────────────────────────
-  // Revenue uses dummy booking data (18 booked nights/month per active house)
-  // until the bookings feature is built.
-  const DUMMY_NIGHTLY_OCCUPANCY = 18; // nights per month
-
-  const periodNights = useMemo(() => {
-    if (periodMode === 'monthly') return DUMMY_NIGHTLY_OCCUPANCY;
-    if (periodMode === 'yearly') return DUMMY_NIGHTLY_OCCUPANCY * 12;
-    // custom: derive nights from date range
-    if (customFrom && customTo) {
-      const from = new Date(customFrom);
-      const to = new Date(customTo);
-      const days = Math.max(
-        0,
-        Math.round((to.getTime() - from.getTime()) / 86_400_000),
-      );
-      // scale: assume same 18/30 occupancy rate over the span
-      return Math.round((days / 30) * DUMMY_NIGHTLY_OCCUPANCY);
+  const periodRange = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    if (periodMode === 'monthly') {
+      return { from: iso(new Date(y, m, 1)), to: iso(new Date(y, m + 1, 0)) };
     }
-    return DUMMY_NIGHTLY_OCCUPANCY;
+    if (periodMode === 'yearly') {
+      return { from: `${y}-01-01`, to: `${y}-12-31` };
+    }
+    if (customFrom && customTo) return { from: customFrom, to: customTo };
+    const today = iso(now);
+    return { from: today, to: today };
   }, [periodMode, customFrom, customTo]);
+
+  const { data: revenueData } = useQuery({
+    queryKey: ['asset_revenue', periodRange.from, periodRange.to],
+    queryFn: () => fetchRevenueByType(periodRange.from, periodRange.to),
+  });
 
   const periodLabel = useMemo(() => {
     if (periodMode === 'monthly') return 'This month';
@@ -270,11 +271,8 @@ function BeachHousesHome() {
       (sum, h) => sum + (h.max_guests ?? 0),
       0,
     );
-    const estRevenue = beachHouses
-      .filter((h) => h.is_active && h.price_per_night)
-      .reduce((sum, h) => sum + (h.price_per_night ?? 0) * periodNights, 0);
-    return { total, active, inactive, totalCapacity, estRevenue };
-  }, [beachHouses, periodNights]);
+    return { total, active, inactive, totalCapacity };
+  }, [beachHouses]);
 
   // ── Filtered + sorted list ───────────────────────────────
   const filtered = useMemo(() => {
@@ -493,7 +491,10 @@ function BeachHousesHome() {
   // ── Delete ───────────────────────────────────────────
   function handleDelete() {
     if (!deletingHouse) return;
-    remove(deletingHouse.id, { onSuccess: () => setDeletingHouse(null) });
+    remove(
+      { id: deletingHouse.id, label: deletingHouse.name },
+      { onSuccess: () => setDeletingHouse(null) },
+    );
   }
 
   // ── Image management (manage images modal) ───────────
@@ -645,16 +646,16 @@ function BeachHousesHome() {
         <div className={styles.formRow}>
           <FormInput
             id="check_in_time"
+            type="time"
             label="Check-in Time"
-            placeholder="e.g. 3:00 PM"
             formActions={formActions}
             disabled={disabled}
             required={false}
           />
           <FormInput
             id="check_out_time"
+            type="time"
             label="Check-out Time"
-            placeholder="e.g. 11:00 AM"
             formActions={formActions}
             disabled={disabled}
             required={false}
@@ -807,8 +808,8 @@ function BeachHousesHome() {
             />
 
             <MetricCard
-              label="Est. Revenue"
-              value={metrics.estRevenue}
+              label="Booking Revenue"
+              value={revenueData?.beach_house ?? 0}
               renderValue={(v) => (v > 0 ? formatPrice(v) : '—')}
               icon={<TrendingUp size={18} />}
               featured
@@ -816,7 +817,7 @@ function BeachHousesHome() {
                 <span
                   className={`${styles.metricBadge} ${styles.metricBadgeSample}`}
                 >
-                  Sample data · {periodNights} nights
+                  Paid · {periodLabel}
                 </span>
               }
             />

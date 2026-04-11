@@ -11,6 +11,8 @@ import {
   Info,
   Lightbulb,
   AlertTriangle,
+  MapPin,
+  Truck,
 } from 'lucide-react';
 import styles from './HelpPage.module.css';
 
@@ -18,9 +20,11 @@ const NAV_SECTIONS = [
   { id: 'overview', label: 'Overview' },
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'bookings', label: 'Bookings' },
+  { id: 'transport', label: 'Transport Bookings' },
   { id: 'customers', label: 'Customers' },
   { id: 'boats', label: 'Boats' },
   { id: 'beach-houses', label: 'Beach Houses' },
+  { id: 'locations', label: 'Locations & Routes' },
   { id: 'users', label: 'Users & Roles' },
   { id: 'profile', label: 'Your Profile' },
   { id: 'tips', label: 'Tips & Shortcuts' },
@@ -89,60 +93,57 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="overview" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <Info />
-              </div>
+              <div className={styles.sectionIcon}><Info /></div>
               <h2 className={styles.sectionTitle}>Overview</h2>
             </div>
             <p className={styles.sectionIntro}>
               Gladiator NG Admin is the central operations platform for managing
-              bookings, fleet, properties, and customers. Everything in the
-              platform revolves around <strong>bookings</strong> — they connect
-              customers to your boats and beach houses and drive all the
-              financial data you see across the dashboard.
+              bookings, fleet, beach house properties, transport, and customers.
+              Everything revolves around <strong>bookings</strong> — they link
+              customers to your assets and drive all the financial data you see
+              across the app.
             </p>
-
             <div className={styles.grid3}>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>📊 Dashboard</p>
                 <p className={styles.cardText}>
-                  High-level metrics, revenue trends, and booking activity at a
-                  glance.
+                  Live KPI cards, revenue trends, booking volume, asset
+                  performance, and a real-time feed of recent bookings.
                 </p>
               </div>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>📋 Bookings</p>
                 <p className={styles.cardText}>
-                  Full booking management — create, confirm, cancel, and track
-                  every reservation in detail.
+                  Create, confirm, and manage every reservation — boat cruises,
+                  beach house stays, and transport trips.
                 </p>
               </div>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>👥 Customers</p>
                 <p className={styles.cardText}>
-                  Automatically built from booking data — see every customer's
-                  history and lifetime value.
+                  Auto-built from booking data. See each customer's history,
+                  total spend, and lifetime value.
                 </p>
               </div>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>🚢 Boats</p>
                 <p className={styles.cardText}>
-                  Manage your fleet — add vessels, upload photos, toggle active
-                  status, and track booking trends.
+                  Fleet registry — add vessels, manage images, toggle
+                  availability, and track real booking revenue.
                 </p>
               </div>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>🏠 Beach Houses</p>
                 <p className={styles.cardText}>
-                  Manage your properties — the same workflow as boats but for
-                  accommodation listings.
+                  Property listings — same workflow as Boats but for
+                  accommodation with nightly pricing and amenities.
                 </p>
               </div>
               <div className={styles.card}>
-                <p className={styles.cardTitle}>🔧 Users & Profile</p>
+                <p className={styles.cardTitle}>📍 Locations</p>
                 <p className={styles.cardText}>
-                  Admin-only user management and personal profile settings
-                  including avatar upload.
+                  Manage transport pickup/drop-off points, set per-person route
+                  pricing, and configure the boat curfew time.
                 </p>
               </div>
             </div>
@@ -153,118 +154,107 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="dashboard" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <LayoutDashboard />
-              </div>
+              <div className={styles.sectionIcon}><LayoutDashboard /></div>
               <h2 className={styles.sectionTitle}>Dashboard</h2>
             </div>
             <p className={styles.sectionIntro}>
-              The Dashboard is your first stop — it gives you a live snapshot of
-              revenue, bookings, and fleet performance without needing to dig
-              into individual records.
+              The Dashboard gives you a live snapshot of revenue, bookings, and
+              asset performance without digging into individual records. All
+              data is fetched fresh on every page load — look for the{' '}
+              <strong>Live</strong> badge in the header.
             </p>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Metric Cards</h3>
+              <h3 className={styles.subTitle}>KPI Cards</h3>
               <p className={styles.subText}>
-                The four cards at the top summarise performance for the selected
-                time period. Each card shows the current value and a trend
-                indicator comparing it to the previous equivalent period.
+                Six metric cards sit at the top. Each shows the current value
+                alongside a trend percentage comparing it to the previous
+                equivalent period.
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>Card</th>
-                    <th>What it measures</th>
-                  </tr>
+                  <tr><th>Card</th><th>What it measures</th></tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Total Revenue</td>
-                    <td>
-                      Sum of <em>amount</em> across all bookings in the selected
-                      period. Includes confirmed and pending bookings.
-                    </td>
+                    <td>All-Time Revenue</td>
+                    <td>Sum of all confirmed &amp; paid booking amounts since the account was created.</td>
                   </tr>
                   <tr>
-                    <td>Total Bookings</td>
-                    <td>
-                      Count of all booking records created in the period,
-                      regardless of status.
-                    </td>
+                    <td>This Month Revenue</td>
+                    <td>Confirmed paid bookings with a start date in the current calendar month. Includes a % trend vs. last month.</td>
                   </tr>
                   <tr>
-                    <td>Active Boats</td>
-                    <td>
-                      Total number of boats currently marked as{' '}
-                      <strong>Active</strong> in your fleet (not affected by
-                      period filter).
-                    </td>
+                    <td>Bookings This Month</td>
+                    <td>Count of all new bookings created this month (any status). Trend vs. last month. Links to the Bookings page.</td>
                   </tr>
                   <tr>
-                    <td>Beach Houses</td>
-                    <td>
-                      Total number of beach houses currently listed and active
-                      (not affected by period filter).
-                    </td>
+                    <td>Active Customers</td>
+                    <td>Unique customers who made a booking this month. Trend vs. last month.</td>
+                  </tr>
+                  <tr>
+                    <td>Pending Bookings</td>
+                    <td>Bookings still in Pending status — need attention. Card is highlighted when the count is above zero. Links to Bookings.</td>
+                  </tr>
+                  <tr>
+                    <td>Avg. Booking Value</td>
+                    <td>Mean total_amount across all non-cancelled bookings. Also shows cumulative total guest count.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Trend Pills</h3>
-              <p className={styles.subText}>
-                Every metric card shows a coloured percentage change pill (e.g.
-                <strong> +88%</strong> or <strong>−12%</strong>). This compares
-                the current period value to the same-length period immediately
-                before it. Green means growth, red means decline.
-              </p>
+              <h3 className={styles.subTitle}>Charts</h3>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Chart</th><th>What it shows</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Revenue &amp; Bookings Over Time</td>
+                    <td>Last 6 months — an area line for confirmed paid revenue (left axis) overlaid with booking count bars (right axis). Hover for exact values.</td>
+                  </tr>
+                  <tr>
+                    <td>Revenue by Booking Type</td>
+                    <td>Donut chart splitting all non-cancelled revenue into Boat Cruise, Beach House, and Transport. Shows share % in the tooltip.</td>
+                  </tr>
+                  <tr>
+                    <td>Booking Status</td>
+                    <td>Donut chart of all-time bookings split by status (Confirmed, Pending, Cancelled, Expired).</td>
+                  </tr>
+                  <tr>
+                    <td>Booking Source</td>
+                    <td>Donut chart showing how bookings originate — Admin (staff-created), Web, or Mobile.</td>
+                  </tr>
+                  <tr>
+                    <td>Asset Performance</td>
+                    <td>Horizontal bar chart ranking every boat and beach house by total paid revenue. Boats are shown in blue, beach houses in teal.</td>
+                  </tr>
+                  <tr>
+                    <td>Monthly Guest Volume</td>
+                    <td>Line chart of total guest_count summed across all bookings per month for the current year.</td>
+                  </tr>
+                </tbody>
+              </table>
               <div className={styles.callout + ' ' + styles.calloutInfo}>
                 <Info />
                 <p className={styles.calloutText}>
-                  If the previous period had zero value (e.g. no revenue last
-                  month), the trend pill shows <strong>New</strong> instead of a
-                  percentage — because dividing by zero isn't meaningful.
+                  All chart tooltips are fully readable in both light and dark
+                  mode. Hover over any data point to see the exact value.
                 </p>
               </div>
-            </div>
-
-            <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Revenue Chart</h3>
-              <p className={styles.subText}>
-                The bar chart on the left shows <strong>monthly revenue</strong>{' '}
-                for the current calendar year. Each bar represents the total
-                booking amounts for that month. Hover over any bar to see the
-                exact figure. Months with no bookings appear as empty bars.
-              </p>
-            </div>
-
-            <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Bookings Chart</h3>
-              <p className={styles.subText}>
-                The second chart shows <strong>booking count per month</strong>{' '}
-                for the year — useful for spotting seasonal demand peaks. It
-                uses the same scale logic as the revenue chart.
-              </p>
             </div>
 
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Recent Bookings</h3>
               <p className={styles.subText}>
-                The bottom of the dashboard lists the 10 most recently created
-                bookings. Each row shows the customer name, booking type,
-                amount, status, and date. Click <strong>View all</strong> to
-                jump to the full bookings page.
+                The bottom-right panel lists the <strong>6 most recently
+                created</strong> bookings across all types. Each row shows the
+                reference code, customer name, amount, status, and time ago.
+                Click <strong>View all →</strong> to jump to the full Bookings
+                page.
               </p>
-              <div className={styles.callout + ' ' + styles.calloutTip}>
-                <Lightbulb />
-                <p className={styles.calloutText}>
-                  The <strong>Live</strong> badge next to the section title
-                  indicates the data is fetched fresh on every page load and is
-                  not cached for long periods.
-                </p>
-              </div>
             </div>
           </section>
 
@@ -273,128 +263,114 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="bookings" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <BookOpen />
-              </div>
+              <div className={styles.sectionIcon}><BookOpen /></div>
               <h2 className={styles.sectionTitle}>Bookings</h2>
             </div>
             <p className={styles.sectionIntro}>
               The Bookings page is the operational core of the platform. Every
-              reservation — whether for a boat or a beach house — lives here.
+              reservation — boat cruises, beach house stays, and transport trips
+              — lives here.
             </p>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Booking Statuses</h3>
-              <p className={styles.subText}>
-                Every booking moves through these states:
-              </p>
-              <div className={styles.badgeRow}>
-                <span className={styles.badgePending}>
-                  <span className={styles.badgeDot} />
-                  Pending
-                </span>
-                <span className={styles.badgeConfirmed}>
-                  <span className={styles.badgeDot} />
-                  Confirmed
-                </span>
-                <span className={styles.badgeCancelled}>
-                  <span className={styles.badgeDot} />
-                  Cancelled
-                </span>
-              </div>
+              <h3 className={styles.subTitle}>Booking Types</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>Status</th>
-                    <th>Meaning</th>
-                  </tr>
+                  <tr><th>Type</th><th>Description</th></tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Pending</td>
-                    <td>
-                      A booking has been created but not yet confirmed. Revenue
-                      is still counted in metrics — only cancel to remove it
-                      from revenue.
-                    </td>
+                    <td>Boat Cruise</td>
+                    <td>Time-based booking for a specific boat. Requires a date, start time, duration (hours), and guest count. Amount is auto-calculated from price-per-hour × hours if the boat has a rate set.</td>
                   </tr>
                   <tr>
-                    <td>Confirmed</td>
-                    <td>
-                      The booking has been confirmed and the customer has paid
-                      or is committed.
-                    </td>
+                    <td>Beach House</td>
+                    <td>Night-based property stay. Requires check-in date, check-out date, and guest count. Amount is auto-calculated from price-per-night × nights if the property has a rate set.</td>
                   </tr>
                   <tr>
-                    <td>Cancelled</td>
-                    <td>
-                      The booking was cancelled. Cancelled bookings are excluded
-                      from revenue totals.
-                    </td>
+                    <td>Transport</td>
+                    <td>Point-to-point passenger transfer. See the <a href="#transport">Transport Bookings</a> section below for full details.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Filters & Sorting</h3>
-              <p className={styles.subText}>
-                Use the filter bar below the tabs to narrow down the list:
-              </p>
+              <h3 className={styles.subTitle}>Booking Statuses</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>Filter</th>
-                    <th>Options</th>
-                  </tr>
+                  <tr><th>Status</th><th>Meaning</th></tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Search</td>
-                    <td>
-                      Filters by customer name or booking reference code
-                      (client-side, instant).
-                    </td>
+                    <td>Pending</td>
+                    <td>Created but not yet actioned. Slot is reserved and shows on availability checks.</td>
                   </tr>
                   <tr>
-                    <td>Status</td>
-                    <td>All · Pending · Confirmed · Cancelled</td>
+                    <td>Confirmed</td>
+                    <td>Booking is confirmed. Counts toward revenue when payment_status is Paid.</td>
                   </tr>
                   <tr>
-                    <td>Type</td>
-                    <td>All · Boat · Beach House</td>
+                    <td>Cancelled</td>
+                    <td>Booking was cancelled. Excluded from all revenue totals. Slot is freed.</td>
                   </tr>
                   <tr>
-                    <td>Sort</td>
-                    <td>Newest · Oldest · Highest Amount · Lowest Amount</td>
+                    <td>Expired</td>
+                    <td>Booking lapsed without confirmation. Excluded from revenue.</td>
                   </tr>
                   <tr>
-                    <td>Date Period</td>
-                    <td>
-                      This Week · This Month · This Year · Custom Range. Custom
-                      range reveals two date inputs (From / To).
-                    </td>
+                    <td>Completed</td>
+                    <td>Booking has been fulfilled. Still counts in revenue.</td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Payment Status</h3>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Status</th><th>Meaning</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Pending</td><td>Payment not yet received.</td></tr>
+                  <tr><td>Paid</td><td>Payment received. This booking counts in all "Revenue (Paid)" metrics.</td></tr>
+                  <tr><td>Failed</td><td>Payment attempt was unsuccessful.</td></tr>
                 </tbody>
               </table>
               <div className={styles.callout + ' ' + styles.calloutInfo}>
                 <Info />
                 <p className={styles.calloutText}>
-                  All filter and sort choices are saved in the URL, so you can
-                  bookmark or share a filtered view and it will open exactly as
-                  you left it.
+                  All revenue figures across the platform — Dashboard, Boats,
+                  and Beach Houses — only count bookings with{' '}
+                  <strong>payment_status = Paid</strong>. A confirmed booking
+                  with pending payment does not add to revenue metrics.
                 </p>
               </div>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Expanding a Booking</h3>
-              <p className={styles.subText}>
-                Click any booking row to expand it and see the full detail panel
-                — including asset name, dates, amount, reference code, status
-                badge, and available actions. Click the row again to collapse
-                it. Only one booking can be expanded at a time.
-              </p>
+              <h3 className={styles.subTitle}>Filters &amp; Period</h3>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Filter</th><th>Options</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Search</td><td>Reference code, customer name, or email (instant, client-side).</td></tr>
+                  <tr><td>Status</td><td>All · Pending · Confirmed · Cancelled · Expired · Completed</td></tr>
+                  <tr><td>Type</td><td>All · Boat Cruise · Beach House · Transport</td></tr>
+                  <tr><td>Sort</td><td>Newest · Oldest · Highest Amount · Lowest Amount</td></tr>
+                  <tr><td>Period</td><td>Month · Quarter · Half Year · Year · Custom. Metrics at the top update with the chosen period.</td></tr>
+                </tbody>
+              </table>
+              <div className={styles.callout + ' ' + styles.calloutInfo}>
+                <Info />
+                <p className={styles.calloutText}>
+                  Every filter, sort, and date selection is saved in the URL.
+                  Bookmark or share the page and it reopens in exactly the same
+                  state.
+                </p>
+              </div>
             </div>
 
             <div className={styles.subSection}>
@@ -403,55 +379,63 @@ function HelpPage() {
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>1</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Click "New Booking"</p>
-                    <p className={styles.stepDesc}>
-                      The button is in the top-right of the Bookings tab. It
-                      opens a creation drawer.
-                    </p>
+                    <p className={styles.stepHead}>Click "+ New Booking"</p>
+                    <p className={styles.stepDesc}>Top-right of the Bookings tab. Opens a creation form.</p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>2</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Fill in customer details</p>
+                    <p className={styles.stepHead}>Choose the booking type</p>
                     <p className={styles.stepDesc}>
-                      Enter the customer name, email (optional), and phone
-                      number.
+                      Boat Cruise, Beach House, or Transport. The form fields
+                      change based on your selection.
                     </p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>3</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>
-                      Select booking type and asset
-                    </p>
+                    <p className={styles.stepHead}>Enter customer details</p>
                     <p className={styles.stepDesc}>
-                      Choose <strong>Boat</strong> or{' '}
-                      <strong>Beach House</strong>, then pick the specific asset
-                      from the dropdown.
+                      Full name, email, and phone. If a customer with that email
+                      already exists, their record is updated; otherwise a new
+                      customer is created automatically.
                     </p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>4</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Set dates and amount</p>
+                    <p className={styles.stepHead}>Select the asset and dates</p>
                     <p className={styles.stepDesc}>
-                      Enter the booking start date, end date, and the total
-                      amount in Naira (₦). A reference code is auto-generated
-                      but can be edited.
+                      Pick the boat or beach house, set the date(s), and enter
+                      guest count. For boat cruises also set the start time and
+                      duration. The total amount is auto-calculated if the asset
+                      has a price set — you can override it.
                     </p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>5</span>
                   <div className={styles.stepBody}>
+                    <p className={styles.stepHead}>Availability is checked automatically</p>
+                    <p className={styles.stepDesc}>
+                      The form runs a live availability check against existing
+                      pending and confirmed bookings. If there's a conflict you
+                      see which booking is blocking the slot.
+                    </p>
+                  </div>
+                </li>
+                <li className={styles.stepItem}>
+                  <span className={styles.stepNum}>6</span>
+                  <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Save</p>
                     <p className={styles.stepDesc}>
-                      The booking is created in <strong>Pending</strong> status.
-                      Use the action buttons in the expanded row to confirm or
-                      cancel it.
+                      Booking is created as <strong>Pending</strong> with
+                      payment status <strong>Pending</strong>. Use the action
+                      buttons in the expanded row to confirm, mark as paid, or
+                      cancel.
                     </p>
                   </div>
                 </li>
@@ -459,21 +443,111 @@ function HelpPage() {
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Editing & Deleting</h3>
+              <h3 className={styles.subTitle}>Boat Curfew</h3>
               <p className={styles.subText}>
-                Expand a booking row and click the{' '}
-                <strong>Edit (pencil)</strong> icon to update any field. Use the{' '}
-                <strong>Delete (trash)</strong> icon to permanently remove a
-                booking. You will be asked to confirm before deletion.
+                If a curfew time is set (configured in{' '}
+                <strong>Locations → Transport Curfew</strong>), the booking
+                form will block any boat cruise whose end time (cruise duration
+                + 1-hour safety buffer) falls after the curfew. You'll see a
+                warning message and the form will not submit.
+              </p>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Editing &amp; Deleting</h3>
+              <p className={styles.subText}>
+                Expand a booking row and click the <strong>pencil</strong> icon
+                to edit any field. Click the <strong>trash</strong> icon to
+                permanently delete. All deletions require confirmation.
               </p>
               <div className={styles.callout + ' ' + styles.calloutWarn}>
                 <AlertTriangle />
                 <p className={styles.calloutText}>
-                  Deletion is permanent and cannot be undone. Consider{' '}
-                  <strong>Cancelling</strong> instead if you want to retain the
-                  record for history.
+                  Deletion is permanent. Unless you need to clean up test data,
+                  prefer <strong>Cancelling</strong> — it preserves the record
+                  for the audit trail while removing it from revenue.
                 </p>
               </div>
+            </div>
+          </section>
+
+          {/* ══════════════════════════════════════════
+              TRANSPORT
+          ══════════════════════════════════════════ */}
+          <section id="transport" className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionIcon}><Truck /></div>
+              <h2 className={styles.sectionTitle}>Transport Bookings</h2>
+            </div>
+            <p className={styles.sectionIntro}>
+              Transport bookings cover passenger transfers between jetties and
+              drop-off points. They can be standalone or linked to a beach house
+              booking as return legs.
+            </p>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Transport Types</h3>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Type</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Outbound</td>
+                    <td>One-way transfer to the destination (e.g. mainland → beach house).</td>
+                  </tr>
+                  <tr>
+                    <td>Return</td>
+                    <td>One-way transfer back (e.g. beach house → mainland).</td>
+                  </tr>
+                  <tr>
+                    <td>Round Trip</td>
+                    <td>Both legs in a single booking. The return date and departure time are separate fields.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Fare Calculation</h3>
+              <p className={styles.subText}>
+                When you select a route, the fare is calculated automatically:
+              </p>
+              <div className={styles.callout + ' ' + styles.calloutInfo}>
+                <Info />
+                <p className={styles.calloutText}>
+                  <strong>Fare = route price per person × max(guest count, 4)</strong>.
+                  A minimum of 4 passengers is billed regardless of actual head
+                  count. For round trips the fare is doubled (two legs).
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Linked Beach House Bookings</h3>
+              <p className={styles.subText}>
+                When creating a transport booking you can optionally link it to
+                an existing beach house booking. When linked:
+              </p>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Field</th><th>Behaviour</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Outbound pickup time</td>
+                    <td>Auto-computed as the beach house check-in time minus the route's one-way travel duration.</td>
+                  </tr>
+                  <tr>
+                    <td>Return departure time</td>
+                    <td>Defaults to the beach house check-out time. You can set a preferred earlier departure using the optional override field.</td>
+                  </tr>
+                  <tr>
+                    <td>Dates</td>
+                    <td>Outbound date = beach house start date; return date = beach house end date. These are shown as read-only hints in the form.</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -482,108 +556,68 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="customers" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <Users />
-              </div>
+              <div className={styles.sectionIcon}><Users /></div>
               <h2 className={styles.sectionTitle}>Customers</h2>
             </div>
             <p className={styles.sectionIntro}>
-              The Customers tab lives inside the Bookings page. It aggregates
-              booking data to show you each unique customer's history and value
-              — no separate customer creation needed.
+              The Customers tab lives inside the Bookings page. Customer records
+              are created automatically when a booking is made — no separate
+              customer creation required. Records are deduplicated by email
+              address.
             </p>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Customer Cards</h3>
+              <h3 className={styles.subTitle}>Views</h3>
               <p className={styles.subText}>
-                Switch between <strong>card view</strong> and{' '}
-                <strong>table view</strong> using the toggle in the top right of
-                the tab. Each customer card shows:
+                The default view is <strong>Table</strong>. Use the toggle in
+                the top-right of the tab to switch to <strong>Card</strong>
+                view. Both show the same data in different layouts.
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>Field</th>
-                    <th>Meaning</th>
-                  </tr>
+                  <tr><th>Field</th><th>Meaning</th></tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Avatar initials</td>
-                    <td>
-                      Colour-coded initials generated from the customer's name.
-                      The colour is consistent across all sessions for the same
-                      name.
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Bookings count</td>
-                    <td>
-                      Total number of bookings (all statuses) for this customer.
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Spent</td>
-                    <td>
-                      Total ₦ amount across all non-cancelled bookings for this
-                      customer.
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Last booking</td>
-                    <td>Date of the most recent booking.</td>
-                  </tr>
-                  <tr>
-                    <td>Marketing tag</td>
-                    <td>
-                      Shown when a customer has 3 or more bookings — a signal
-                      they're a repeat customer worth targeting.
-                    </td>
-                  </tr>
+                  <tr><td>Bookings</td><td>Total number of bookings across all statuses for this customer.</td></tr>
+                  <tr><td>Spent</td><td>Sum of total_amount across all non-cancelled bookings.</td></tr>
+                  <tr><td>Last booking</td><td>Date of the most recent booking for this customer.</td></tr>
+                  <tr><td>Marketing opt-in</td><td>Whether the customer consented to marketing at time of booking.</td></tr>
                 </tbody>
               </table>
             </div>
 
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Sorting</h3>
-              <p className={styles.subText}>
-                Use the sort dropdown to order customers by:
-              </p>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>Sort option</th>
-                    <th>Description</th>
-                  </tr>
+                  <tr><th>Sort option</th><th>Description</th></tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Most Bookings</td>
-                    <td>Customers with the highest booking count first.</td>
-                  </tr>
-                  <tr>
-                    <td>Highest Spend</td>
-                    <td>Customers who have spent the most money first.</td>
-                  </tr>
-                  <tr>
-                    <td>Most Recent</td>
-                    <td>Customers whose last booking is the most recent.</td>
-                  </tr>
-                  <tr>
-                    <td>Name A–Z</td>
-                    <td>Alphabetical order.</td>
-                  </tr>
+                  <tr><td>Most Bookings</td><td>Highest booking count first.</td></tr>
+                  <tr><td>Highest Spend</td><td>Customers who have spent the most.</td></tr>
+                  <tr><td>Most Recent</td><td>Most recently active customers first.</td></tr>
+                  <tr><td>Name A–Z</td><td>Alphabetical order.</td></tr>
                 </tbody>
               </table>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Exporting Customer Data</h3>
+              <h3 className={styles.subTitle}>Editing &amp; Deleting Customers</h3>
               <p className={styles.subText}>
-                Click <strong>Export CSV</strong> at the top of the Customers
-                tab to download a CSV file of the currently filtered and sorted
-                customer list. The file includes name, email, phone, booking
-                count, total spent, and last booking date.
+                In table view, each row has a <strong>pencil</strong> icon to
+                edit the customer's name, email, phone, and marketing opt-in,
+                and a <strong>trash</strong> icon to delete the record. Deletion
+                requires confirmation and is permanent — the customer's past
+                bookings remain in the system but lose their customer link.
+              </p>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Exporting</h3>
+              <p className={styles.subText}>
+                Click <strong>Export CSV</strong> to download the current
+                filtered and sorted customer list. The file includes name,
+                email, phone, booking count, total spent, and last booking date.
               </p>
             </div>
           </section>
@@ -593,51 +627,44 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="boats" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <Ship />
-              </div>
+              <div className={styles.sectionIcon}><Ship /></div>
               <h2 className={styles.sectionTitle}>Boats</h2>
             </div>
             <p className={styles.sectionIntro}>
               The Boats page is your fleet registry. Each boat is an asset that
-              can be attached to bookings. You can manage availability, upload
-              photos, and track how each vessel is performing.
+              can be attached to cruise bookings and optionally used for
+              transport.
             </p>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Revenue Metric</h3>
+              <p className={styles.subText}>
+                The featured metric card shows <strong>Cruise &amp; Transport
+                Revenue</strong> — the real sum of paid boat_cruise and
+                transport bookings for the selected period. Use the{' '}
+                <strong>Monthly / Yearly / Custom</strong> period selector to
+                change the window. This metric will always match the same period
+                on the Bookings page.
+              </p>
+            </div>
 
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Active vs. Inactive</h3>
               <p className={styles.subText}>
-                Every boat has an <strong>Active/Inactive</strong> toggle
-                visible in its card. Use this to temporarily remove a vessel
-                from service (e.g. for maintenance) without deleting it.
+                Use the <strong>Active/Inactive</strong> toggle on each boat
+                card to temporarily take a vessel out of service (e.g. for
+                maintenance) without deleting it. Inactive boats do not appear
+                in the New Booking dropdown.
               </p>
-              <div className={styles.badgeRow}>
-                <span className={styles.badgeActive}>
-                  <span className={styles.badgeDot} />
-                  Active
-                </span>
-                <span className={styles.badgeInactive}>
-                  <span className={styles.badgeDot} />
-                  Inactive
-                </span>
-              </div>
-              <div className={styles.callout + ' ' + styles.calloutInfo}>
-                <Info />
-                <p className={styles.calloutText}>
-                  Only <strong>Active</strong> boats are counted in the
-                  Dashboard "Active Boats" metric card.
-                </p>
-              </div>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Period Charts</h3>
+              <h3 className={styles.subTitle}>Available for Transport</h3>
               <p className={styles.subText}>
-                Each boat card contains a small bar chart showing booking
-                activity over time. Use the <strong>Monthly / Weekly</strong>{' '}
-                toggle in the filter bar to switch the time granularity. Use the{' '}
-                <strong>Custom</strong> option to specify a precise date range.
-                This helps you spot seasonality or underperforming assets.
+                When creating or editing a boat you can check{' '}
+                <strong>Available for Transport</strong>. This flags the vessel
+                as a transport asset that can be selected when creating transport
+                bookings.
               </p>
             </div>
 
@@ -648,18 +675,17 @@ function HelpPage() {
                   <span className={styles.stepNum}>1</span>
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Click "Add Boat"</p>
-                    <p className={styles.stepDesc}>
-                      Opens the creation drawer from the right.
-                    </p>
+                    <p className={styles.stepDesc}>Opens the creation form.</p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>2</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Enter name and capacity</p>
+                    <p className={styles.stepHead}>Fill in details</p>
                     <p className={styles.stepDesc}>
-                      The name is what appears in booking forms and customer
-                      records. Capacity is informational.
+                      Name, boat type, location, max guests, cabins, price per
+                      hour, and min/max booking hours. The name is what appears
+                      in booking forms.
                     </p>
                   </div>
                 </li>
@@ -668,8 +694,8 @@ function HelpPage() {
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Upload images</p>
                     <p className={styles.stepDesc}>
-                      Drag-and-drop or click to browse. You can upload multiple
-                      images. The first image is used as the cover photo.
+                      Drag-and-drop or click to browse. Multiple images
+                      accepted. The first image is used as the cover photo.
                     </p>
                   </div>
                 </li>
@@ -677,9 +703,7 @@ function HelpPage() {
                   <span className={styles.stepNum}>4</span>
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Save</p>
-                    <p className={styles.stepDesc}>
-                      The boat is created as <strong>Active</strong> by default.
-                    </p>
+                    <p className={styles.stepDesc}>Created as Active by default.</p>
                   </div>
                 </li>
               </ol>
@@ -688,10 +712,9 @@ function HelpPage() {
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Managing Images</h3>
               <p className={styles.subText}>
-                On any boat card, click the <strong>image count chip</strong>{' '}
-                (e.g. "4 photos") to open the Image Manager. From there you can
-                reorder images, add new ones, or remove existing ones. The first
-                image is always used as the cover.
+                Click the <strong>image count chip</strong> on any boat card to
+                open the Image Manager — reorder, add, or remove photos. The
+                first image is always the cover.
               </p>
             </div>
           </section>
@@ -701,25 +724,120 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="beach-houses" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <Home />
-              </div>
+              <div className={styles.sectionIcon}><Home /></div>
               <h2 className={styles.sectionTitle}>Beach Houses</h2>
             </div>
             <p className={styles.sectionIntro}>
-              The Beach Houses page works identically to the Boats page — all
-              the same controls, filters, image management, and period charts
-              apply. The only difference is that these are accommodation
-              properties rather than vessels.
+              The Beach Houses page works like the Boats page but for
+              accommodation properties. The period metric card shows actual paid
+              beach house booking revenue.
             </p>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Beach House–specific fields</h3>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Field</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Price per night</td><td>Used to auto-calculate booking amount for stays. Multiplied by number of nights.</td></tr>
+                  <tr><td>Check-in time</td><td>The standard check-in time (e.g. 14:00). Used to auto-compute outbound transport pickup times for linked transport bookings.</td></tr>
+                  <tr><td>Check-out time</td><td>The standard check-out time (e.g. 11:00). Used as the default return transport departure time for linked bookings.</td></tr>
+                  <tr><td>Amenities</td><td>Comma-separated list displayed on the property card (e.g. Pool, WiFi, Generator).</td></tr>
+                  <tr><td>Transport price</td><td>An optional flat transport supplement that can be added to beach house bookings.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
             <div className={styles.callout + ' ' + styles.calloutTip}>
               <Lightbulb />
               <p className={styles.calloutText}>
-                When creating a booking, select <strong>Beach House</strong> as
-                the booking type and then choose from your active properties in
-                the asset dropdown. Inactive beach houses will not appear in
-                booking forms.
+                Setting accurate <strong>check-in</strong> and{' '}
+                <strong>check-out</strong> times on a beach house is important —
+                when a transport booking is linked to that property, the pickup
+                times are computed automatically from those values.
               </p>
+            </div>
+          </section>
+
+          {/* ══════════════════════════════════════════
+              LOCATIONS
+          ══════════════════════════════════════════ */}
+          <section id="locations" className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionIcon}><MapPin /></div>
+              <h2 className={styles.sectionTitle}>Locations &amp; Routes</h2>
+            </div>
+            <p className={styles.sectionIntro}>
+              The Locations page has three tabs: <strong>Locations</strong>,{' '}
+              <strong>Pricing Routes</strong>, and{' '}
+              <strong>Transport Curfew</strong>. Together they configure the
+              entire transport infrastructure.
+            </p>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Locations tab</h3>
+              <p className={styles.subText}>
+                Each Location represents a physical pickup or drop-off point
+                (a jetty, pier, or landmark). Locations you add here appear in
+                the transport booking form's From / To dropdowns.
+              </p>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Field</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Name</td><td>Displayed in booking dropdowns (e.g. "Victoria Island Jetty").</td></tr>
+                  <tr><td>Description</td><td>Optional note shown in the admin UI.</td></tr>
+                  <tr><td>Display Order</td><td>Lower numbers appear first in dropdowns.</td></tr>
+                  <tr><td>Active</td><td>Inactive locations are hidden from booking forms.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Pricing Routes tab</h3>
+              <p className={styles.subText}>
+                A Route defines the per-person price and travel time between two
+                locations. When a customer selects a From / To pair in a
+                transport booking, the fare is calculated automatically.
+              </p>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Field</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>From / To</td><td>The two locations that define the route. Routes are directional — add both directions if needed.</td></tr>
+                  <tr><td>Price per person (₦)</td><td>Used to compute fare: price × max(guest_count, 4). Round trips bill both legs.</td></tr>
+                  <tr><td>One-way duration (hours)</td><td>Used to auto-compute outbound pickup times when a transport booking is linked to a beach house (check-in time minus duration).</td></tr>
+                </tbody>
+              </table>
+              <div className={styles.callout + ' ' + styles.calloutInfo}>
+                <Info />
+                <p className={styles.calloutText}>
+                  Routes without a price set will show "Price not set" in the
+                  list and will not auto-calculate fares in the booking form —
+                  the amount can still be entered manually.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Transport Curfew tab</h3>
+              <p className={styles.subText}>
+                Set a daily curfew time for boat operations. Any boat cruise
+                booking whose end time (cruise duration + 1-hour buffer) would
+                fall after this time will be blocked at the booking form level.
+                Leave blank to disable the curfew entirely.
+              </p>
+              <div className={styles.callout + ' ' + styles.calloutTip}>
+                <Lightbulb />
+                <p className={styles.calloutText}>
+                  Example: curfew set to <strong>22:00</strong> and a customer
+                  wants a 4-hour cruise starting at 19:30 — end time would be
+                  00:30, which exceeds the curfew, so the booking is blocked.
+                </p>
+              </div>
             </div>
           </section>
 
@@ -728,42 +846,29 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="users" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <Users />
-              </div>
+              <div className={styles.sectionIcon}><Users /></div>
               <h2 className={styles.sectionTitle}>Users &amp; Roles</h2>
             </div>
             <p className={styles.sectionIntro}>
-              The Users page is only visible to accounts with the{' '}
-              <strong>Admin</strong> role. It lets you manage who has access to
-              the platform and what they can do.
+              The Users page is only visible to <strong>Admin</strong> accounts.
+              It controls who has access to the platform and at what permission
+              level.
             </p>
 
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Roles</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>Role</th>
-                    <th>Access</th>
-                  </tr>
+                  <tr><th>Role</th><th>Access</th></tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Admin</td>
-                    <td>
-                      Full access to everything — including the Users page,
-                      creating and deleting other users, and all booking/fleet
-                      operations.
-                    </td>
+                    <td>Full access — including Users page, creating/deleting accounts, and all booking and fleet operations.</td>
                   </tr>
                   <tr>
                     <td>Fleet Manager</td>
-                    <td>
-                      Access to Dashboard, Bookings, Boats, Beach Houses, and
-                      their own Profile. Cannot access the Users page or manage
-                      other accounts.
-                    </td>
+                    <td>Access to Dashboard, Bookings, Boats, Beach Houses, Locations, and their own Profile. Cannot access the Users page.</td>
                   </tr>
                 </tbody>
               </table>
@@ -776,39 +881,29 @@ function HelpPage() {
                   <span className={styles.stepNum}>1</span>
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Click "New User"</p>
-                    <p className={styles.stepDesc}>
-                      Available to Admin accounts only.
-                    </p>
+                    <p className={styles.stepDesc}>Admin accounts only.</p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>2</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>
-                      Enter name, email, and role
-                    </p>
-                    <p className={styles.stepDesc}>
-                      Choose between Admin and Fleet Manager. The email must be
-                      unique.
-                    </p>
+                    <p className={styles.stepHead}>Enter name, email, and role</p>
+                    <p className={styles.stepDesc}>Email must be unique. Choose Admin or Fleet Manager.</p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>3</span>
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Set a temporary password</p>
-                    <p className={styles.stepDesc}>
-                      The new user can change their password from their Profile
-                      page after first login.
-                    </p>
+                    <p className={styles.stepDesc}>The new user can change it from their Profile page after first login.</p>
                   </div>
                 </li>
               </ol>
               <div className={styles.callout + ' ' + styles.calloutWarn}>
                 <AlertTriangle />
                 <p className={styles.calloutText}>
-                  Deleting a user is permanent. Any bookings they created remain
-                  in the system, but their login access is revoked immediately.
+                  Deleting a user is permanent — their login is revoked
+                  immediately. Bookings they created remain in the system.
                 </p>
               </div>
             </div>
@@ -819,44 +914,41 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="profile" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <User />
-              </div>
+              <div className={styles.sectionIcon}><User /></div>
               <h2 className={styles.sectionTitle}>Your Profile</h2>
             </div>
             <p className={styles.sectionIntro}>
-              The Profile page lets you personalise your account and update your
-              credentials.
+              The Profile page lets you update your personal details, change
+              your password, and upload a profile photo.
             </p>
-
             <div className={styles.grid2}>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>Personal Details</p>
                 <p className={styles.cardText}>
                   Update your full name, phone number, and a short bio. Changes
-                  are reflected across the app immediately.
+                  reflect across the app immediately.
                 </p>
               </div>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>Avatar</p>
                 <p className={styles.cardText}>
-                  Upload a profile photo. Click the camera icon on your avatar
-                  or drag an image file onto it. Accepted formats: JPG, PNG,
-                  WebP. Max size: 5 MB.
+                  Upload a profile photo — click the camera icon on your avatar
+                  or drag an image onto it. Accepted: JPG, PNG, WebP. Max 5 MB.
                 </p>
               </div>
               <div className={styles.card}>
                 <p className={styles.cardTitle}>Change Password</p>
                 <p className={styles.cardText}>
-                  Enter your new password twice to confirm. Passwords must be at
-                  least 8 characters.
+                  Enter your new password twice to confirm. Minimum 8
+                  characters.
                 </p>
               </div>
               <div className={styles.card}>
-                <p className={styles.cardTitle}>Theme</p>
+                <p className={styles.cardTitle}>Light / Dark Mode</p>
                 <p className={styles.cardText}>
-                  Toggle between Light and Dark mode from the Settings gear icon
-                  in the header. Your preference is saved per-device.
+                  Use the <strong>Sun / Moon icon</strong> in the top-right
+                  header to toggle between Light and Dark mode. Your preference
+                  is saved per-device and persists across sessions.
                 </p>
               </div>
             </div>
@@ -867,83 +959,95 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="tips" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}>
-                <Lightbulb />
-              </div>
+              <div className={styles.sectionIcon}><Lightbulb /></div>
               <h2 className={styles.sectionTitle}>Tips &amp; Shortcuts</h2>
             </div>
             <p className={styles.sectionIntro}>
-              A few things that make the platform faster to use once you know
-              about them.
+              A few things that make the platform faster once you know about
+              them.
             </p>
 
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>URL State</h3>
               <p className={styles.subText}>
-                Every filter, sort, search, date range, and even which booking
-                row is expanded — all of it is saved in the page URL. This
-                means:
+                Filters, sort, search, date range, active tab, and even the
+                expanded booking row are all stored in the URL.
               </p>
               <div className={styles.grid2}>
                 <div className={styles.card}>
                   <p className={styles.cardTitle}>📎 Bookmarking</p>
                   <p className={styles.cardText}>
-                    Bookmark any filtered view in your browser and come back to
-                    the exact same state.
+                    Bookmark any filtered view and come back to exactly the same
+                    state.
                   </p>
                 </div>
                 <div className={styles.card}>
                   <p className={styles.cardTitle}>🔗 Sharing</p>
                   <p className={styles.cardText}>
-                    Copy the URL and share it with a colleague — they'll land on
-                    the same filtered view or expanded booking.
+                    Copy the URL and share it — colleagues land on the same
+                    filtered view or expanded booking.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Page Navigation</h3>
+              <h3 className={styles.subTitle}>Revenue Math</h3>
               <p className={styles.subText}>
-                Use the browser's Back button or{' '}
-                <span className={styles.kbd}>Alt ←</span> (Windows) /{' '}
-                <span className={styles.kbd}>⌘ [</span> (Mac) to go back to your
-                previous view — the filters you had active will be restored from
-                the URL.
+                All revenue figures are consistent and use the same rule: only
+                bookings with <strong>payment_status = Paid</strong> are
+                counted. This means:
               </p>
-            </div>
-
-            <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Pagination</h3>
-              <p className={styles.subText}>
-                Both the Bookings list and the Customers list are paginated (20
-                items per page). The current page is stored in the URL as{' '}
-                <span className={styles.kbd}>?page=</span> so refreshing keeps
-                you on the same page. Changing any filter automatically resets
-                to page 1.
-              </p>
-            </div>
-
-            <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Cancelling vs Deleting</h3>
-              <div className={styles.callout + ' ' + styles.calloutTip}>
-                <Lightbulb />
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Page</th><th>What "Revenue" means</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Dashboard – This Month Revenue</td><td>All paid bookings with start_date in the current month.</td></tr>
+                  <tr><td>Dashboard – All-Time Revenue</td><td>All paid bookings ever.</td></tr>
+                  <tr><td>Bookings – Revenue (Paid)</td><td>Paid bookings in the selected period.</td></tr>
+                  <tr><td>Boats – Cruise &amp; Transport Revenue</td><td>Paid boat_cruise + transport bookings in the selected period.</td></tr>
+                  <tr><td>Beach Houses – Booking Revenue</td><td>Paid beach_house bookings in the selected period.</td></tr>
+                </tbody>
+              </table>
+              <div className={styles.callout + ' ' + styles.calloutInfo}>
+                <Info />
                 <p className={styles.calloutText}>
-                  Prefer <strong>Cancelling</strong> over Deleting bookings.
-                  Cancelled bookings are kept in the system for record-keeping
-                  and are excluded from revenue, giving you accurate historical
-                  data without losing the audit trail.
+                  When the Boats and Beach Houses pages are both set to
+                  "Monthly", their revenues should sum to the Bookings page
+                  "Revenue (Paid)" for the same month.
                 </p>
               </div>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Dark Mode</h3>
+              <h3 className={styles.subTitle}>Cancelling vs. Deleting</h3>
+              <div className={styles.callout + ' ' + styles.calloutTip}>
+                <Lightbulb />
+                <p className={styles.calloutText}>
+                  Prefer <strong>Cancelling</strong> over Deleting. Cancelled
+                  bookings are kept for the audit trail and excluded from
+                  revenue — you don't lose history, but the numbers stay clean.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Auto-calculated Amounts</h3>
               <p className={styles.subText}>
-                Click the <strong>Settings</strong> icon{' '}
-                <span className={styles.kbd}>⚙</span> in the header to toggle
-                between Light and Dark mode. The preference is saved to your
-                browser and persists across sessions.
+                Amounts in the New Booking form are suggestions — they're
+                computed from the asset's price settings but can always be
+                overridden manually before saving.
+              </p>
+            </div>
+
+            <div className={styles.subSection}>
+              <h3 className={styles.subTitle}>Customer Deduplication</h3>
+              <p className={styles.subText}>
+                Customers are matched by <strong>email address</strong>. If you
+                create two bookings with the same email, both are linked to the
+                same customer record. Changing the name or phone in a new
+                booking updates the existing customer record.
               </p>
             </div>
           </section>

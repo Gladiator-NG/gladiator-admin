@@ -7,6 +7,7 @@ import { useUser } from '../authentication/useUser';
 import { useProfile } from './useProfile';
 import { useUpdateProfile } from './useUpdateProfile';
 import { useUpdatePassword } from './useUpdatePassword';
+import { useNotificationPreferences } from '../notifications/useNotifications';
 import styles from './ProfileHome.module.css';
 
 // ── Details form ──────────────────────────────────────
@@ -27,6 +28,11 @@ function ProfileHome() {
   const { profile, isLoading: isLoadingProfile } = useProfile();
   const { update, isPending: isUpdating } = useUpdateProfile();
   const { changePassword, isPending: isChangingPw } = useUpdatePassword();
+  const {
+    preferences,
+    savePreferences,
+    isSaving: isSavingPrefs,
+  } = useNotificationPreferences();
 
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
   const role = profile?.role ?? (user?.user_metadata?.role as string) ?? '';
@@ -211,6 +217,34 @@ function ProfileHome() {
               </Button>
             </div>
           </form>
+        </div>
+      </div>
+
+      {/* ── Notification preferences ── */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>Notification Preferences</h2>
+        <div className={styles.notifPrefRow}>
+          <div className={styles.notifPrefInfo}>
+            <p className={styles.notifPrefLabel}>Email notifications</p>
+            <p className={styles.notifPrefHint}>
+              Receive an email whenever a new booking is created.
+            </p>
+          </div>
+          <button
+            role="switch"
+            aria-checked={preferences?.email_notifications ?? true}
+            className={`${styles.toggle} ${(preferences?.email_notifications ?? true) ? styles.toggleOn : styles.toggleOff}`}
+            onClick={() =>
+              savePreferences({
+                email_notifications: !(
+                  preferences?.email_notifications ?? true
+                ),
+              } as Parameters<typeof savePreferences>[0])
+            }
+            disabled={isSavingPrefs}
+          >
+            <span className={styles.toggleThumb} />
+          </button>
         </div>
       </div>
     </div>

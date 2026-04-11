@@ -60,7 +60,9 @@ function statusBadge(status: string | null): string {
     cancelled: '#ef4444',
   };
   const color = map[status ?? ''] ?? '#6b7280';
-  const label = (status ?? 'pending').charAt(0).toUpperCase() + (status ?? 'pending').slice(1);
+  const label =
+    (status ?? 'pending').charAt(0).toUpperCase() +
+    (status ?? 'pending').slice(1);
   return `<span style="display:inline-block;padding:3px 12px;border-radius:99px;background:${color}22;color:${color};font-weight:700;font-size:13px;">${label}</span>`;
 }
 
@@ -183,14 +185,56 @@ Deno.serve(async (req: Request) => {
   }
 
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
-  const notifyEmail = Deno.env.get('NOTIFY_EMAIL');
+  const notifyEmailEnv = Deno.env.get('NOTIFY_EMAIL');
   // Default to Resend's test sender — swap for a verified domain in production
   const fromEmail =
-    Deno.env.get('NOTIFY_FROM_EMAIL') ?? 'Gladiator NG Admin <onboarding@resend.dev>';
+    Deno.env.get('NOTIFY_FROM_EMAIL') ??
+    'Gladiator NG Admin <onboarding@resend.dev>';
 
-  if (!resendApiKey || !notifyEmail) {
-    console.error('Missing RESEND_API_KEY or NOTIFY_EMAIL env vars');
+  if (!resendApiKey) {
+    console.error('Missing RESEND_API_KEY env var');
     return new Response('Configuration error', { status: 500 });
+  }
+
+  // ── Build recipient list from DB prefs + fallback env var ─────────────────
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+  let recipientEmails: string[] = [];
+
+  if (supabaseUrl && serviceRoleKey) {
+    try {
+      const prefsRes = await fetch(
+        `${supabaseUrl}/rest/v1/notification_preferences?email_notifications=eq.true&select=email`,
+        {
+          headers: {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+          },
+        },
+      );
+      const prefs = (await prefsRes.json()) as Array<{ email: string | null }>;
+      recipientEmails = prefs
+        .map((p) => p.email)
+        .filter((e): e is string => !!e);
+    } catch (err) {
+      console.warn('Could not fetch notification preferences:', err);
+    }
+  }
+
+  // Always include the env-var fallback so someone still gets notified even if
+  // no preferences have been saved yet.
+  if (notifyEmailEnv) {
+    for (const addr of notifyEmailEnv.split(',').map((e) => e.trim())) {
+      if (addr && !recipientEmails.includes(addr)) recipientEmails.push(addr);
+    }
+  }
+
+  if (recipientEmails.length === 0) {
+    console.error(
+      'No recipients — set NOTIFY_EMAIL or configure notification preferences',
+    );
+    return new Response('No recipients configured', { status: 500 });
   }
 
   let payload: WebhookPayload;
@@ -220,7 +264,7 @@ Deno.serve(async (req: Request) => {
     },
     body: JSON.stringify({
       from: fromEmail,
-      to: notifyEmail.split(',').map((e) => e.trim()),
+      to: recipientEmails,
       subject,
       html,
       text,

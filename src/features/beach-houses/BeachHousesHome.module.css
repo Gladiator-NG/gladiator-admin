@@ -1108,4 +1108,17 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  .pageTitle {
+    font-size: 2.2rem;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr 1fr;
+  }
 }
