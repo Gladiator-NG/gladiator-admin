@@ -416,7 +416,10 @@ function LocationsHome() {
             </div>
           )}
           {routes.map((route) => (
-            <div key={route.id} className={`${styles.listRow} ${styles.routeRow}`}>
+            <div
+              key={route.id}
+              className={`${styles.listRow} ${styles.routeRow}`}
+            >
               <div className={styles.routeMain}>
                 <div className={styles.routeHeaderRow}>
                   <div className={styles.routeLabel}>
@@ -428,7 +431,9 @@ function LocationsHome() {
                       {route.to_location?.name ?? '—'}
                     </span>
                   </div>
-                  <div className={`${styles.listRowActions} ${styles.routeActions}`}>
+                  <div
+                    className={`${styles.listRowActions} ${styles.routeActions}`}
+                  >
                     <button
                       className={styles.iconBtn}
                       onClick={() => openEditRoute(route)}
@@ -439,7 +444,8 @@ function LocationsHome() {
                     <button
                       className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                       onClick={() => {
-                        if (confirm('Delete this route?')) removeRoute(route.id);
+                        if (confirm('Delete this route?'))
+                          removeRoute(route.id);
                       }}
                       title="Delete"
                     >
@@ -455,7 +461,9 @@ function LocationsHome() {
                         <span className={styles.routePriceUnit}>/person</span>
                       </>
                     ) : (
-                      <span className={styles.routePriceUnset}>Price not set</span>
+                      <span className={styles.routePriceUnset}>
+                        Price not set
+                      </span>
                     )}
                   </div>
                   {route.duration_hours != null && (

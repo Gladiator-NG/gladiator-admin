@@ -71,11 +71,12 @@ function HelpPage() {
         {/* TOC */}
         <aside className={styles.toc}>
           <p className={styles.tocHead}>On this page</p>
-          <nav>
+          <nav aria-label="Help page sections">
             {NAV_SECTIONS.map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
+                aria-current={activeSection === s.id ? 'true' : undefined}
                 className={
                   activeSection === s.id ? styles.tocLinkActive : styles.tocLink
                 }
@@ -93,7 +94,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="overview" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><Info /></div>
+              <div className={styles.sectionIcon}>
+                <Info />
+              </div>
               <h2 className={styles.sectionTitle}>Overview</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -154,7 +157,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="dashboard" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><LayoutDashboard /></div>
+              <div className={styles.sectionIcon}>
+                <LayoutDashboard />
+              </div>
               <h2 className={styles.sectionTitle}>Dashboard</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -173,32 +178,54 @@ function HelpPage() {
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Card</th><th>What it measures</th></tr>
+                  <tr>
+                    <th>Card</th>
+                    <th>What it measures</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>All-Time Revenue</td>
-                    <td>Sum of all confirmed &amp; paid booking amounts since the account was created.</td>
+                    <td>
+                      Sum of all confirmed &amp; paid booking amounts since the
+                      account was created.
+                    </td>
                   </tr>
                   <tr>
                     <td>This Month Revenue</td>
-                    <td>Confirmed paid bookings with a start date in the current calendar month. Includes a % trend vs. last month.</td>
+                    <td>
+                      Confirmed paid bookings with a start date in the current
+                      calendar month. Includes a % trend vs. last month.
+                    </td>
                   </tr>
                   <tr>
                     <td>Bookings This Month</td>
-                    <td>Count of all new bookings created this month (any status). Trend vs. last month. Links to the Bookings page.</td>
+                    <td>
+                      Count of all new bookings created this month (any status).
+                      Trend vs. last month. Links to the Bookings page.
+                    </td>
                   </tr>
                   <tr>
                     <td>Active Customers</td>
-                    <td>Unique customers who made a booking this month. Trend vs. last month.</td>
+                    <td>
+                      Unique customers who made a booking this month. Trend vs.
+                      last month.
+                    </td>
                   </tr>
                   <tr>
                     <td>Pending Bookings</td>
-                    <td>Bookings still in Pending status — need attention. Card is highlighted when the count is above zero. Links to Bookings.</td>
+                    <td>
+                      Bookings still in Pending status — need attention. Card is
+                      highlighted when the count is above zero. Links to
+                      Bookings.
+                    </td>
                   </tr>
                   <tr>
                     <td>Avg. Booking Value</td>
-                    <td>Mean total_amount across all non-cancelled bookings. Also shows cumulative total guest count.</td>
+                    <td>
+                      Mean total_amount across all non-cancelled bookings. Also
+                      shows cumulative total guest count.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -208,32 +235,56 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Charts</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Chart</th><th>What it shows</th></tr>
+                  <tr>
+                    <th>Chart</th>
+                    <th>What it shows</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Revenue &amp; Bookings Over Time</td>
-                    <td>Last 6 months — an area line for confirmed paid revenue (left axis) overlaid with booking count bars (right axis). Hover for exact values.</td>
+                    <td>
+                      Last 6 months — an area line for confirmed paid revenue
+                      (left axis) overlaid with booking count bars (right axis).
+                      Hover for exact values.
+                    </td>
                   </tr>
                   <tr>
                     <td>Revenue by Booking Type</td>
-                    <td>Donut chart splitting all non-cancelled revenue into Boat Cruise, Beach House, and Transport. Shows share % in the tooltip.</td>
+                    <td>
+                      Donut chart splitting all non-cancelled revenue into Boat
+                      Cruise, Beach House, and Transport. Shows share % in the
+                      tooltip.
+                    </td>
                   </tr>
                   <tr>
                     <td>Booking Status</td>
-                    <td>Donut chart of all-time bookings split by status (Confirmed, Pending, Cancelled, Expired).</td>
+                    <td>
+                      Donut chart of all-time bookings split by status
+                      (Confirmed, Pending, Cancelled, Expired).
+                    </td>
                   </tr>
                   <tr>
                     <td>Booking Source</td>
-                    <td>Donut chart showing how bookings originate — Admin (staff-created), Web, or Mobile.</td>
+                    <td>
+                      Donut chart showing how bookings originate — Admin
+                      (staff-created), Web, or Mobile.
+                    </td>
                   </tr>
                   <tr>
                     <td>Asset Performance</td>
-                    <td>Horizontal bar chart ranking every boat and beach house by total paid revenue. Boats are shown in blue, beach houses in teal.</td>
+                    <td>
+                      Horizontal bar chart ranking every boat and beach house by
+                      total paid revenue. Boats are shown in blue, beach houses
+                      in teal.
+                    </td>
                   </tr>
                   <tr>
                     <td>Monthly Guest Volume</td>
-                    <td>Line chart of total guest_count summed across all bookings per month for the current year.</td>
+                    <td>
+                      Line chart of total guest_count summed across all bookings
+                      per month for the current year.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -249,11 +300,11 @@ function HelpPage() {
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Recent Bookings</h3>
               <p className={styles.subText}>
-                The bottom-right panel lists the <strong>6 most recently
-                created</strong> bookings across all types. Each row shows the
-                reference code, customer name, amount, status, and time ago.
-                Click <strong>View all →</strong> to jump to the full Bookings
-                page.
+                The bottom-right panel lists the{' '}
+                <strong>6 most recently created</strong> bookings across all
+                types. Each row shows the reference code, customer name, amount,
+                status, and time ago. Click <strong>View all →</strong> to jump
+                to the full Bookings page.
               </p>
             </div>
           </section>
@@ -263,7 +314,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="bookings" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><BookOpen /></div>
+              <div className={styles.sectionIcon}>
+                <BookOpen />
+              </div>
               <h2 className={styles.sectionTitle}>Bookings</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -276,20 +329,37 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Booking Types</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Type</th><th>Description</th></tr>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Boat Cruise</td>
-                    <td>Time-based booking for a specific boat. Requires a date, start time, duration (hours), and guest count. Amount is auto-calculated from price-per-hour × hours if the boat has a rate set.</td>
+                    <td>
+                      Time-based booking for a specific boat. Requires a date,
+                      start time, duration (hours), and guest count. Amount is
+                      auto-calculated from price-per-hour × hours if the boat
+                      has a rate set.
+                    </td>
                   </tr>
                   <tr>
                     <td>Beach House</td>
-                    <td>Night-based property stay. Requires check-in date, check-out date, and guest count. Amount is auto-calculated from price-per-night × nights if the property has a rate set.</td>
+                    <td>
+                      Night-based property stay. Requires check-in date,
+                      check-out date, and guest count. Amount is auto-calculated
+                      from price-per-night × nights if the property has a rate
+                      set.
+                    </td>
                   </tr>
                   <tr>
                     <td>Transport</td>
-                    <td>Point-to-point passenger transfer. See the <a href="#transport">Transport Bookings</a> section below for full details.</td>
+                    <td>
+                      Point-to-point passenger transfer. See the{' '}
+                      <a href="#transport">Transport Bookings</a> section below
+                      for full details.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -299,28 +369,45 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Booking Statuses</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Status</th><th>Meaning</th></tr>
+                  <tr>
+                    <th>Status</th>
+                    <th>Meaning</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Pending</td>
-                    <td>Created but not yet actioned. Slot is reserved and shows on availability checks.</td>
+                    <td>
+                      Created but not yet actioned. Slot is reserved and shows
+                      on availability checks.
+                    </td>
                   </tr>
                   <tr>
                     <td>Confirmed</td>
-                    <td>Booking is confirmed. Counts toward revenue when payment_status is Paid.</td>
+                    <td>
+                      Booking is confirmed. Counts toward revenue when
+                      payment_status is Paid.
+                    </td>
                   </tr>
                   <tr>
                     <td>Cancelled</td>
-                    <td>Booking was cancelled. Excluded from all revenue totals. Slot is freed.</td>
+                    <td>
+                      Booking was cancelled. Excluded from all revenue totals.
+                      Slot is freed.
+                    </td>
                   </tr>
                   <tr>
                     <td>Expired</td>
-                    <td>Booking lapsed without confirmation. Excluded from revenue.</td>
+                    <td>
+                      Booking lapsed without confirmation. Excluded from
+                      revenue.
+                    </td>
                   </tr>
                   <tr>
                     <td>Completed</td>
-                    <td>Booking has been fulfilled. Still counts in revenue.</td>
+                    <td>
+                      Booking has been fulfilled. Still counts in revenue.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -330,12 +417,27 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Payment Status</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Status</th><th>Meaning</th></tr>
+                  <tr>
+                    <th>Status</th>
+                    <th>Meaning</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Pending</td><td>Payment not yet received.</td></tr>
-                  <tr><td>Paid</td><td>Payment received. This booking counts in all "Revenue (Paid)" metrics.</td></tr>
-                  <tr><td>Failed</td><td>Payment attempt was unsuccessful.</td></tr>
+                  <tr>
+                    <td>Pending</td>
+                    <td>Payment not yet received.</td>
+                  </tr>
+                  <tr>
+                    <td>Paid</td>
+                    <td>
+                      Payment received. This booking counts in all "Revenue
+                      (Paid)" metrics.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Failed</td>
+                    <td>Payment attempt was unsuccessful.</td>
+                  </tr>
                 </tbody>
               </table>
               <div className={styles.callout + ' ' + styles.calloutInfo}>
@@ -353,14 +455,41 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Filters &amp; Period</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Filter</th><th>Options</th></tr>
+                  <tr>
+                    <th>Filter</th>
+                    <th>Options</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Search</td><td>Reference code, customer name, or email (instant, client-side).</td></tr>
-                  <tr><td>Status</td><td>All · Pending · Confirmed · Cancelled · Expired · Completed</td></tr>
-                  <tr><td>Type</td><td>All · Boat Cruise · Beach House · Transport</td></tr>
-                  <tr><td>Sort</td><td>Newest · Oldest · Highest Amount · Lowest Amount</td></tr>
-                  <tr><td>Period</td><td>Month · Quarter · Half Year · Year · Custom. Metrics at the top update with the chosen period.</td></tr>
+                  <tr>
+                    <td>Search</td>
+                    <td>
+                      Reference code, customer name, or email (instant,
+                      client-side).
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Status</td>
+                    <td>
+                      All · Pending · Confirmed · Cancelled · Expired ·
+                      Completed
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Type</td>
+                    <td>All · Boat Cruise · Beach House · Transport</td>
+                  </tr>
+                  <tr>
+                    <td>Sort</td>
+                    <td>Newest · Oldest · Highest Amount · Lowest Amount</td>
+                  </tr>
+                  <tr>
+                    <td>Period</td>
+                    <td>
+                      Month · Quarter · Half Year · Year · Custom. Metrics at
+                      the top update with the chosen period.
+                    </td>
+                  </tr>
                 </tbody>
               </table>
               <div className={styles.callout + ' ' + styles.calloutInfo}>
@@ -380,7 +509,9 @@ function HelpPage() {
                   <span className={styles.stepNum}>1</span>
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Click "+ New Booking"</p>
-                    <p className={styles.stepDesc}>Top-right of the Bookings tab. Opens a creation form.</p>
+                    <p className={styles.stepDesc}>
+                      Top-right of the Bookings tab. Opens a creation form.
+                    </p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
@@ -407,7 +538,9 @@ function HelpPage() {
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>4</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Select the asset and dates</p>
+                    <p className={styles.stepHead}>
+                      Select the asset and dates
+                    </p>
                     <p className={styles.stepDesc}>
                       Pick the boat or beach house, set the date(s), and enter
                       guest count. For boat cruises also set the start time and
@@ -419,7 +552,9 @@ function HelpPage() {
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>5</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Availability is checked automatically</p>
+                    <p className={styles.stepHead}>
+                      Availability is checked automatically
+                    </p>
                     <p className={styles.stepDesc}>
                       The form runs a live availability check against existing
                       pending and confirmed bookings. If there's a conflict you
@@ -446,9 +581,9 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Boat Curfew</h3>
               <p className={styles.subText}>
                 If a curfew time is set (configured in{' '}
-                <strong>Locations → Transport Curfew</strong>), the booking
-                form will block any boat cruise whose end time (cruise duration
-                + 1-hour safety buffer) falls after the curfew. You'll see a
+                <strong>Locations → Transport Curfew</strong>), the booking form
+                will block any boat cruise whose end time (cruise duration +
+                1-hour safety buffer) falls after the curfew. You'll see a
                 warning message and the form will not submit.
               </p>
             </div>
@@ -476,7 +611,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="transport" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><Truck /></div>
+              <div className={styles.sectionIcon}>
+                <Truck />
+              </div>
               <h2 className={styles.sectionTitle}>Transport Bookings</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -489,20 +626,31 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Transport Types</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Type</th><th>Description</th></tr>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Outbound</td>
-                    <td>One-way transfer to the destination (e.g. mainland → beach house).</td>
+                    <td>
+                      One-way transfer to the destination (e.g. mainland → beach
+                      house).
+                    </td>
                   </tr>
                   <tr>
                     <td>Return</td>
-                    <td>One-way transfer back (e.g. beach house → mainland).</td>
+                    <td>
+                      One-way transfer back (e.g. beach house → mainland).
+                    </td>
                   </tr>
                   <tr>
                     <td>Round Trip</td>
-                    <td>Both legs in a single booking. The return date and departure time are separate fields.</td>
+                    <td>
+                      Both legs in a single booking. The return date and
+                      departure time are separate fields.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -516,9 +664,11 @@ function HelpPage() {
               <div className={styles.callout + ' ' + styles.calloutInfo}>
                 <Info />
                 <p className={styles.calloutText}>
-                  <strong>Fare = route price per person × max(guest count, 4)</strong>.
-                  A minimum of 4 passengers is billed regardless of actual head
-                  count. For round trips the fare is doubled (two legs).
+                  <strong>
+                    Fare = route price per person × max(guest count, 4)
+                  </strong>
+                  . A minimum of 4 passengers is billed regardless of actual
+                  head count. For round trips the fare is doubled (two legs).
                 </p>
               </div>
             </div>
@@ -531,20 +681,34 @@ function HelpPage() {
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Field</th><th>Behaviour</th></tr>
+                  <tr>
+                    <th>Field</th>
+                    <th>Behaviour</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Outbound pickup time</td>
-                    <td>Auto-computed as the beach house check-in time minus the route's one-way travel duration.</td>
+                    <td>
+                      Auto-computed as the beach house check-in time minus the
+                      route's one-way travel duration.
+                    </td>
                   </tr>
                   <tr>
                     <td>Return departure time</td>
-                    <td>Defaults to the beach house check-out time. You can set a preferred earlier departure using the optional override field.</td>
+                    <td>
+                      Defaults to the beach house check-out time. You can set a
+                      preferred earlier departure using the optional override
+                      field.
+                    </td>
                   </tr>
                   <tr>
                     <td>Dates</td>
-                    <td>Outbound date = beach house start date; return date = beach house end date. These are shown as read-only hints in the form.</td>
+                    <td>
+                      Outbound date = beach house start date; return date =
+                      beach house end date. These are shown as read-only hints
+                      in the form.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -556,7 +720,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="customers" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><Users /></div>
+              <div className={styles.sectionIcon}>
+                <Users />
+              </div>
               <h2 className={styles.sectionTitle}>Customers</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -575,13 +741,36 @@ function HelpPage() {
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Field</th><th>Meaning</th></tr>
+                  <tr>
+                    <th>Field</th>
+                    <th>Meaning</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Bookings</td><td>Total number of bookings across all statuses for this customer.</td></tr>
-                  <tr><td>Spent</td><td>Sum of total_amount across all non-cancelled bookings.</td></tr>
-                  <tr><td>Last booking</td><td>Date of the most recent booking for this customer.</td></tr>
-                  <tr><td>Marketing opt-in</td><td>Whether the customer consented to marketing at time of booking.</td></tr>
+                  <tr>
+                    <td>Bookings</td>
+                    <td>
+                      Total number of bookings across all statuses for this
+                      customer.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Spent</td>
+                    <td>
+                      Sum of total_amount across all non-cancelled bookings.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Last booking</td>
+                    <td>Date of the most recent booking for this customer.</td>
+                  </tr>
+                  <tr>
+                    <td>Marketing opt-in</td>
+                    <td>
+                      Whether the customer consented to marketing at time of
+                      booking.
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -590,19 +779,36 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Sorting</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Sort option</th><th>Description</th></tr>
+                  <tr>
+                    <th>Sort option</th>
+                    <th>Description</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Most Bookings</td><td>Highest booking count first.</td></tr>
-                  <tr><td>Highest Spend</td><td>Customers who have spent the most.</td></tr>
-                  <tr><td>Most Recent</td><td>Most recently active customers first.</td></tr>
-                  <tr><td>Name A–Z</td><td>Alphabetical order.</td></tr>
+                  <tr>
+                    <td>Most Bookings</td>
+                    <td>Highest booking count first.</td>
+                  </tr>
+                  <tr>
+                    <td>Highest Spend</td>
+                    <td>Customers who have spent the most.</td>
+                  </tr>
+                  <tr>
+                    <td>Most Recent</td>
+                    <td>Most recently active customers first.</td>
+                  </tr>
+                  <tr>
+                    <td>Name A–Z</td>
+                    <td>Alphabetical order.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Editing &amp; Deleting Customers</h3>
+              <h3 className={styles.subTitle}>
+                Editing &amp; Deleting Customers
+              </h3>
               <p className={styles.subText}>
                 In table view, each row has a <strong>pencil</strong> icon to
                 edit the customer's name, email, phone, and marketing opt-in,
@@ -627,7 +833,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="boats" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><Ship /></div>
+              <div className={styles.sectionIcon}>
+                <Ship />
+              </div>
               <h2 className={styles.sectionTitle}>Boats</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -639,12 +847,12 @@ function HelpPage() {
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Revenue Metric</h3>
               <p className={styles.subText}>
-                The featured metric card shows <strong>Cruise &amp; Transport
-                Revenue</strong> — the real sum of paid boat_cruise and
-                transport bookings for the selected period. Use the{' '}
-                <strong>Monthly / Yearly / Custom</strong> period selector to
-                change the window. This metric will always match the same period
-                on the Bookings page.
+                The featured metric card shows{' '}
+                <strong>Cruise &amp; Transport Revenue</strong> — the real sum
+                of paid boat_cruise and transport bookings for the selected
+                period. Use the <strong>Monthly / Yearly / Custom</strong>{' '}
+                period selector to change the window. This metric will always
+                match the same period on the Bookings page.
               </p>
             </div>
 
@@ -663,8 +871,8 @@ function HelpPage() {
               <p className={styles.subText}>
                 When creating or editing a boat you can check{' '}
                 <strong>Available for Transport</strong>. This flags the vessel
-                as a transport asset that can be selected when creating transport
-                bookings.
+                as a transport asset that can be selected when creating
+                transport bookings.
               </p>
             </div>
 
@@ -703,7 +911,9 @@ function HelpPage() {
                   <span className={styles.stepNum}>4</span>
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Save</p>
-                    <p className={styles.stepDesc}>Created as Active by default.</p>
+                    <p className={styles.stepDesc}>
+                      Created as Active by default.
+                    </p>
                   </div>
                 </li>
               </ol>
@@ -724,7 +934,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="beach-houses" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><Home /></div>
+              <div className={styles.sectionIcon}>
+                <Home />
+              </div>
               <h2 className={styles.sectionTitle}>Beach Houses</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -737,14 +949,49 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Beach House–specific fields</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Field</th><th>Description</th></tr>
+                  <tr>
+                    <th>Field</th>
+                    <th>Description</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Price per night</td><td>Used to auto-calculate booking amount for stays. Multiplied by number of nights.</td></tr>
-                  <tr><td>Check-in time</td><td>The standard check-in time (e.g. 14:00). Used to auto-compute outbound transport pickup times for linked transport bookings.</td></tr>
-                  <tr><td>Check-out time</td><td>The standard check-out time (e.g. 11:00). Used as the default return transport departure time for linked bookings.</td></tr>
-                  <tr><td>Amenities</td><td>Comma-separated list displayed on the property card (e.g. Pool, WiFi, Generator).</td></tr>
-                  <tr><td>Transport price</td><td>An optional flat transport supplement that can be added to beach house bookings.</td></tr>
+                  <tr>
+                    <td>Price per night</td>
+                    <td>
+                      Used to auto-calculate booking amount for stays.
+                      Multiplied by number of nights.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Check-in time</td>
+                    <td>
+                      The standard check-in time (e.g. 14:00). Used to
+                      auto-compute outbound transport pickup times for linked
+                      transport bookings.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Check-out time</td>
+                    <td>
+                      The standard check-out time (e.g. 11:00). Used as the
+                      default return transport departure time for linked
+                      bookings.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Amenities</td>
+                    <td>
+                      Comma-separated list displayed on the property card (e.g.
+                      Pool, WiFi, Generator).
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Transport price</td>
+                    <td>
+                      An optional flat transport supplement that can be added to
+                      beach house bookings.
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -765,7 +1012,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="locations" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><MapPin /></div>
+              <div className={styles.sectionIcon}>
+                <MapPin />
+              </div>
               <h2 className={styles.sectionTitle}>Locations &amp; Routes</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -778,19 +1027,37 @@ function HelpPage() {
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Locations tab</h3>
               <p className={styles.subText}>
-                Each Location represents a physical pickup or drop-off point
-                (a jetty, pier, or landmark). Locations you add here appear in
-                the transport booking form's From / To dropdowns.
+                Each Location represents a physical pickup or drop-off point (a
+                jetty, pier, or landmark). Locations you add here appear in the
+                transport booking form's From / To dropdowns.
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Field</th><th>Description</th></tr>
+                  <tr>
+                    <th>Field</th>
+                    <th>Description</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Name</td><td>Displayed in booking dropdowns (e.g. "Victoria Island Jetty").</td></tr>
-                  <tr><td>Description</td><td>Optional note shown in the admin UI.</td></tr>
-                  <tr><td>Display Order</td><td>Lower numbers appear first in dropdowns.</td></tr>
-                  <tr><td>Active</td><td>Inactive locations are hidden from booking forms.</td></tr>
+                  <tr>
+                    <td>Name</td>
+                    <td>
+                      Displayed in booking dropdowns (e.g. "Victoria Island
+                      Jetty").
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Description</td>
+                    <td>Optional note shown in the admin UI.</td>
+                  </tr>
+                  <tr>
+                    <td>Display Order</td>
+                    <td>Lower numbers appear first in dropdowns.</td>
+                  </tr>
+                  <tr>
+                    <td>Active</td>
+                    <td>Inactive locations are hidden from booking forms.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -804,12 +1071,34 @@ function HelpPage() {
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Field</th><th>Description</th></tr>
+                  <tr>
+                    <th>Field</th>
+                    <th>Description</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>From / To</td><td>The two locations that define the route. Routes are directional — add both directions if needed.</td></tr>
-                  <tr><td>Price per person (₦)</td><td>Used to compute fare: price × max(guest_count, 4). Round trips bill both legs.</td></tr>
-                  <tr><td>One-way duration (hours)</td><td>Used to auto-compute outbound pickup times when a transport booking is linked to a beach house (check-in time minus duration).</td></tr>
+                  <tr>
+                    <td>From / To</td>
+                    <td>
+                      The two locations that define the route. Routes are
+                      directional — add both directions if needed.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Price per person (₦)</td>
+                    <td>
+                      Used to compute fare: price × max(guest_count, 4). Round
+                      trips bill both legs.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>One-way duration (hours)</td>
+                    <td>
+                      Used to auto-compute outbound pickup times when a
+                      transport booking is linked to a beach house (check-in
+                      time minus duration).
+                    </td>
+                  </tr>
                 </tbody>
               </table>
               <div className={styles.callout + ' ' + styles.calloutInfo}>
@@ -846,7 +1135,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="users" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><Users /></div>
+              <div className={styles.sectionIcon}>
+                <Users />
+              </div>
               <h2 className={styles.sectionTitle}>Users &amp; Roles</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -859,43 +1150,60 @@ function HelpPage() {
               <h3 className={styles.subTitle}>Roles</h3>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Role</th><th>Access</th></tr>
+                  <tr>
+                    <th>Role</th>
+                    <th>Access</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Admin</td>
-                    <td>Full access — including Users page, creating/deleting accounts, and all booking and fleet operations.</td>
+                    <td>
+                      Full access — including Users page, creating/deleting
+                      accounts, and all booking and fleet operations.
+                    </td>
                   </tr>
                   <tr>
-                    <td>Fleet Manager</td>
-                    <td>Access to Dashboard, Bookings, Boats, Beach Houses, Locations, and their own Profile. Cannot access the Users page.</td>
+                    <td>Staff</td>
+                    <td>
+                      Access to Dashboard, Bookings, Boats, Beach Houses,
+                      Locations, and their own Profile. Cannot access the Users
+                      page.
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div className={styles.subSection}>
-              <h3 className={styles.subTitle}>Creating a User</h3>
+              <h3 className={styles.subTitle}>Inviting a User</h3>
               <ol className={styles.stepList}>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>1</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Click "New User"</p>
+                    <p className={styles.stepHead}>Click "Add User"</p>
                     <p className={styles.stepDesc}>Admin accounts only.</p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>2</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Enter name, email, and role</p>
-                    <p className={styles.stepDesc}>Email must be unique. Choose Admin or Fleet Manager.</p>
+                    <p className={styles.stepHead}>
+                      Enter name, email, and role
+                    </p>
+                    <p className={styles.stepDesc}>
+                      Email must be unique. Choose Admin or Staff.
+                    </p>
                   </div>
                 </li>
                 <li className={styles.stepItem}>
                   <span className={styles.stepNum}>3</span>
                   <div className={styles.stepBody}>
-                    <p className={styles.stepHead}>Set a temporary password</p>
-                    <p className={styles.stepDesc}>The new user can change it from their Profile page after first login.</p>
+                    <p className={styles.stepHead}>Send invite email</p>
+                    <p className={styles.stepDesc}>
+                      The user receives an invite link and sets their own
+                      password when they open it.
+                    </p>
                   </div>
                 </li>
               </ol>
@@ -914,7 +1222,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="profile" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><User /></div>
+              <div className={styles.sectionIcon}>
+                <User />
+              </div>
               <h2 className={styles.sectionTitle}>Your Profile</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -959,7 +1269,9 @@ function HelpPage() {
           ══════════════════════════════════════════ */}
           <section id="tips" className={styles.section}>
             <div className={styles.sectionHeader}>
-              <div className={styles.sectionIcon}><Lightbulb /></div>
+              <div className={styles.sectionIcon}>
+                <Lightbulb />
+              </div>
               <h2 className={styles.sectionTitle}>Tips &amp; Shortcuts</h2>
             </div>
             <p className={styles.sectionIntro}>
@@ -1000,14 +1312,37 @@ function HelpPage() {
               </p>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Page</th><th>What "Revenue" means</th></tr>
+                  <tr>
+                    <th>Page</th>
+                    <th>What "Revenue" means</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td>Dashboard – This Month Revenue</td><td>All paid bookings with start_date in the current month.</td></tr>
-                  <tr><td>Dashboard – All-Time Revenue</td><td>All paid bookings ever.</td></tr>
-                  <tr><td>Bookings – Revenue (Paid)</td><td>Paid bookings in the selected period.</td></tr>
-                  <tr><td>Boats – Cruise &amp; Transport Revenue</td><td>Paid boat_cruise + transport bookings in the selected period.</td></tr>
-                  <tr><td>Beach Houses – Booking Revenue</td><td>Paid beach_house bookings in the selected period.</td></tr>
+                  <tr>
+                    <td>Dashboard – This Month Revenue</td>
+                    <td>
+                      All paid bookings with start_date in the current month.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Dashboard – All-Time Revenue</td>
+                    <td>All paid bookings ever.</td>
+                  </tr>
+                  <tr>
+                    <td>Bookings – Revenue (Paid)</td>
+                    <td>Paid bookings in the selected period.</td>
+                  </tr>
+                  <tr>
+                    <td>Boats – Cruise &amp; Transport Revenue</td>
+                    <td>
+                      Paid boat_cruise + transport bookings in the selected
+                      period.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Beach Houses – Booking Revenue</td>
+                    <td>Paid beach_house bookings in the selected period.</td>
+                  </tr>
                 </tbody>
               </table>
               <div className={styles.callout + ' ' + styles.calloutInfo}>

@@ -18,43 +18,90 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    const { email, fullName, role } = await req.json();
+    const authHeader = req.headers.get('authorization') ?? '';
+    const accessToken = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-    const { data, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password: 'newGladiator123',
-      user_metadata: { full_name: fullName, role, password_changed: false },
-      email_confirm: true,
-    });
+    if (!accessToken) {
+      throw new Error('Missing auth token. Please sign in again.');
+    }
+
+    const {
+      data: { user: caller },
+      error: callerError,
+    } = await supabase.auth.getUser(accessToken);
+
+    if (callerError || !caller) {
+      throw new Error('Invalid or expired session. Please sign in again.');
+    }
+
+    const { data: callerProfile, error: profileReadError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .maybeSingle();
+
+    if (profileReadError) {
+      throw new Error(
+        `Unable to verify permissions: ${profileReadError.message}`,
+      );
+    }
+
+    const callerRole = callerProfile?.role?.toLowerCase() ?? '';
+    if (callerRole !== 'admin') {
+      throw new Error('Only Admin users can send invites.');
+    }
+
+    const { email, fullName, role, redirectTo } = await req.json();
+
+    const { data, error: authError } =
+      await supabase.auth.admin.inviteUserByEmail(email, {
+        data: { full_name: fullName, role },
+        redirectTo,
+      });
 
     if (authError) throw authError;
 
-    // Attempt profile upsert; ignore errors — the profile may already exist
-    // from a DB trigger, or the role column may not exist yet.
-    await supabase.from('profiles').upsert(
-      {
-        id: data.user.id,
-        full_name: fullName,
-        role,
-        created_at: data.user.created_at,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' },
-    );
+    const invitedUser = data?.user ?? null;
+    const warnings: string[] = [];
 
-    // Insert a new_user notification for all admin users to see
-    await supabase.from('notifications').insert({
+    // Best effort profile sync. Do not fail successful invites if this fails.
+    if (invitedUser?.id) {
+      const { error: profileError } = await supabase.from('profiles').upsert(
+        {
+          id: invitedUser.id,
+          full_name: fullName,
+          role,
+          created_at: invitedUser.created_at,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      );
+
+      if (profileError) {
+        warnings.push(`Profile sync warning: ${profileError.message}`);
+      }
+    }
+
+    // Best effort activity notification. Do not fail successful invites if this fails.
+    const { error: notifError } = await supabase.from('notifications').insert({
       type: 'new_user',
       title: 'New Staff Account',
-      message: `${fullName} joined as ${role}`,
+      message: `${fullName} was invited as ${role}`,
       entity_type: 'user',
       metadata: { full_name: fullName, email, role },
     });
 
-    return new Response(JSON.stringify({ user: data.user }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+    if (notifError) {
+      warnings.push(`Notification warning: ${notifError.message}`);
+    }
+
+    return new Response(
+      JSON.stringify({ invited: true, user: invitedUser, warnings }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
+    );
   } catch (err) {
     const message =
       err instanceof Error
@@ -62,9 +109,15 @@ Deno.serve(async (req) => {
         : typeof err === 'object' && err !== null && 'message' in err
           ? String((err as Record<string, unknown>).message)
           : JSON.stringify(err);
-    return new Response(JSON.stringify({ error: message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({
+        invited: false,
+        error: message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
+    );
   }
 });

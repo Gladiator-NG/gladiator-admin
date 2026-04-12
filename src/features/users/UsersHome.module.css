@@ -328,7 +328,7 @@
   padding: 1rem 1.4rem;
 }
 
-.defaultPasswordNotice {
+.inviteNotice {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;

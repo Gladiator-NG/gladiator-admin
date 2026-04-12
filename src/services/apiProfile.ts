@@ -1,4 +1,5 @@
 import supabase from './supabase';
+import { buildAppUrl } from '../config/app';
 
 export interface Profile {
   id: string;
@@ -55,14 +56,33 @@ export async function createUser({
   fullName: string;
   role: string;
 }): Promise<Profile> {
+  const redirectTo = buildAppUrl('/signin');
+
   const { data, error } = await supabase.functions.invoke('create-user', {
-    body: { email, fullName, role },
+    body: { email, fullName, role, redirectTo },
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    let message = error.message;
+    const maybeResponse = (error as { context?: unknown }).context;
+
+    if (maybeResponse instanceof Response) {
+      try {
+        const payload = (await maybeResponse.clone().json()) as {
+          error?: string;
+        };
+        if (payload?.error) message = payload.error;
+      } catch {
+        // Fall back to the original error message.
+      }
+    }
+
+    throw new Error(message);
+  }
+
   if (data?.error) throw new Error(data.error);
 
-  return data.user as Profile;
+  return (data?.user ?? null) as Profile;
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {

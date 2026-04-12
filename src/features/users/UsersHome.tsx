@@ -482,7 +482,7 @@ function UsersHome() {
               transition={{ duration: 0.2, ease: 'easeOut' }}
             >
               <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>Add User</h2>
+                <h2 className={styles.modalTitle}>Invite User</h2>
                 <button
                   className={styles.modalCloseBtn}
                   onClick={closeCreate}
@@ -522,13 +522,10 @@ function UsersHome() {
                     </option>
                   ))}
                 </FormInput>
-                <div className={styles.defaultPasswordNotice}>
+                <div className={styles.inviteNotice}>
+                  <span>We will email an invite link to this user.</span>
                   <span>
-                    Default password: <strong>newGladiator123</strong>
-                  </span>
-                  <span>
-                    The user will be advised to update their password on first
-                    login.
+                    They will set their own password when they open the invite.
                   </span>
                 </div>
                 {createError && (
@@ -544,7 +541,7 @@ function UsersHome() {
                     Cancel
                   </Button>
                   <Button variant="primary" type="submit" disabled={isCreating}>
-                    {isCreating ? 'Creating…' : 'Create User'}
+                    {isCreating ? 'Sending Invite…' : 'Send Invite'}
                   </Button>
                 </div>
               </form>

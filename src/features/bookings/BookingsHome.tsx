@@ -69,10 +69,10 @@ import type { TransportRoute } from '../../services/apiTransport';
 import styles from './BookingsHome.module.css';
 
 // ── Types ────────────────────────────────────────────────────────────────────
-type SortKey = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc';
+type SortKey = 'all' | 'newest' | 'oldest' | 'amount_desc' | 'amount_asc';
 type StatusFilter = 'all' | BookingStatus;
 type TypeFilter = 'all' | BookingType;
-type DatePreset = 'month' | 'quarter' | 'half' | 'year' | 'custom';
+type DatePreset = 'all' | 'month' | 'quarter' | 'half' | 'year' | 'custom';
 type Tab = 'bookings' | 'customers';
 
 type CustomerSortKey =
@@ -984,10 +984,10 @@ function BookingsHome() {
   const search = searchParams.get('q') ?? '';
   const statusFilter = (searchParams.get('status') ?? 'all') as StatusFilter;
   const typeFilter = (searchParams.get('type') ?? 'all') as TypeFilter;
-  const sortKey = (searchParams.get('sort') ?? 'newest') as SortKey;
+  const sortKey = (searchParams.get('sort') ?? 'all') as SortKey;
   const expandedId = searchParams.get('open');
   const page = Number(searchParams.get('page') ?? '1');
-  const datePreset = (searchParams.get('period') ?? 'month') as DatePreset;
+  const datePreset = (searchParams.get('period') ?? 'all') as DatePreset;
   const customStart = searchParams.get('from') ?? '';
   const customEnd = searchParams.get('to') ?? '';
   const customerSearch = searchParams.get('cq') ?? '';
@@ -1117,6 +1117,7 @@ function BookingsHome() {
     const pad = (n: number) => String(n).padStart(2, '0');
     const iso = (d: Date) =>
       `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    if (datePreset === 'all') return { start: '', end: '' };
     if (datePreset === 'month')
       return { start: iso(new Date(y, m, 1)), end: iso(new Date(y, m + 1, 0)) };
     if (datePreset === 'quarter') {
@@ -1139,6 +1140,7 @@ function BookingsHome() {
   }, [datePreset, customStart, customEnd]);
 
   function getPeriodLabel() {
+    if (datePreset === 'all') return 'All time';
     const { start } = dateRange;
     if (!start) return 'All time';
     const d = new Date(start + 'T12:00:00');
@@ -1189,6 +1191,7 @@ function BookingsHome() {
       return matchSearch && matchStatus && matchType && matchDate;
     });
     list = [...list].sort((a, b) => {
+      if (sortKey === 'all') return 0;
       if (sortKey === 'oldest')
         return (
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -2184,6 +2187,7 @@ function BookingsHome() {
               <div className={styles.periodPills}>
                 {(
                   [
+                    { key: 'all', label: 'All' },
                     { key: 'month', label: 'Month' },
                     { key: 'quarter', label: 'Quarter' },
                     { key: 'half', label: 'Half Year' },
@@ -2267,6 +2271,7 @@ function BookingsHome() {
                 <div className={styles.pills}>
                   {(
                     [
+                      { key: 'all', label: 'All' },
                       { key: 'newest', label: 'Newest' },
                       { key: 'oldest', label: 'Oldest' },
                       { key: 'amount_desc', label: 'Amount ↓' },
