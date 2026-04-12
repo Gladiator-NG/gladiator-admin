@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -10,6 +11,7 @@ import ProtectedRoutes from './ui/ProtectedRoutes';
 import SignIn from './pages/SignIn';
 import AdminRoute from './ui/AdminRoute';
 import ScrollToTop from './ui/ScrollToTop';
+import MetaTags from './ui/MetaTags';
 
 const DashboardHome = lazy(() => import('./features/dashboard/DashboardHome'));
 const BookingsHome = lazy(() => import('./features/bookings/BookingsHome'));
@@ -30,6 +32,20 @@ const queryClient = new QueryClient({
   },
 });
 
+interface RouteMeta {
+  title: string;
+  description: string;
+}
+
+function withMeta(meta: RouteMeta, element: ReactNode) {
+  return (
+    <>
+      <MetaTags title={meta.title} description={meta.description} />
+      {element}
+    </>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -44,7 +60,17 @@ function App() {
                   path="/"
                   element={<Navigate to="/dashboard" replace />}
                 />
-                <Route path="signin" element={<SignIn />} />
+                <Route
+                  path="signin"
+                  element={withMeta(
+                    {
+                      title: 'Sign In',
+                      description:
+                        'Sign in to Gladiator Admin to manage bookings, transport, boats, beach houses, and team operations.',
+                    },
+                    <SignIn />,
+                  )}
+                />
                 <Route
                   element={
                     <ProtectedRoutes>
@@ -52,29 +78,99 @@ function App() {
                     </ProtectedRoutes>
                   }
                 >
-                  <Route path="dashboard" element={<DashboardHome />} />
-                  <Route path="bookings" element={<BookingsHome />} />
-                  <Route path="boats" element={<BoatsHome />} />
-                  <Route path="beach-houses" element={<BeachHousesHome />} />
+                  <Route
+                    path="dashboard"
+                    element={withMeta(
+                      {
+                        title: 'Dashboard',
+                        description:
+                          'View the operational overview for bookings, boats, beach houses, transport, and recent activity in Gladiator Admin.',
+                      },
+                      <DashboardHome />,
+                    )}
+                  />
+                  <Route
+                    path="bookings"
+                    element={withMeta(
+                      {
+                        title: 'Bookings',
+                        description:
+                          'Manage customer bookings, confirm reservations, and keep transport and accommodation operations organized.',
+                      },
+                      <BookingsHome />,
+                    )}
+                  />
+                  <Route
+                    path="boats"
+                    element={withMeta(
+                      {
+                        title: 'Boats',
+                        description:
+                          'Manage the boat fleet, availability, details, and pricing used across Gladiator bookings.',
+                      },
+                      <BoatsHome />,
+                    )}
+                  />
+                  <Route
+                    path="beach-houses"
+                    element={withMeta(
+                      {
+                        title: 'Beach Houses',
+                        description:
+                          'Manage beach house inventory, property details, and availability from the Gladiator Admin dashboard.',
+                      },
+                      <BeachHousesHome />,
+                    )}
+                  />
                   <Route
                     path="users"
-                    element={
+                    element={withMeta(
+                      {
+                        title: 'Users',
+                        description:
+                          'Manage admin users, access, and team visibility inside Gladiator Admin.',
+                      },
                       <AdminRoute>
                         <UsersHome />
-                      </AdminRoute>
-                    }
+                      </AdminRoute>,
+                    )}
                   />
-                  <Route path="profile" element={<ProfileHome />} />
-                  <Route path="locations" element={<LocationsHome />} />
+                  <Route
+                    path="profile"
+                    element={withMeta(
+                      {
+                        title: 'Profile',
+                        description:
+                          'Update your account profile and personal admin settings in Gladiator Admin.',
+                      },
+                      <ProfileHome />,
+                    )}
+                  />
+                  <Route
+                    path="locations"
+                    element={withMeta(
+                      {
+                        title: 'Transport Locations',
+                        description:
+                          'Manage transport locations, pricing routes, and curfew settings used for booking logistics.',
+                      },
+                      <LocationsHome />,
+                    )}
+                  />
                 </Route>
                 {/* Help — protected but no AppLayout wrapper */}
                 <Route
                   path="help"
-                  element={
+                  element={withMeta(
+                    {
+                      title: 'Help',
+                      description:
+                        'Access help resources and support information for using Gladiator Admin effectively.',
+                    },
                     <ProtectedRoutes>
                       <HelpPage />
-                    </ProtectedRoutes>
-                  }
+                    </ProtectedRoutes>,
+                  )}
                 />
               </Routes>
             </Suspense>
