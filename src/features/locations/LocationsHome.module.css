@@ -98,6 +98,18 @@
   gap: 0.8rem;
 }
 
+.reorderHint {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.reorderGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
 .empty {
   font-size: 1.4rem;
   color: var(--color-text-muted);
@@ -114,6 +126,14 @@
   border-radius: 1rem;
   padding: 1.2rem 1.6rem;
   transition: border-color 0.15s;
+}
+
+.draggableRow {
+  cursor: grab;
+}
+
+.draggableRow:active {
+  cursor: grabbing;
 }
 
 .listRow:hover {
@@ -134,6 +154,25 @@
   background-color: rgba(47, 140, 202, 0.12);
   color: var(--color-ocean-blue);
   flex-shrink: 0;
+}
+
+.dragHandle {
+  width: 2.8rem;
+  height: 2.8rem;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  border-radius: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.dragHandle:hover {
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 .listRowContent {

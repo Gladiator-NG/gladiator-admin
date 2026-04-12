@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import {
@@ -10,13 +10,15 @@ import {
   Route,
   AlertTriangle,
   Clock,
+  GripVertical,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, Reorder } from 'framer-motion';
 import {
   getAllLocations,
   getAllTransportRoutes,
   createLocation,
   updateLocation,
+  reorderLocations,
   deleteLocation,
   upsertTransportRoute,
   deleteTransportRoute,
@@ -106,6 +108,11 @@ function LocationsHome() {
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [orderedLocations, setOrderedLocations] = useState<Location[]>([]);
+
+  useEffect(() => {
+    setOrderedLocations(locations);
+  }, [locations]);
 
   const {
     register: locReg,
@@ -145,6 +152,25 @@ function LocationsHome() {
     onSuccess: invalidate,
     onError: (err) => alert(err instanceof Error ? err.message : String(err)),
   });
+
+  const {
+    mutate: saveLocationOrder,
+    isPending: isSavingLocationOrder,
+    error: locationOrderError,
+  } = useMutation({
+    mutationFn: reorderLocations,
+    onSuccess: invalidate,
+  });
+
+  const hasOrderChanges = useMemo(() => {
+    if (orderedLocations.length !== locations.length) return false;
+    return orderedLocations.some((loc, idx) => loc.id !== locations[idx]?.id);
+  }, [orderedLocations, locations]);
+
+  function persistLocationOrder() {
+    if (!hasOrderChanges || isSavingLocationOrder) return;
+    saveLocationOrder(orderedLocations.map((loc) => loc.id));
+  }
 
   function openNewLocation() {
     setEditingLocation(null);
@@ -290,51 +316,85 @@ function LocationsHome() {
               No locations yet. Add one to get started.
             </p>
           )}
-          {locations.map((loc) => (
-            <div
-              key={loc.id}
-              className={`${styles.listRow} ${!loc.is_active ? styles.listRowInactive : ''}`}
+          {!isLoading && locations.length > 0 && (
+            <p className={styles.reorderHint}>
+              Drag rows to reorder locations. You can still edit Display Order in
+              the form if preferred.
+            </p>
+          )}
+          {!isLoading && orderedLocations.length > 0 && (
+            <Reorder.Group
+              as="div"
+              axis="y"
+              values={orderedLocations}
+              onReorder={setOrderedLocations}
+              className={styles.reorderGroup}
             >
-              <div className={styles.listRowIcon}>
-                <MapPin size={16} />
-              </div>
-              <div className={styles.listRowContent}>
-                <span className={styles.listRowName}>{loc.name}</span>
-                {loc.description && (
-                  <span className={styles.listRowMeta}>{loc.description}</span>
-                )}
-              </div>
-              <div className={styles.listRowMeta2}>
-                {!loc.is_active && (
-                  <span className={styles.inactiveBadge}>Inactive</span>
-                )}
-                <span className={styles.sortOrder}>#{loc.sort_order}</span>
-              </div>
-              <div className={styles.listRowActions}>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => openEditLocation(loc)}
-                  title="Edit"
+              {orderedLocations.map((loc, index) => (
+                <Reorder.Item
+                  key={loc.id}
+                  value={loc}
+                  as="div"
+                  className={`${styles.listRow} ${styles.draggableRow} ${!loc.is_active ? styles.listRowInactive : ''}`}
+                  onDragEnd={persistLocationOrder}
                 >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Delete location "${loc.name}"? This cannot be undone.`,
-                      )
-                    )
-                      removeLocation(loc.id);
-                  }}
-                  title="Delete"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+                  <button
+                    type="button"
+                    className={styles.dragHandle}
+                    aria-label={`Drag to reorder ${loc.name}`}
+                    title="Drag to reorder"
+                  >
+                    <GripVertical size={16} />
+                  </button>
+                  <div className={styles.listRowIcon}>
+                    <MapPin size={16} />
+                  </div>
+                  <div className={styles.listRowContent}>
+                    <span className={styles.listRowName}>{loc.name}</span>
+                    {loc.description && (
+                      <span className={styles.listRowMeta}>{loc.description}</span>
+                    )}
+                  </div>
+                  <div className={styles.listRowMeta2}>
+                    {!loc.is_active && (
+                      <span className={styles.inactiveBadge}>Inactive</span>
+                    )}
+                    <span className={styles.sortOrder}>#{index + 1}</span>
+                  </div>
+                  <div className={styles.listRowActions}>
+                    <button
+                      className={styles.iconBtn}
+                      onClick={() => openEditLocation(loc)}
+                      title="Edit"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Delete location "${loc.name}"? This cannot be undone.`,
+                          )
+                        )
+                          removeLocation(loc.id);
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
+          )}
+          {locationOrderError && (
+            <p className={styles.submitError}>
+              {locationOrderError instanceof Error
+                ? locationOrderError.message
+                : String(locationOrderError)}
+            </p>
+          )}
         </div>
       )}
 

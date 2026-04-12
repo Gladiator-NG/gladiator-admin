@@ -22,7 +22,7 @@ function AppLayout() {
 
       <div className={styles.rightSide}>
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className={styles.main}>
+        <main id="app-main-scroll-container" className={styles.main}>
           <Outlet />
         </main>
       </div>

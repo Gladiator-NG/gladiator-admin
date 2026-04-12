@@ -9,6 +9,7 @@ import AppLayout from './ui/AppLayout';
 import ProtectedRoutes from './ui/ProtectedRoutes';
 import SignIn from './pages/SignIn';
 import AdminRoute from './ui/AdminRoute';
+import ScrollToTop from './ui/ScrollToTop';
 
 const DashboardHome = lazy(() => import('./features/dashboard/DashboardHome'));
 const BookingsHome = lazy(() => import('./features/bookings/BookingsHome'));
@@ -36,6 +37,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           <BrowserRouter>
+            <ScrollToTop />
             <Suspense fallback={null}>
               <Routes>
                 <Route

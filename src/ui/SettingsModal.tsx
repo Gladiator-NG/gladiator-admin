@@ -5,8 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import styles from './styles/SettingsModal.module.css';
 
 const FONT_SIZE_KEY = 'gladiator_font_scale';
-const FONT_MIN = 62.5;   // 1rem = 10px
-const FONT_MAX = 80;     // 1rem = 12.8px  (+20%)
+const FONT_MIN = 62.5; // 1rem = 10px
+const FONT_MAX = 80; // 1rem = 12.8px  (+20%)
 const FONT_DEFAULT = 62.5;
 
 function readFontScale(): number {
@@ -215,15 +215,16 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <span className={styles.fontLarge}>A</span>
                     <button
                       className={styles.fontReset}
-                      onClick={() => { setFontScale(FONT_DEFAULT); applyFontScale(FONT_DEFAULT); }}
+                      onClick={() => {
+                        setFontScale(FONT_DEFAULT);
+                        applyFontScale(FONT_DEFAULT);
+                      }}
                       disabled={fontScale === FONT_DEFAULT}
                     >
                       Reset
                     </button>
                   </div>
                 </section>
-
-
               </div>
             </motion.div>
           </motion.div>

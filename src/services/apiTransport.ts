@@ -81,6 +81,22 @@ export async function updateLocation(
   return data as Location;
 }
 
+export async function reorderLocations(locationIds: string[]): Promise<void> {
+  const updatedAt = new Date().toISOString();
+
+  const results = await Promise.all(
+    locationIds.map((id, index) =>
+      supabase
+        .from('locations')
+        .update({ sort_order: index + 1, updated_at: updatedAt })
+        .eq('id', id),
+    ),
+  );
+
+  const failed = results.find((result) => result.error);
+  if (failed?.error) throw new Error(failed.error.message);
+}
+
 export async function deleteLocation(id: string): Promise<void> {
   const { error } = await supabase.from('locations').delete().eq('id', id);
   if (error) throw new Error(error.message);

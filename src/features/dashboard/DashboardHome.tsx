@@ -343,6 +343,7 @@ function DashboardHome() {
               sub="unique bookers"
               icon={<Users size={18} />}
               accent={AMBER}
+              to="/bookings?tab=customers"
             />
             <KpiCard
               label="Pending Bookings"
@@ -351,7 +352,7 @@ function DashboardHome() {
               icon={<Clock size={18} />}
               accent={ROSE}
               alert={kpi.pendingBookings > 0}
-              to="/bookings"
+              to="/bookings?status=pending"
             />
             <KpiCard
               label="Avg. Booking Value"
