@@ -99,6 +99,31 @@ export async function completePasswordRecovery(newPassword: string) {
   return data;
 }
 
+export async function ensureRecoverySessionFromUrl() {
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const type = hashParams.get('type');
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
+
+  if (type === 'recovery' && accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error) throw new Error(error.message);
+
+    const cleanUrl = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session;
+}
+
 export async function getUser() {
   const {
     data: { session },

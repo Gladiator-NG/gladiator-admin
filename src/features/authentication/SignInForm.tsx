@@ -11,6 +11,7 @@ import { useSignIn } from './useSignIn';
 import supabase from '../../services/supabase';
 import {
   completePasswordRecovery,
+  ensureRecoverySessionFromUrl,
   requestPasswordReset,
 } from '../../services/apiAuth';
 import styles from './styles/SignInForm.module.css';
@@ -50,6 +51,8 @@ function SignInForm() {
   const { signIn, isPending } = useSignIn();
   const [view, setView] = useState<AuthView>('signin');
   const [recoveryEmail, setRecoveryEmail] = useState<string>('');
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const [isPreparingRecovery, setIsPreparingRecovery] = useState(false);
 
   const {
     register,
@@ -97,25 +100,68 @@ function SignInForm() {
   );
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const hashParams = new URLSearchParams(window.location.hash.slice(1));
-    if (
-      searchParams.get('reset') === 'password' ||
-      hashParams.get('type') === 'recovery'
-    ) {
-      setView('reset-password');
+    let isMounted = true;
+
+    async function prepareRecoverySession() {
+      const searchParams = new URLSearchParams(location.search);
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const isRecoveryUrl =
+        searchParams.get('reset') === 'password' ||
+        hashParams.get('type') === 'recovery';
+
+      if (!isRecoveryUrl) {
+        if (isMounted) {
+          setHasRecoverySession(false);
+        }
+        return;
+      }
+
+      if (isMounted) setIsPreparingRecovery(true);
+
+      try {
+        const session = await ensureRecoverySessionFromUrl();
+
+        if (!isMounted) return;
+
+        if (session?.user) {
+          setRecoveryEmail(session.user.email ?? '');
+          setHasRecoverySession(true);
+          setView('reset-password');
+        } else {
+          setHasRecoverySession(false);
+          setView('forgot-password');
+          toast.error('Recovery link is invalid or expired. Request a new one.');
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        setHasRecoverySession(false);
+        setView('forgot-password');
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : 'Unable to validate recovery link. Request a new one.',
+        );
+      } finally {
+        if (isMounted) setIsPreparingRecovery(false);
+      }
     }
+
+    void prepareRecoverySession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setRecoveryEmail(session?.user?.email ?? '');
+        setHasRecoverySession(Boolean(session));
         setView('reset-password');
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [location.search]);
 
   function onSubmit(data: SignInFormData) {
@@ -128,10 +174,20 @@ function SignInForm() {
   }
 
   function onResetPasswordSubmit(data: ResetPasswordFormData) {
+    if (!hasRecoverySession) {
+      toast.error('Recovery session missing. Request a new reset link.');
+      setView('forgot-password');
+      return;
+    }
+
     resetPassword(data.password);
   }
 
-  const isBusy = isPending || isSendingResetEmail || isResettingPassword;
+  const isBusy =
+    isPending ||
+    isSendingResetEmail ||
+    isResettingPassword ||
+    isPreparingRecovery;
   const heading =
     view === 'forgot-password'
       ? 'Reset your password'
@@ -251,6 +307,12 @@ function SignInForm() {
 
       {view === 'reset-password' && (
         <>
+          {!hasRecoverySession && (
+            <p className={styles.infoMessage}>
+              Recovery session missing. Request a new reset link.
+            </p>
+          )}
+
           {recoveryEmail && (
             <p className={styles.infoMessage}>
               Resetting password for {recoveryEmail}
@@ -293,7 +355,7 @@ function SignInForm() {
               variant="primary"
               type="submit"
               className={styles.submitBtn}
-              disabled={isBusy}
+              disabled={isBusy || !hasRecoverySession}
             >
               {isResettingPassword ? 'Updating password…' : 'Update Password'}
             </Button>
