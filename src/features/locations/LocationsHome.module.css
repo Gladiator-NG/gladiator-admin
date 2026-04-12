@@ -13,6 +13,10 @@
   flex-wrap: wrap;
 }
 
+.headerActionWrap {
+  flex-shrink: 0;
+}
+
 .pageTitle {
   font-size: var(--font-size-h2);
   font-weight: 800;
@@ -218,14 +222,41 @@
 }
 
 /* ── Route rows ───────────────────────────────────── */
+.routeMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.routeRow {
+  align-items: flex-start;
+}
+
+.routeHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .routeLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: auto;
+  flex: 0 1 auto;
+}
+
+.routeMetaRow {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  flex: 1;
-  font-size: 1.4rem;
-  font-weight: 500;
-  color: var(--color-text);
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .routeFrom,
@@ -239,12 +270,32 @@
 }
 
 .routePrice {
-  font-size: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--color-text);
-  min-width: 10rem;
-  text-align: right;
-  margin-right: 1.2rem;
+  min-width: 0;
+  text-align: left;
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10rem;
+  padding: 0.3rem 0.8rem;
+}
+
+.routeDuration {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10rem;
+  padding: 0.3rem 0.8rem;
+}
+
+.routeActions {
+  margin-left: 0;
+  gap: 0.35rem;
 }
 
 .routePriceUnset {
@@ -255,7 +306,7 @@
 }
 
 .routePriceUnit {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 500;
   color: var(--color-text-muted);
   margin-left: 0.2rem;
@@ -517,6 +568,10 @@
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 56.25em) {
+  .page {
+    gap: 2rem;
+  }
+
   .pageTitle {
     font-size: 2.6rem;
   }
@@ -537,11 +592,21 @@
     font-size: 1.2rem;
   }
 
-  /* Route price: no fixed min-width */
-  .routePrice {
-    min-width: auto;
-    text-align: left;
-    margin-right: 0;
+  .routeRow {
+    padding: 1.2rem 1.4rem;
+  }
+
+  .routeMain {
+    gap: 0.65rem;
+  }
+
+  .routeMetaRow {
+    gap: 0.8rem;
+  }
+
+  .routeActions .iconBtn {
+    width: 2.8rem;
+    height: 2.8rem;
   }
 
   /* Curfew card: stack vertically */
@@ -562,22 +627,94 @@
 }
 
 @media (max-width: 37.5em) {
+  .page {
+    gap: 1.6rem;
+  }
+
   .pageTitle {
     font-size: 2.2rem;
   }
 
+  .pageSubtitle {
+    font-size: 1.2rem;
+    line-height: 1.45;
+  }
+
+  .pageHeader {
+    gap: 1rem;
+  }
+
+  .headerActionWrap {
+    width: 100%;
+  }
+
+  .headerActionWrap button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tabs {
+    padding: 0.3rem;
+    border-radius: 0.9rem;
+  }
+
+  .routeRow {
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1.15rem 1.2rem;
+  }
+
+  .routeHeaderRow {
+    gap: 0.6rem;
+  }
+
+  .routeLabel {
+    font-size: 1.3rem;
+    gap: 0.4rem;
+  }
+
+  .routeFrom,
+  .routeTo {
+    line-height: 1.25;
+  }
+
+  .routeMetaRow {
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .routePrice {
+    font-size: 1.2rem;
+    padding: 0.25rem 0.7rem;
+  }
+
+  .routeDuration {
+    padding: 0.25rem 0.7rem;
+  }
+
+  .routePriceUnit {
+    font-size: 1rem;
+  }
+
+  .routeRow .listRowActions {
+    margin-left: auto;
+    padding-top: 0;
+    align-self: flex-start;
+  }
+
+  .routeRow .iconBtn {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+
   .tab {
-    font-size: 1.1rem;
-    padding: 0.6rem 0.4rem;
+    font-size: 1rem;
+    padding: 0.55rem 0.3rem;
   }
 
   .tabBadge {
     display: none;
-  }
-
-  .pageHeader {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .curfewRow {

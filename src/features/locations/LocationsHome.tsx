@@ -268,6 +268,7 @@ function LocationsHome() {
           </p>
         </div>
         <div
+          className={styles.headerActionWrap}
           style={{ visibility: activeTab === 'curfew' ? 'hidden' : 'visible' }}
         >
           <Button
@@ -415,50 +416,56 @@ function LocationsHome() {
             </div>
           )}
           {routes.map((route) => (
-            <div key={route.id} className={styles.listRow}>
-              <div className={styles.routeLabel}>
-                <span className={styles.routeFrom}>
-                  {route.from_location?.name ?? '—'}
-                </span>
-                <span className={styles.routeArrow}>→</span>
-                <span className={styles.routeTo}>
-                  {route.to_location?.name ?? '—'}
-                </span>
-              </div>
-              <div className={styles.routePrice}>
-                {route.price_per_trip != null ? (
-                  <>
-                    {formatPrice(route.price_per_trip)}
-                    <span className={styles.routePriceUnit}>/person</span>
-                  </>
-                ) : (
-                  <span className={styles.routePriceUnset}>Price not set</span>
-                )}
-              </div>
-              {route.duration_hours != null && (
-                <div className={styles.routePrice}>
-                  <span className={styles.routePriceUnit}>
-                    {route.duration_hours}hr one-way
-                  </span>
+            <div key={route.id} className={`${styles.listRow} ${styles.routeRow}`}>
+              <div className={styles.routeMain}>
+                <div className={styles.routeHeaderRow}>
+                  <div className={styles.routeLabel}>
+                    <span className={styles.routeFrom}>
+                      {route.from_location?.name ?? '—'}
+                    </span>
+                    <span className={styles.routeArrow}>→</span>
+                    <span className={styles.routeTo}>
+                      {route.to_location?.name ?? '—'}
+                    </span>
+                  </div>
+                  <div className={`${styles.listRowActions} ${styles.routeActions}`}>
+                    <button
+                      className={styles.iconBtn}
+                      onClick={() => openEditRoute(route)}
+                      title="Edit"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                      onClick={() => {
+                        if (confirm('Delete this route?')) removeRoute(route.id);
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-              )}
-              <div className={styles.listRowActions}>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => openEditRoute(route)}
-                  title="Edit"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                  onClick={() => {
-                    if (confirm('Delete this route?')) removeRoute(route.id);
-                  }}
-                  title="Delete"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className={styles.routeMetaRow}>
+                  <div className={styles.routePrice}>
+                    {route.price_per_trip != null ? (
+                      <>
+                        {formatPrice(route.price_per_trip)}
+                        <span className={styles.routePriceUnit}>/person</span>
+                      </>
+                    ) : (
+                      <span className={styles.routePriceUnset}>Price not set</span>
+                    )}
+                  </div>
+                  {route.duration_hours != null && (
+                    <div className={styles.routeDuration}>
+                      <span className={styles.routePriceUnit}>
+                        {route.duration_hours}hr one-way
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
