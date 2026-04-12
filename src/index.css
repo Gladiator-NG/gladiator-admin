@@ -260,3 +260,14 @@ button {
   border: none;
   background: none;
 }
+
+/* iOS Safari auto-zooms focused form fields when font-size is below 16px. */
+@supports (-webkit-touch-callout: none) {
+  @media only screen and (max-width: 56.25em) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
