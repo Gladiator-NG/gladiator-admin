@@ -318,8 +318,8 @@ function LocationsHome() {
           )}
           {!isLoading && locations.length > 0 && (
             <p className={styles.reorderHint}>
-              Drag rows to reorder locations. You can still edit Display Order in
-              the form if preferred.
+              Drag rows to reorder locations. You can still edit Display Order
+              in the form if preferred.
             </p>
           )}
           {!isLoading && orderedLocations.length > 0 && (
@@ -352,7 +352,9 @@ function LocationsHome() {
                   <div className={styles.listRowContent}>
                     <span className={styles.listRowName}>{loc.name}</span>
                     {loc.description && (
-                      <span className={styles.listRowMeta}>{loc.description}</span>
+                      <span className={styles.listRowMeta}>
+                        {loc.description}
+                      </span>
                     )}
                   </div>
                   <div className={styles.listRowMeta2}>

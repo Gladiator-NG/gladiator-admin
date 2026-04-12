@@ -1,4 +1,5 @@
 import supabase from './supabase';
+import { buildAppUrl } from '../config/app';
 
 export async function signInWithEmail({
   email,
@@ -20,6 +21,17 @@ export async function signInWithEmail({
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(error.message);
+}
+
+export async function requestPasswordReset(email: string) {
+  const redirectTo = buildAppUrl('/signin?reset=password');
+
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function updateProfile({
@@ -74,6 +86,16 @@ export async function verifyAndUpdatePassword({
   });
 
   if (updateError) throw new Error(updateError.message);
+  return data;
+}
+
+export async function completePasswordRecovery(newPassword: string) {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+    data: { password_changed: true },
+  });
+
+  if (error) throw new Error(error.message);
   return data;
 }
 

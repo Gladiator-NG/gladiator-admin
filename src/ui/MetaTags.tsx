@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { buildAppUrl } from '../config/app';
 
 const SITE_NAME = 'Gladiator Admin';
 const DEFAULT_DESCRIPTION =
@@ -14,7 +15,11 @@ interface MetaTagsProps {
   robots?: string;
 }
 
-function upsertMeta(attribute: 'name' | 'property', key: string, content: string) {
+function upsertMeta(
+  attribute: 'name' | 'property',
+  key: string,
+  content: string,
+) {
   let element = document.head.querySelector<HTMLMetaElement>(
     `meta[${attribute}="${key}"]`,
   );
@@ -29,7 +34,9 @@ function upsertMeta(attribute: 'name' | 'property', key: string, content: string
 }
 
 function upsertLink(rel: string, href: string) {
-  let element = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+  let element = document.head.querySelector<HTMLLinkElement>(
+    `link[rel="${rel}"]`,
+  );
 
   if (!element) {
     element = document.createElement('link');
@@ -52,8 +59,8 @@ function MetaTags({
   useEffect(() => {
     const documentTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME;
     const resolvedPath = canonicalPath ?? `${pathname}${search}`;
-    const pageUrl = new URL(resolvedPath, window.location.origin).toString();
-    const imageUrl = new URL(image, window.location.origin).toString();
+    const pageUrl = buildAppUrl(resolvedPath);
+    const imageUrl = buildAppUrl(image);
 
     document.title = documentTitle;
 
