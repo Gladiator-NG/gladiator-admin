@@ -130,7 +130,9 @@ function SignInForm() {
         } else {
           setHasRecoverySession(false);
           setView('forgot-password');
-          toast.error('Recovery link is invalid or expired. Request a new one.');
+          toast.error(
+            'Recovery link is invalid or expired. Request a new one.',
+          );
         }
       } catch (error) {
         if (!isMounted) return;

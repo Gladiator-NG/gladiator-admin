@@ -2411,8 +2411,10 @@ function BookingsHome() {
                         <span className={styles.amount}>
                           {formatPrice(b.total_amount)}
                         </span>
-                        <StatusBadge status={b.status} />
-                        <PaymentBadge status={b.payment_status} />
+                        <div className={styles.rowBadges}>
+                          <StatusBadge status={b.status} />
+                          <PaymentBadge status={b.payment_status} />
+                        </div>
                         <button
                           className={styles.expandBtn}
                           aria-label="Expand"

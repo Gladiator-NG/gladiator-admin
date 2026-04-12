@@ -909,8 +909,59 @@
     font-size: 2.6rem;
   }
 
+  .metricsHeader {
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .periodPills {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .periodPills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .periodLabel {
+    margin-left: 0;
+  }
+
+  .customRange {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .dateInput {
+    flex: 1;
+    min-width: 0;
+  }
+
   .metrics {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+  }
+
+  .cardsToolbar {
+    gap: 1.2rem;
+  }
+
+  .toolbarGroup {
+    width: 100%;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .sortPills,
+  .filterPills {
+    gap: 0.6rem;
+  }
+
+  .sortPill,
+  .filterPill {
+    padding: 0.55rem 1rem;
+    font-size: 1.2rem;
   }
 
   .headerActions {
@@ -928,6 +979,20 @@
     font-size: 2.2rem;
   }
 
+  .periodPills {
+    padding: 0.25rem;
+    border-radius: 1.4rem;
+  }
+
+  .periodPill {
+    padding: 0.55rem 0.95rem;
+    font-size: 1.15rem;
+  }
+
+  .periodLabel {
+    font-size: 1.1rem;
+  }
+
   .pageHeader {
     flex-direction: column;
     align-items: flex-start;
@@ -940,5 +1005,50 @@
 
   .metrics {
     grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .cardsToolbar {
+    gap: 0.9rem;
+  }
+
+  .toolbarGroup {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .toolbarIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .toolbarGroupLabel {
+    width: auto;
+    font-size: 1.05rem;
+    letter-spacing: 0.05em;
+  }
+
+  .sortPills,
+  .filterPills {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.2rem;
+  }
+
+  .sortPills::-webkit-scrollbar,
+  .filterPills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sortPill,
+  .filterPill {
+    flex: 0 0 auto;
+    font-size: 1.1rem;
+    padding: 0.48rem 0.9rem;
   }
 }
