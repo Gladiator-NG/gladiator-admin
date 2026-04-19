@@ -67,7 +67,6 @@ interface BoatFields {
   name: string;
   slug: string;
   description: string;
-  location: string;
   pickup_location: string;
   max_guests: number;
   cabins: number;
@@ -183,30 +182,21 @@ function BoatFormFields({
         />
         <FormInput id="slug" label="Slug" formActions={formActions} disabled />
       </div>
-      <div className={styles.formRow}>
-        <FormInput
-          id="location"
-          label="Location"
-          formActions={formActions}
-          disabled={disabled}
-          required={false}
-        />
-        <FormInput
-          id="pickup_location"
-          type="select"
-          label="Boarding / Jetty Location"
-          formActions={formActions}
-          disabled={disabled}
-          required={false}
-        >
-          <option value="">Select jetty…</option>
-          {locations.map((l) => (
-            <option key={l.id} value={l.name}>
-              {l.name}
-            </option>
-          ))}
-        </FormInput>
-      </div>
+      <FormInput
+        id="pickup_location"
+        type="select"
+        label="Boarding / Jetty Location"
+        formActions={formActions}
+        disabled={disabled}
+        required={false}
+      >
+        <option value="">Select jetty…</option>
+        {locations.map((l) => (
+          <option key={l.id} value={l.name}>
+            {l.name}
+          </option>
+        ))}
+      </FormInput>
       <div className={styles.formRow3}>
         <FormInput
           id="max_guests"
@@ -431,6 +421,7 @@ function BoatsHome() {
       const matchesSearch =
         !q ||
         b.name.toLowerCase().includes(q) ||
+        b.pickup_location?.toLowerCase().includes(q) ||
         b.location?.toLowerCase().includes(q) ||
         b.boat_type?.toLowerCase().includes(q) ||
         b.slug.toLowerCase().includes(q);
@@ -487,6 +478,7 @@ function BoatsHome() {
     create(
       {
         ...data,
+        location: data.pickup_location || undefined,
         max_guests: Number(data.max_guests) || undefined,
         cabins: Number(data.cabins) || undefined,
         price_per_hour: Number(data.price_per_hour) || undefined,
@@ -559,8 +551,7 @@ function BoatsHome() {
       name: boat.name,
       slug: boat.slug,
       description: boat.description ?? '',
-      location: boat.location ?? '',
-      pickup_location: boat.pickup_location ?? '',
+      pickup_location: boat.pickup_location ?? boat.location ?? '',
       max_guests: boat.max_guests ?? ('' as unknown as number),
       cabins: boat.cabins ?? ('' as unknown as number),
       boat_type: boat.boat_type ?? '',
@@ -586,6 +577,7 @@ function BoatsHome() {
       {
         id: editingBoat.id,
         ...data,
+        location: data.pickup_location || undefined,
         max_guests: Number(data.max_guests) || undefined,
         cabins: Number(data.cabins) || undefined,
         price_per_hour: Number(data.price_per_hour) || undefined,
@@ -884,8 +876,10 @@ function BoatsHome() {
 
               <div className={styles.cardBody}>
                 <h3 className={styles.cardName}>{boat.name}</h3>
-                {boat.location && (
-                  <p className={styles.cardLocation}>{boat.location}</p>
+                {(boat.pickup_location || boat.location) && (
+                  <p className={styles.cardLocation}>
+                    {boat.pickup_location || boat.location}
+                  </p>
                 )}
                 <div className={styles.cardStats}>
                   {boat.max_guests != null && (
