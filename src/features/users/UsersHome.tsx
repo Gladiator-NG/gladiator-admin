@@ -168,12 +168,34 @@ function UsersHome() {
     );
   }
 
-  const joinedDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-GB', {
+  const formatDate = (iso?: string | null) => {
+    if (!iso) return 'Never';
+
+    return new Date(iso).toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
+  };
+
+  const formatLastLoggedIn = (iso?: string | null) => {
+    if (!iso) return 'Never';
+
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return 'Never';
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMs < 0) return formatDate(iso);
+    if (diffHours < 1) return 'Less than 1 hour ago';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return formatDate(iso);
+  };
 
   return (
     <div className={styles.page}>
@@ -211,27 +233,28 @@ function UsersHome() {
               <th>User</th>
               <th>Role</th>
               <th className={styles.colJoined}>Joined</th>
+              <th className={styles.colLastActive}>Last logged in</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {usersError && (
               <tr>
-                <td colSpan={4} className={styles.empty}>
+                <td colSpan={5} className={styles.empty}>
                   Error: {usersError.message}
                 </td>
               </tr>
             )}
             {isLoading && (
               <tr>
-                <td colSpan={4} className={styles.empty}>
+                <td colSpan={5} className={styles.empty}>
                   Loading users…
                 </td>
               </tr>
             )}
             {!isLoading && !usersError && filtered.length === 0 && (
               <tr>
-                <td colSpan={4} className={styles.empty}>
+                <td colSpan={5} className={styles.empty}>
                   No users found.
                 </td>
               </tr>
@@ -259,7 +282,10 @@ function UsersHome() {
                   <RoleBadge role={user.role} />
                 </td>
                 <td className={styles.colJoined}>
-                  {joinedDate(user.created_at)}
+                  {formatDate(user.created_at)}
+                </td>
+                <td className={styles.colLastActive}>
+                  {formatLastLoggedIn(user.last_logged_in_at)}
                 </td>
                 <td>
                   <div className={styles.actions}>
@@ -306,6 +332,9 @@ function UsersHome() {
               <div className={styles.mobileCardInfo}>
                 <span className={styles.userName}>{user.full_name ?? '—'}</span>
                 <RoleBadge role={user.role} />
+                <span className={styles.mobileMeta}>
+                  Last logged in: {formatLastLoggedIn(user.last_logged_in_at)}
+                </span>
               </div>
               <div className={styles.actions}>
                 <button

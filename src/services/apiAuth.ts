@@ -15,6 +15,25 @@ export async function signInWithEmail({
 
   if (error) throw new Error(error.message);
 
+  const signedInUser = data.user;
+  if (signedInUser?.id) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        last_logged_in_at:
+          signedInUser.last_sign_in_at ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', signedInUser.id);
+
+    if (profileError) {
+      console.warn(
+        'Unable to sync last login timestamp:',
+        profileError.message,
+      );
+    }
+  }
+
   return data;
 }
 

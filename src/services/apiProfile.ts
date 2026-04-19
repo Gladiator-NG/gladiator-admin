@@ -3,21 +3,29 @@ import { buildAppUrl } from '../config/app';
 
 export interface Profile {
   id: string;
+  email?: string | null;
   full_name: string | null;
   phone: string | null;
   role: string | null;
   created_at: string;
   updated_at: string;
+  last_logged_in_at?: string | null;
 }
 
 export async function getUsers(): Promise<Profile[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.functions.invoke('list-users');
+
+  if (!error && !data?.error) {
+    return (data?.users ?? []) as Profile[];
+  }
+
+  const { data: fallbackData, error: fallbackError } = await supabase
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  if (fallbackError) throw new Error(fallbackError.message);
+  return (fallbackData ?? []) as Profile[];
 }
 
 export async function updateUser({

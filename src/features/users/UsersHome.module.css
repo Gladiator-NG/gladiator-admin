@@ -78,7 +78,7 @@
 
 .table {
   width: 100%;
-  min-width: 48rem;
+  min-width: 62rem;
   border-collapse: collapse;
 }
 
@@ -405,6 +405,12 @@
   justify-content: center;
 }
 
+.mobileMeta {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  margin-top: 0.4rem;
+}
+
 /* ── Responsive ───────────────────────────────────── */
 @media (max-width: 56.25em) {
   .pageTitle {
@@ -412,7 +418,8 @@
   }
 
   /* Hide less-important columns on tablet */
-  .colJoined {
+  .colJoined,
+  .colLastActive {
     display: none;
   }
 }

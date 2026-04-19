@@ -10,3 +10,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/notify-new-booking/deno.json"
 entrypoint = "./functions/notify-new-booking/index.ts"
+
+[functions.list-users]
+enabled = true
+verify_jwt = false
+import_map = "./functions/list-users/deno.json"
+entrypoint = "./functions/list-users/index.ts"
