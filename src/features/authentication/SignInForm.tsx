@@ -53,6 +53,7 @@ function SignInForm() {
   const [recoveryEmail, setRecoveryEmail] = useState<string>('');
   const [hasRecoverySession, setHasRecoverySession] = useState(false);
   const [isPreparingRecovery, setIsPreparingRecovery] = useState(false);
+  const [isInviteFlow, setIsInviteFlow] = useState(false);
 
   const {
     register,
@@ -124,6 +125,7 @@ function SignInForm() {
             // Session exists from invite verification - show password setup
             setRecoveryEmail(existingSession.user.email ?? '');
             setHasRecoverySession(true);
+            setIsInviteFlow(true);
             setView('reset-password');
             return;
           }
@@ -133,6 +135,7 @@ function SignInForm() {
 
         if (isMounted) {
           setHasRecoverySession(false);
+          setIsInviteFlow(false);
         }
         return;
       }
@@ -147,9 +150,11 @@ function SignInForm() {
         if (session?.user) {
           setRecoveryEmail(session.user.email ?? '');
           setHasRecoverySession(true);
+          setIsInviteFlow(type === 'invite');
           setView('reset-password');
         } else {
           setHasRecoverySession(false);
+          setIsInviteFlow(false);
           setView('forgot-password');
           const isInvite = type === 'invite';
           const errorMsg = isInvite
@@ -160,6 +165,7 @@ function SignInForm() {
       } catch (error) {
         if (!isMounted) return;
         setHasRecoverySession(false);
+        setIsInviteFlow(false);
         setView('forgot-password');
         toast.error(
           error instanceof Error
@@ -219,14 +225,18 @@ function SignInForm() {
     view === 'forgot-password'
       ? 'Reset your password'
       : view === 'reset-password'
-        ? 'Create a new password'
+        ? isInviteFlow
+          ? 'Set up your password'
+          : 'Create a new password'
         : 'Sign in with your email';
 
   const subheading =
     view === 'forgot-password'
       ? 'Enter your email and we will send you a secure reset link.'
       : view === 'reset-password'
-        ? 'Choose a new password for your account.'
+        ? isInviteFlow
+          ? 'You've been invited to join. Set a password to get started.'
+          : 'Choose a new password for your account.'
         : null;
 
   return (
@@ -342,7 +352,7 @@ function SignInForm() {
 
           {recoveryEmail && (
             <p className={styles.infoMessage}>
-              Resetting password for {recoveryEmail}
+              {isInviteFlow ? 'Setting up account for' : 'Resetting password for'} {recoveryEmail}
             </p>
           )}
 
@@ -384,7 +394,7 @@ function SignInForm() {
               className={styles.submitBtn}
               disabled={isBusy || !hasRecoverySession}
             >
-              {isResettingPassword ? 'Updating password…' : 'Update Password'}
+              {isResettingPassword ? (isInviteFlow ? 'Setting up…' : 'Updating password…') : (isInviteFlow ? 'Set Password' : 'Update Password')}
             </Button>
           </form>
         </>
