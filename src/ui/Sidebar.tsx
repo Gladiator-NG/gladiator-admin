@@ -50,7 +50,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
           draggable={false}
         />
         <div className={styles.logoText}>
-          <span className={styles.logoName}>Gladiator</span>
+          <span className={styles.logoName}>GLADIATOR</span>
           <span className={styles.logoSub}>NG Admin</span>
         </div>
       </div>

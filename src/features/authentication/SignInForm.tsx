@@ -105,11 +105,32 @@ function SignInForm() {
     async function prepareRecoverySession() {
       const searchParams = new URLSearchParams(location.search);
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const type = hashParams.get('type');
       const isRecoveryUrl =
         searchParams.get('reset') === 'password' ||
-        hashParams.get('type') === 'recovery';
+        type === 'recovery' ||
+        type === 'invite';
 
       if (!isRecoveryUrl) {
+        // Check if there's an existing session (from invite verification server-side)
+        try {
+          const {
+            data: { session: existingSession },
+          } = await supabase.auth.getSession();
+
+          if (!isMounted) return;
+
+          if (existingSession?.user) {
+            // Session exists from invite verification - show password setup
+            setRecoveryEmail(existingSession.user.email ?? '');
+            setHasRecoverySession(true);
+            setView('reset-password');
+            return;
+          }
+        } catch {
+          // Continue to normal flow if session check fails
+        }
+
         if (isMounted) {
           setHasRecoverySession(false);
         }
@@ -130,9 +151,11 @@ function SignInForm() {
         } else {
           setHasRecoverySession(false);
           setView('forgot-password');
-          toast.error(
-            'Recovery link is invalid or expired. Request a new one.',
-          );
+          const isInvite = type === 'invite';
+          const errorMsg = isInvite
+            ? 'Invitation link is invalid or expired. Request a new one.'
+            : 'Recovery link is invalid or expired. Request a new one.';
+          toast.error(errorMsg);
         }
       } catch (error) {
         if (!isMounted) return;
@@ -141,7 +164,7 @@ function SignInForm() {
         toast.error(
           error instanceof Error
             ? error.message
-            : 'Unable to validate recovery link. Request a new one.',
+            : 'Unable to validate link. Request a new one.',
         );
       } finally {
         if (isMounted) setIsPreparingRecovery(false);
@@ -153,10 +176,12 @@ function SignInForm() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setRecoveryEmail(session?.user?.email ?? '');
-        setHasRecoverySession(Boolean(session));
-        setView('reset-password');
+      if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          setRecoveryEmail(session.user.email ?? '');
+          setHasRecoverySession(Boolean(session));
+          setView('reset-password');
+        }
       }
     });
 
