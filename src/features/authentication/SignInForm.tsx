@@ -235,7 +235,7 @@ function SignInForm() {
       ? 'Enter your email and we will send you a secure reset link.'
       : view === 'reset-password'
         ? isInviteFlow
-          ? 'You've been invited to join. Set a password to get started.'
+          ? "You've been invited to join. Set a password to get started."
           : 'Choose a new password for your account.'
         : null;
 
