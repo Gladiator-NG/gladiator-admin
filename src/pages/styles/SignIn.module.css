@@ -13,7 +13,7 @@
 }
 
 :global([data-theme='dark']) .page {
-  background: radial-gradient(ellipse at 50% 40%, #261810 0%, #0e0804 100%);
+  background: radial-gradient(ellipse at 50% 40%, #132434 0%, #05080d 100%);
 }
 
 /* ── Theme toggle button ──────────────────────────── */
