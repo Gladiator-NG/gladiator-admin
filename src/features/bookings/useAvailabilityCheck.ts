@@ -41,7 +41,8 @@ export function useAvailabilityCheck(
   const curfewViolation = useMemo((): string | null => {
     if (!params || params.resourceType !== 'boat') return null;
     const curfew = settingsData?.boat_curfew_time;
-    if (!curfew) return null;
+    const curfewEnabled = settingsData?.boat_curfew_enabled ?? true;
+    if (!curfewEnabled || !curfew) return null;
     // The endTime already includes the 1hr buffer; if it exceeds curfew, block.
     const checkTime = params.endTime ?? params.startTime;
     if (!checkTime) return null;

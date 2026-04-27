@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from './useDashboard';
 import { useTheme } from '../../context/ThemeContext';
+import { useIsAdmin } from '../authentication/useIsAdmin';
 import { formatPrice } from '../../utils/format';
 import styles from './DashboardHome.module.css';
 import type { RecentBooking } from '../../services/apiDashboard';
@@ -263,6 +264,7 @@ function Skeleton({ className }: { className?: string }) {
 function DashboardHome() {
   const { data, isLoading } = useDashboard();
   const { isDark } = useTheme();
+  const { isAdmin } = useIsAdmin();
   const kpi = data?.kpi;
 
   const gridColor = isDark ? '#2e2618' : '#f0f0f0';
@@ -312,21 +314,25 @@ function DashboardHome() {
           ))
         ) : kpi ? (
           <>
-            <KpiCard
-              label="All-Time Revenue"
-              value={formatPrice(kpi.revenueAllTime)}
-              icon={<TrendingUp size={18} />}
-              accent={OCEAN}
-              sub="confirmed paid bookings"
-            />
-            <KpiCard
-              label="This Month Revenue"
-              value={formatPrice(kpi.revenueThisMonth)}
-              trend={revTrend}
-              sub="vs last month"
-              icon={<TrendingUp size={18} />}
-              accent={TEAL}
-            />
+            {isAdmin && (
+              <>
+                <KpiCard
+                  label="All-Time Revenue"
+                  value={formatPrice(kpi.revenueAllTime)}
+                  icon={<TrendingUp size={18} />}
+                  accent={OCEAN}
+                  sub="confirmed paid bookings"
+                />
+                <KpiCard
+                  label="This Month Revenue"
+                  value={formatPrice(kpi.revenueThisMonth)}
+                  trend={revTrend}
+                  sub="vs last month"
+                  icon={<TrendingUp size={18} />}
+                  accent={TEAL}
+                />
+              </>
+            )}
             <KpiCard
               label="Bookings This Month"
               value={String(kpi.bookingsThisMonth)}
@@ -354,150 +360,156 @@ function DashboardHome() {
               alert={kpi.pendingBookings > 0}
               to="/bookings?status=pending"
             />
-            <KpiCard
-              label="Avg. Booking Value"
-              value={formatPrice(kpi.avgBookingValue)}
-              sub={`${kpi.totalGuests} total guests`}
-              icon={<CheckCircle2 size={18} />}
-              accent={SLATE}
-            />
+            {isAdmin && (
+              <KpiCard
+                label="Avg. Booking Value"
+                value={formatPrice(kpi.avgBookingValue)}
+                sub={`${kpi.totalGuests} total guests`}
+                icon={<CheckCircle2 size={18} />}
+                accent={SLATE}
+              />
+            )}
           </>
         ) : null}
       </div>
 
       {/* ── Row 1: Revenue trend + Type donut ──────────────────────────── */}
-      <div className={`${styles.chartRow} ${styles.chartRow60_40}`}>
-        <ChartCard
-          title="Revenue & Bookings Over Time"
-          subtitle="Last 6 months · confirmed paid bookings"
-          span="half"
-        >
-          {isLoading ? (
-            <Skeleton className={styles.chartSkeleton} />
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <ComposedChart
-                data={data?.monthly}
-                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={OCEAN} stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={OCEAN} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={gridColor}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 11, fill: '#9ca3af' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  yAxisId="rev"
-                  orientation="left"
-                  tickFormatter={(v) => compactRevenue(v)}
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={56}
-                />
-                <YAxis
-                  yAxisId="bk"
-                  orientation="right"
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <Tooltip content={<RevenueTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                <Bar
-                  yAxisId="bk"
-                  dataKey="bookings"
-                  name="Bookings"
-                  fill="#10b981"
-                  fillOpacity={0.75}
-                  radius={[4, 4, 0, 0]}
-                  barSize={18}
-                />
-                <Area
-                  yAxisId="rev"
-                  dataKey="revenue"
-                  name="Revenue"
-                  stroke={OCEAN}
-                  strokeWidth={2.5}
-                  fill="url(#revGrad)"
-                  dot={{ r: 3, fill: OCEAN, strokeWidth: 0 }}
-                  activeDot={{ r: 5 }}
-                  type="monotone"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Revenue by Booking Type"
-          subtitle="All bookings · not cancelled"
-          span="half"
-          viewAllTo="/bookings"
-        >
-          {isLoading ? (
-            <Skeleton className={styles.chartSkeleton} />
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={data?.byType}
-                  dataKey="revenue"
-                  nameKey="name"
-                  cx="50%"
-                  cy="46%"
-                  innerRadius="50%"
-                  outerRadius="74%"
-                  paddingAngle={3}
-                  strokeWidth={0}
+      {isAdmin && (
+        <div className={`${styles.chartRow} ${styles.chartRow60_40}`}>
+          <ChartCard
+            title="Revenue & Bookings Over Time"
+            subtitle="Last 6 months · confirmed paid bookings"
+            span="half"
+          >
+            {isLoading ? (
+              <Skeleton className={styles.chartSkeleton} />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <ComposedChart
+                  data={data?.monthly}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 >
-                  {data?.byType.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={TYPE_COLORS[entry.name] ?? SLATE}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value, name) => {
-                    const total =
-                      data?.byType.reduce((s, t) => s + t.revenue, 0) ?? 0;
-                    const share =
-                      total > 0 ? Math.round((Number(value) / total) * 100) : 0;
-                    return [
-                      `${compactRevenue(Number(value))} (${share}%)`,
-                      name,
-                    ];
-                  }}
-                  contentStyle={tooltipStyle}
-                  labelStyle={tooltipLabelStyle}
-                  itemStyle={tooltipItemStyle}
-                />
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-                  formatter={(value, entry: any) =>
-                    `${value} · ${compactRevenue(entry.payload.revenue)}`
-                  }
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-      </div>
+                  <defs>
+                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={OCEAN} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={OCEAN} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={gridColor}
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    yAxisId="rev"
+                    orientation="left"
+                    tickFormatter={(v) => compactRevenue(v)}
+                    tick={{ fontSize: 10, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={56}
+                  />
+                  <YAxis
+                    yAxisId="bk"
+                    orientation="right"
+                    tick={{ fontSize: 10, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={28}
+                  />
+                  <Tooltip content={<RevenueTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                  <Bar
+                    yAxisId="bk"
+                    dataKey="bookings"
+                    name="Bookings"
+                    fill="#10b981"
+                    fillOpacity={0.75}
+                    radius={[4, 4, 0, 0]}
+                    barSize={18}
+                  />
+                  <Area
+                    yAxisId="rev"
+                    dataKey="revenue"
+                    name="Revenue"
+                    stroke={OCEAN}
+                    strokeWidth={2.5}
+                    fill="url(#revGrad)"
+                    dot={{ r: 3, fill: OCEAN, strokeWidth: 0 }}
+                    activeDot={{ r: 5 }}
+                    type="monotone"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+          </ChartCard>
+
+          <ChartCard
+            title="Revenue by Booking Type"
+            subtitle="All bookings · not cancelled"
+            span="half"
+            viewAllTo="/bookings"
+          >
+            {isLoading ? (
+              <Skeleton className={styles.chartSkeleton} />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={data?.byType}
+                    dataKey="revenue"
+                    nameKey="name"
+                    cx="50%"
+                    cy="46%"
+                    innerRadius="50%"
+                    outerRadius="74%"
+                    paddingAngle={3}
+                    strokeWidth={0}
+                  >
+                    {data?.byType.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={TYPE_COLORS[entry.name] ?? SLATE}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name) => {
+                      const total =
+                        data?.byType.reduce((s, t) => s + t.revenue, 0) ?? 0;
+                      const share =
+                        total > 0
+                          ? Math.round((Number(value) / total) * 100)
+                          : 0;
+                      return [
+                        `${compactRevenue(Number(value))} (${share}%)`,
+                        name,
+                      ];
+                    }}
+                    contentStyle={tooltipStyle}
+                    labelStyle={tooltipLabelStyle}
+                    itemStyle={tooltipItemStyle}
+                  />
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                    formatter={(value, entry: any) =>
+                      `${value} · ${compactRevenue(entry.payload.revenue)}`
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </ChartCard>
+        </div>
+      )}
 
       {/* ── Row 2: Status + Source + Recent feed ───────────────────────── */}
       <div className={`${styles.chartRow} ${styles.chartRow3}`}>

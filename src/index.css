@@ -50,14 +50,14 @@
 
 /* ─── Dark mode — sunset palette ─────────────────────────────────────────── */
 [data-theme='dark'] {
-  /* Brand — warm sunset accent (interactive elements only) */
-  --color-ocean-blue: #e07b38;
-  --color-sky-blue: #eda96a;
+  /* Brand — blueish gradient accent (interactive elements only) */
+  --color-ocean-blue: #2f8cca;
+  --color-sky-blue: #44aee8;
   --color-sun-yellow: #fbbf24;
-  --color-sunset: #f87171;
-  --color-primary: #e07b38;
-  --color-primary-hover: #eda96a;
-  --color-danger: #f87171;
+  --color-sunset: #71bce6;
+  --color-primary: #2f8cca;
+  --color-primary-hover: #44aee8;
+  --color-danger: #71bce6;
 
   /* Backgrounds — very dark neutral charcoal, barely any tint */
   --color-bg: #0e0e0e;

@@ -190,7 +190,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const typeLabels: Record<string, string> = {
     boat_cruise: 'Boat Cruise',
     beach_house: 'Beach House',
-    transport: 'Transport',
+    boat_rental: 'Boat Rental',
   };
   const byType: TypeSlice[] = Object.entries(typeMap).map(([k, v]) => ({
     name: typeLabels[k] ?? k,

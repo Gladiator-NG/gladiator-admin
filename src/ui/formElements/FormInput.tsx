@@ -73,11 +73,38 @@ function FormInput<T extends FieldValues>({
 }: FormInputProps<T>) {
   const { register, errors } = formActions;
 
-  const baseRules = (
-    required
-      ? { required: 'This field is required', ...validation }
-      : { ...validation }
-  ) as RegisterOptions<T, Path<T>>;
+  const requiredCheck = (value: unknown) =>
+    value === undefined ||
+    value === null ||
+    (typeof value === 'string' && value.trim() === '')
+      ? 'This field is required'
+      : true;
+
+  const mergeValidate = (
+    existing: RegisterOptions<T, Path<T>>['validate'],
+  ): RegisterOptions<T, Path<T>>['validate'] => {
+    if (!required) return existing;
+
+    if (!existing) return requiredCheck;
+
+    if (typeof existing === 'function') {
+      return (value, formValues) => {
+        const requiredResult = requiredCheck(value);
+        if (requiredResult !== true) return requiredResult;
+        return existing(value, formValues);
+      };
+    }
+
+    return {
+      requiredCheck,
+      ...existing,
+    };
+  };
+
+  const baseRules = {
+    ...validation,
+    validate: mergeValidate(validation.validate),
+  } as RegisterOptions<T, Path<T>>;
 
   const emailRules = {
     ...baseRules,
@@ -100,6 +127,14 @@ function FormInput<T extends FieldValues>({
     pattern: {
       value: /^https?:\/\/.+/,
       message: 'Please enter a valid URL (starting with http:// or https://)',
+    },
+  } as RegisterOptions<T, Path<T>>;
+
+  const numberRules = {
+    ...baseRules,
+    setValueAs: (value: unknown) => {
+      if (value === '' || value === null || value === undefined) return undefined;
+      return Number(value);
     },
   } as RegisterOptions<T, Path<T>>;
 
@@ -165,6 +200,8 @@ function FormInput<T extends FieldValues>({
         ? telRules
         : type === 'url'
           ? urlRules
+          : type === 'number'
+            ? numberRules
           : baseRules;
 
   return (

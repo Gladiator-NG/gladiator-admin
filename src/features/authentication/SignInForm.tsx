@@ -352,7 +352,10 @@ function SignInForm() {
 
           {recoveryEmail && (
             <p className={styles.infoMessage}>
-              {isInviteFlow ? 'Setting up account for' : 'Resetting password for'} {recoveryEmail}
+              {isInviteFlow
+                ? 'Setting up account for'
+                : 'Resetting password for'}{' '}
+              {recoveryEmail}
             </p>
           )}
 
@@ -394,7 +397,13 @@ function SignInForm() {
               className={styles.submitBtn}
               disabled={isBusy || !hasRecoverySession}
             >
-              {isResettingPassword ? (isInviteFlow ? 'Setting up…' : 'Updating password…') : (isInviteFlow ? 'Set Password' : 'Update Password')}
+              {isResettingPassword
+                ? isInviteFlow
+                  ? 'Setting up…'
+                  : 'Updating password…'
+                : isInviteFlow
+                  ? 'Set Password'
+                  : 'Update Password'}
             </Button>
           </form>
         </>

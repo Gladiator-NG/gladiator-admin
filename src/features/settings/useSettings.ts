@@ -19,8 +19,13 @@ export function useUpdateSetting() {
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
-    mutationFn: ({ key, value }: { key: keyof AppSettings; value: string }) =>
-      updateSetting(key, value),
+    mutationFn: ({
+      key,
+      value,
+    }: {
+      key: keyof AppSettings;
+      value: string | boolean;
+    }) => updateSetting(key, value),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['app_settings'] });
     },

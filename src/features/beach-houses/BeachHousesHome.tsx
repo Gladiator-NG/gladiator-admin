@@ -1,3 +1,5 @@
+import { useIsAdmin } from '../authentication/useIsAdmin';
+import { useTodayCheckins } from './useTodayCheckins';
 import { useState, useMemo, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -62,11 +64,16 @@ interface HouseFields {
   bedrooms: number;
   bathrooms: number;
   price_per_night: number;
+  day_use_price_per_hour: number;
+  day_use_min_hours: number;
+  day_use_max_hours: number;
   check_in_time: string;
   check_out_time: string;
+  late_checkout_price_per_hour: number;
+  extra_guest_fee_per_head: number;
   amenities: string;
   is_active: boolean;
-  transport_price: number;
+  rental_price: number;
 }
 
 // ── Image edit helper ────────────────────────────────
@@ -154,6 +161,9 @@ function CoverPhoto({ house }: { house: BeachHouse }) {
 // ── Main component ────────────────────────────────────
 
 function BeachHousesHome() {
+  const { isAdmin } = useIsAdmin();
+  const { checkins: todayCheckins, isLoading: isCheckinsLoading } =
+    useTodayCheckins();
   const queryClient = useQueryClient();
   const { beachHouses, isLoading, error } = useBeachHouses();
   const { locations } = useLocations();
@@ -347,7 +357,13 @@ function BeachHousesHome() {
         bedrooms: Number(data.bedrooms) || undefined,
         bathrooms: Number(data.bathrooms) || undefined,
         price_per_night: Number(data.price_per_night) || undefined,
-        transport_price: Number(data.transport_price) || null,
+        day_use_price_per_hour: Number(data.day_use_price_per_hour) || undefined,
+        day_use_min_hours: Number(data.day_use_min_hours) || undefined,
+        day_use_max_hours: Number(data.day_use_max_hours) || undefined,
+        late_checkout_price_per_hour:
+          Number(data.late_checkout_price_per_hour) || null,
+        extra_guest_fee_per_head: Number(data.extra_guest_fee_per_head) || null,
+        rental_price: Number(data.rental_price) || null,
       },
       {
         onSuccess: async (newHouse) => {
@@ -424,11 +440,19 @@ function BeachHousesHome() {
       bedrooms: house.bedrooms ?? ('' as unknown as number),
       bathrooms: house.bathrooms ?? ('' as unknown as number),
       price_per_night: house.price_per_night ?? ('' as unknown as number),
+      day_use_price_per_hour:
+        house.day_use_price_per_hour ?? ('' as unknown as number),
+      day_use_min_hours: house.day_use_min_hours ?? ('' as unknown as number),
+      day_use_max_hours: house.day_use_max_hours ?? ('' as unknown as number),
       check_in_time: house.check_in_time ?? '',
       check_out_time: house.check_out_time ?? '',
+      late_checkout_price_per_hour:
+        house.late_checkout_price_per_hour ?? ('' as unknown as number),
+      extra_guest_fee_per_head:
+        house.extra_guest_fee_per_head ?? ('' as unknown as number),
       amenities: house.amenities?.join(', ') ?? '',
       is_active: house.is_active,
-      transport_price: house.transport_price ?? ('' as unknown as number),
+      rental_price: house.rental_price ?? ('' as unknown as number),
     });
   }
 
@@ -457,7 +481,13 @@ function BeachHousesHome() {
         bedrooms: Number(data.bedrooms) || undefined,
         bathrooms: Number(data.bathrooms) || undefined,
         price_per_night: Number(data.price_per_night) || undefined,
-        transport_price: Number(data.transport_price) || null,
+        day_use_price_per_hour: Number(data.day_use_price_per_hour) || undefined,
+        day_use_min_hours: Number(data.day_use_min_hours) || undefined,
+        day_use_max_hours: Number(data.day_use_max_hours) || undefined,
+        late_checkout_price_per_hour:
+          Number(data.late_checkout_price_per_hour) || null,
+        extra_guest_fee_per_head: Number(data.extra_guest_fee_per_head) || null,
+        rental_price: Number(data.rental_price) || null,
       },
       {
         onSuccess: async () => {
@@ -627,7 +657,33 @@ function BeachHousesHome() {
           <FormInput
             id="price_per_night"
             type="number"
-            label="Price per Night (₦)"
+            label="Overnight Rate (₦ / night)"
+            formActions={formActions}
+            disabled={disabled}
+            required={false}
+          />
+          <FormInput
+            id="day_use_price_per_hour"
+            type="number"
+            label="Day Use Rate (₦ / hour)"
+            formActions={formActions}
+            disabled={disabled}
+            required={false}
+          />
+        </div>
+        <div className={styles.formRow3}>
+          <FormInput
+            id="day_use_min_hours"
+            type="number"
+            label="Day Use Min Hours"
+            formActions={formActions}
+            disabled={disabled}
+            required={false}
+          />
+          <FormInput
+            id="day_use_max_hours"
+            type="number"
+            label="Day Use Max Hours"
             formActions={formActions}
             disabled={disabled}
             required={false}
@@ -647,7 +703,7 @@ function BeachHousesHome() {
           <FormInput
             id="check_in_time"
             type="time"
-            label="Check-in Time"
+            label="Default Overnight Check-in"
             formActions={formActions}
             disabled={disabled}
             required={false}
@@ -655,7 +711,25 @@ function BeachHousesHome() {
           <FormInput
             id="check_out_time"
             type="time"
-            label="Check-out Time"
+            label="Default Overnight Check-out"
+            formActions={formActions}
+            disabled={disabled}
+            required={false}
+          />
+        </div>
+        <div className={styles.formRow}>
+          <FormInput
+            id="late_checkout_price_per_hour"
+            type="number"
+            label="Late Checkout Fee (₦ / hour)"
+            formActions={formActions}
+            disabled={disabled}
+            required={false}
+          />
+          <FormInput
+            id="extra_guest_fee_per_head"
+            type="number"
+            label="Extra Guest Fee (₦ / head)"
             formActions={formActions}
             disabled={disabled}
             required={false}
@@ -671,9 +745,9 @@ function BeachHousesHome() {
         />
         <div className={styles.formRow}>
           <FormInput
-            id="transport_price"
+            id="rental_price"
             type="number"
-            label="Transport Price Override (₦)"
+            label="Rental Price Override (₦)"
             formActions={formActions}
             disabled={disabled}
             required={false}
@@ -807,20 +881,30 @@ function BeachHousesHome() {
               }
             />
 
-            <MetricCard
-              label="Booking Revenue"
-              value={revenueData?.beach_house ?? 0}
-              renderValue={(v) => (v > 0 ? formatPrice(v) : '—')}
-              icon={<TrendingUp size={18} />}
-              featured
-              sub={
-                <span
-                  className={`${styles.metricBadge} ${styles.metricBadgeSample}`}
-                >
-                  Paid · {periodLabel}
-                </span>
-              }
-            />
+            {isAdmin ? (
+              <MetricCard
+                label="Booking Revenue"
+                value={revenueData?.beach_house ?? 0}
+                renderValue={(v) => (v > 0 ? formatPrice(v) : '—')}
+                icon={<TrendingUp size={18} />}
+                featured
+                sub={
+                  <span
+                    className={`${styles.metricBadge} ${styles.metricBadgeSample}`}
+                  >
+                    Paid · {periodLabel}
+                  </span>
+                }
+              />
+            ) : (
+              <MetricCard
+                label="Today's Check-ins"
+                value={isCheckinsLoading ? 0 : todayCheckins}
+                icon={<Calendar size={18} />}
+                featured
+                sub={<span className={styles.metricBadge}>Today</span>}
+              />
+            )}
           </div>
         </div>
       )}
@@ -936,6 +1020,16 @@ function BeachHousesHome() {
                   <p className={styles.cardPrice}>
                     {formatPrice(house.price_per_night)}
                     <span> / night</span>
+                  </p>
+                )}
+                {house.day_use_price_per_hour != null && (
+                  <p className={styles.cardLocation}>
+                    Day use: {formatPrice(house.day_use_price_per_hour)} / hour
+                  </p>
+                )}
+                {house.extra_guest_fee_per_head != null && (
+                  <p className={styles.cardLocation}>
+                    Extra guest: {formatPrice(house.extra_guest_fee_per_head)} / head
                   </p>
                 )}
 

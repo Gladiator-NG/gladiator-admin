@@ -124,7 +124,11 @@ export async function ensureRecoverySessionFromUrl() {
   const accessToken = hashParams.get('access_token');
   const refreshToken = hashParams.get('refresh_token');
 
-  if ((type === 'recovery' || type === 'invite') && accessToken && refreshToken) {
+  if (
+    (type === 'recovery' || type === 'invite') &&
+    accessToken &&
+    refreshToken
+  ) {
     const { error } = await supabase.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken,

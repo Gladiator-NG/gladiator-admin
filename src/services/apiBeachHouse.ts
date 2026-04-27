@@ -63,12 +63,17 @@ export interface BeachHouse {
   bedrooms: number | null;
   bathrooms: number | null;
   price_per_night: number | null;
+  day_use_price_per_hour: number | null;
+  day_use_min_hours: number | null;
+  day_use_max_hours: number | null;
   check_in_time: string | null;
   check_out_time: string | null;
+  late_checkout_price_per_hour: number | null;
+  extra_guest_fee_per_head: number | null;
   amenities: string[];
   is_active: boolean;
   cover_image_id: string | null;
-  transport_price: number | null;
+  rental_price: number | null;
   created_at: string;
   updated_at: string;
   // Joined from beach_house_images
@@ -85,11 +90,16 @@ export interface CreateBeachHouseInput {
   bedrooms?: number;
   bathrooms?: number;
   price_per_night?: number;
+  day_use_price_per_hour?: number;
+  day_use_min_hours?: number;
+  day_use_max_hours?: number;
   check_in_time?: string;
   check_out_time?: string;
+  late_checkout_price_per_hour?: number | null;
+  extra_guest_fee_per_head?: number | null;
   amenities?: string[];
   is_active?: boolean;
-  transport_price?: number | null;
+  rental_price?: number | null;
 }
 
 export type UpdateBeachHouseInput = Partial<CreateBeachHouseInput> & {

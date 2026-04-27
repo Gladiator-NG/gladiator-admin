@@ -1,3 +1,5 @@
+import { useIsAdmin } from '../authentication/useIsAdmin';
+import { useActiveBoatBookings } from './useActiveBoatBookings';
 import { useState, useMemo, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -75,7 +77,7 @@ interface BoatFields {
   is_active: boolean;
   min_booking_hours: number;
   max_booking_hours: number;
-  is_available_for_transport: boolean;
+  is_available_for_rental: boolean;
 }
 
 // ── Image edit helper ─────────────────────────────────
@@ -272,9 +274,9 @@ function BoatFormFields({
           <option value="false">Inactive</option>
         </FormInput>
         <FormInput
-          id="is_available_for_transport"
+          id="is_available_for_rental"
           type="select"
-          label="Available for Transport"
+          label="Available for Rental"
           formActions={formActions}
           disabled={disabled}
         >
@@ -297,6 +299,9 @@ function BoatFormFields({
 // ── Main component ────────────────────────────────────
 
 function BoatsHome() {
+  const { isAdmin } = useIsAdmin();
+  const { active: activeBoatBookings, isLoading: isActiveLoading } =
+    useActiveBoatBookings();
   const queryClient = useQueryClient();
   const { boats, isLoading, error } = useBoats();
   const { locations } = useLocations();
@@ -450,7 +455,7 @@ function BoatsHome() {
     reset: resetCreate,
     setValue: setCreateValue,
   } = useForm<BoatFields>({
-    defaultValues: { is_active: true, is_available_for_transport: false },
+    defaultValues: { is_active: true, is_available_for_rental: false },
   });
   const createFormActions = { register: createRegister, errors: createErrors };
 
@@ -459,7 +464,7 @@ function BoatsHome() {
   }
 
   function openCreate() {
-    resetCreate({ is_active: true, is_available_for_transport: false });
+    resetCreate({ is_active: true, is_available_for_rental: false });
     setCreateImages([]);
     setCreateImageError(null);
     setCreateSubmitError(null);
@@ -484,8 +489,8 @@ function BoatsHome() {
         price_per_hour: Number(data.price_per_hour) || undefined,
         min_booking_hours: Number(data.min_booking_hours) || undefined,
         max_booking_hours: Number(data.max_booking_hours) || undefined,
-        is_available_for_transport:
-          String(data.is_available_for_transport) === 'true',
+        is_available_for_rental:
+          String(data.is_available_for_rental) === 'true',
       },
       {
         onSuccess: async (newBoat) => {
@@ -559,7 +564,7 @@ function BoatsHome() {
       is_active: boat.is_active,
       min_booking_hours: boat.min_booking_hours ?? ('' as unknown as number),
       max_booking_hours: boat.max_booking_hours ?? ('' as unknown as number),
-      is_available_for_transport: boat.is_available_for_transport,
+      is_available_for_rental: boat.is_available_for_rental,
     });
   }
 
@@ -583,8 +588,8 @@ function BoatsHome() {
         price_per_hour: Number(data.price_per_hour) || undefined,
         min_booking_hours: Number(data.min_booking_hours) || undefined,
         max_booking_hours: Number(data.max_booking_hours) || undefined,
-        is_available_for_transport:
-          String(data.is_available_for_transport) === 'true',
+        is_available_for_rental:
+          String(data.is_available_for_rental) === 'true',
       },
       {
         onSuccess: async (updatedBoat) => {
@@ -771,22 +776,35 @@ function BoatsHome() {
                   : 'across all boats'
               }
             />
-            <MetricCard
-              label="Cruise & Transport Revenue"
-              value={
-                (revenueData?.boat_cruise ?? 0) + (revenueData?.transport ?? 0)
-              }
-              renderValue={(v) => (v > 0 ? formatPrice(v) : '—')}
-              icon={<TrendingUp size={18} />}
-              featured
-              sub={
-                <span
-                  className={`${styles.metricBadge} ${styles.metricBadgeSample}`}
-                >
-                  Paid · {periodLabel}
-                </span>
-              }
-            />
+            {isAdmin ? (
+              <MetricCard
+                label="Cruise & Rental Revenue"
+                value={
+                  (revenueData?.boat_cruise ?? 0) +
+                  (revenueData?.boat_rental ?? 0)
+                }
+                renderValue={(v) => (v > 0 ? formatPrice(v) : '—')}
+                icon={<TrendingUp size={18} />}
+                featured
+                sub={
+                  <span
+                    className={`${styles.metricBadge} ${styles.metricBadgeSample}`}
+                  >
+                    Paid · {periodLabel}
+                  </span>
+                }
+              />
+            ) : (
+              <MetricCard
+                label="Active Bookings"
+                value={isActiveLoading ? 0 : activeBoatBookings}
+                icon={<Calendar size={18} />}
+                featured
+                sub={
+                  <span className={styles.metricBadge}>Upcoming & Ongoing</span>
+                }
+              />
+            )}
           </div>
         </div>
       )}
@@ -866,10 +884,10 @@ function BoatsHome() {
             >
               <div className={styles.cardCover}>
                 <CoverPhoto boat={boat} />
-                {boat.is_available_for_transport && (
+                {boat.is_available_for_rental && (
                   <span className={styles.transportBadge}>
                     <Truck size={11} />
-                    Transport
+                    Rental
                   </span>
                 )}
               </div>

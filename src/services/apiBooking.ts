@@ -2,7 +2,8 @@ import supabase from './supabase';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type BookingType = 'boat_cruise' | 'beach_house' | 'transport';
+export type BookingType = 'boat_cruise' | 'beach_house' | 'boat_rental';
+export type BeachHouseBookingMode = 'day_use' | 'overnight';
 export type BookingStatus =
   | 'pending'
   | 'confirmed'
@@ -10,7 +11,7 @@ export type BookingStatus =
   | 'expired'
   | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
-export type TransportType = 'outbound' | 'return' | 'round_trip';
+export type RentalType = 'outbound' | 'return' | 'round_trip';
 export type BookingSource = 'admin' | 'web' | 'mobile';
 
 export interface Booking {
@@ -20,6 +21,7 @@ export interface Booking {
 
   boat_id: string | null;
   beach_house_id: string | null;
+  beach_house_booking_mode: BeachHouseBookingMode | null;
   parent_beach_house_booking_id: string | null;
 
   customer_id: string | null;
@@ -34,9 +36,10 @@ export interface Booking {
   start_time: string | null;
   end_time: string | null;
   hours: number | null;
+  late_checkout_hours: number | null;
 
-  transport_type: TransportType | null;
-  transport_route_id: string | null;
+  rental_type: RentalType | null;
+  rental_route_id: string | null;
   pickup_location: string | null;
   dropoff_location: string | null;
 
@@ -64,7 +67,7 @@ export interface Booking {
     start_date: string;
     end_date: string;
   } | null;
-  transport_route?: {
+  rental_route?: {
     id: string;
     duration_hours: number | null;
     from_location: { id: string; name: string } | null;
@@ -90,6 +93,7 @@ export interface CreateBookingInput {
   booking_type: BookingType;
   boat_id?: string | null;
   beach_house_id?: string | null;
+  beach_house_booking_mode?: BeachHouseBookingMode | null;
   parent_beach_house_booking_id?: string | null;
   customer_id?: string | null;
   customer_name: string;
@@ -101,8 +105,9 @@ export interface CreateBookingInput {
   start_time?: string | null;
   end_time?: string | null;
   hours?: number | null;
-  transport_type?: TransportType | null;
-  transport_route_id?: string | null;
+  late_checkout_hours?: number | null;
+  rental_type?: RentalType | null;
+  rental_route_id?: string | null;
   pickup_location?: string | null;
   dropoff_location?: string | null;
   total_amount: number;
@@ -123,7 +128,7 @@ const BOOKING_SELECT = `
   beach_house:beach_houses(id, name),
   customer:customers(*),
   parent_booking:bookings!parent_beach_house_booking_id(id, reference_code, booking_type, start_date, end_date),
-  transport_route:transport_routes!transport_route_id(id, duration_hours, from_location:locations!from_location_id(id, name), to_location:locations!to_location_id(id, name))
+  rental_route:transport_routes!rental_route_id(id, duration_hours, from_location:locations!from_location_id(id, name), to_location:locations!to_location_id(id, name))
 `;
 
 export async function getBookings(): Promise<Booking[]> {
@@ -333,58 +338,43 @@ export async function checkAvailability(params: {
   const selectCols =
     'id, reference_code, customer_name, start_date, end_date, start_time, end_time, status';
 
-  // ── Time-range overlap for same-day boat bookings ────────────────────────
-  // We have both a startTime and endTime (endTime already includes the 1hr
-  // post-cruise buffer added by the caller). Use strict time-range overlap:
-  //   existing.start_time < requested.endTime
-  //   AND existing.end_time > requested.startTime
-  if (startDate === endDate && startTime && endTime) {
-    let q = supabase
-      .from('bookings')
-      .select(selectCols)
-      .eq(idCol, resourceId)
-      .in('status', activeStatuses)
-      .eq('start_date', startDate)
-      // existing booking starts before this one ends
-      .lt('start_time', endTime)
-      // existing booking ends after this one starts, OR has no end_time recorded
-      // (NULL end_time means the slot is still occupied — treat as blocking)
-      .or(`end_time.gt.${startTime},end_time.is.null`)
-      .limit(1);
-
-    if (excludeBookingId) q = q.neq('id', excludeBookingId);
-
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    if (data && data.length > 0)
-      return {
-        available: false,
-        conflictingBooking: data[0] as unknown as Booking,
-      };
-    return { available: true };
-  }
-
-  // ── Date-range overlap for multi-day / beach-house bookings ─────────────
-  // Overlap: existing.start_date < requested.end_date
-  //      AND existing.end_date   > requested.start_date
   let q = supabase
     .from('bookings')
     .select(selectCols)
     .eq(idCol, resourceId)
     .in('status', activeStatuses)
-    .lt('start_date', endDate)
-    .gt('end_date', startDate)
-    .limit(1);
+    .lte('start_date', endDate)
+    .gte('end_date', startDate);
 
   if (excludeBookingId) q = q.neq('id', excludeBookingId);
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  if (data && data.length > 0)
+
+  const requestedStart = new Date(
+    `${startDate}T${startTime && startTime !== '' ? startTime : '00:00:00'}`,
+  );
+  const requestedEnd = new Date(
+    `${endDate}T${endTime && endTime !== '' ? endTime : '23:59:59'}`,
+  );
+
+  const conflict = (data ?? []).find((row) => {
+    const existingStart = new Date(
+      `${row.start_date}T${row.start_time && row.start_time !== '' ? row.start_time : '00:00:00'}`,
+    );
+    const existingEnd = new Date(
+      `${row.end_date}T${row.end_time && row.end_time !== '' ? row.end_time : '23:59:59'}`,
+    );
+    return existingStart < requestedEnd && existingEnd > requestedStart;
+  });
+
+  if (conflict) {
     return {
       available: false,
-      conflictingBooking: data[0] as unknown as Booking,
+      conflictingBooking: conflict as unknown as Booking,
     };
+  }
+
   return { available: true };
 }
 
@@ -394,7 +384,7 @@ export async function checkAvailability(params: {
 export interface RevenueByType {
   boat_cruise: number;
   beach_house: number;
-  transport: number;
+  boat_rental: number;
 }
 
 export async function fetchRevenueByType(
@@ -413,7 +403,7 @@ export async function fetchRevenueByType(
   const result: RevenueByType = {
     boat_cruise: 0,
     beach_house: 0,
-    transport: 0,
+    boat_rental: 0,
   };
   for (const row of data ?? []) {
     const t = row.booking_type as keyof RevenueByType;

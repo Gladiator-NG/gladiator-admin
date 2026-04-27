@@ -14,7 +14,7 @@ export interface TransportRoute {
   id: string;
   from_location_id: string;
   to_location_id: string;
-  price_per_trip: number | null;
+  route_price: number | null;
   duration_hours: number | null; // one-way trip duration in hours
   is_active: boolean;
   created_at: string;
@@ -128,7 +128,7 @@ export async function getAllTransportRoutes(): Promise<TransportRoute[]> {
 export async function upsertTransportRoute(input: {
   from_location_id: string;
   to_location_id: string;
-  price_per_trip: number | null;
+  route_price: number | null;
   duration_hours?: number | null;
   is_active?: boolean;
 }): Promise<TransportRoute> {
@@ -163,5 +163,5 @@ export function findRoutePrice(
   const route = routes.find(
     (r) => r.from_location?.name === fromName && r.to_location?.name === toName,
   );
-  return route?.price_per_trip ?? null;
+  return route?.route_price ?? null;
 }

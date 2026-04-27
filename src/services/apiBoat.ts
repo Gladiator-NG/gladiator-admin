@@ -62,7 +62,7 @@ export interface Boat {
   is_active: boolean;
   min_booking_hours: number | null;
   max_booking_hours: number | null;
-  is_available_for_transport: boolean;
+  is_available_for_rental: boolean;
   created_at: string;
   updated_at: string;
   // Joined
@@ -82,7 +82,7 @@ export interface CreateBoatInput {
   is_active?: boolean;
   min_booking_hours?: number;
   max_booking_hours?: number;
-  is_available_for_transport?: boolean;
+  is_available_for_rental?: boolean;
 }
 
 export type UpdateBoatInput = Partial<CreateBoatInput> & {
@@ -109,7 +109,7 @@ export async function createBoat(input: CreateBoatInput): Promise<Boat> {
     .insert({
       ...input,
       is_active: input.is_active ?? true,
-      is_available_for_transport: input.is_available_for_transport ?? false,
+      is_available_for_rental: input.is_available_for_rental ?? false,
     })
     .select()
     .single();

@@ -43,7 +43,7 @@ interface LocationFields {
 interface RouteFields {
   from_location_id: string;
   to_location_id: string;
-  price_per_trip: number;
+  route_price: number;
   duration_hours: number;
 }
 
@@ -92,12 +92,17 @@ function LocationsHome() {
   const { settings } = useSettings();
   const { updateSetting, isPending: isSavingCurfew } = useUpdateSetting();
   const [curfewInput, setCurfewInput] = useState<string>('');
+  const curfewEnabled = settings?.boat_curfew_enabled ?? true;
 
   useEffect(() => {
     if (settings?.boat_curfew_time) {
       setCurfewInput(settings.boat_curfew_time);
     }
   }, [settings?.boat_curfew_time]);
+
+  function handleToggleCurfewEnabled() {
+    updateSetting({ key: 'boat_curfew_enabled', value: !curfewEnabled });
+  }
 
   function handleCurfewSave() {
     if (!curfewInput) return;
@@ -209,8 +214,7 @@ function LocationsHome() {
       upsertTransportRoute({
         from_location_id: data.from_location_id,
         to_location_id: data.to_location_id,
-        price_per_trip:
-          data.price_per_trip != null ? Number(data.price_per_trip) : null,
+        route_price: data.route_price != null ? Number(data.route_price) : null,
         duration_hours:
           data.duration_hours != null ? Number(data.duration_hours) : null,
         is_active: true,
@@ -237,7 +241,7 @@ function LocationsHome() {
     resetRoute({
       from_location_id: '',
       to_location_id: '',
-      price_per_trip: undefined,
+      route_price: undefined,
       duration_hours: undefined,
     });
     setRouteError(null);
@@ -249,7 +253,7 @@ function LocationsHome() {
     resetRoute({
       from_location_id: route.from_location_id,
       to_location_id: route.to_location_id,
-      price_per_trip: route.price_per_trip ?? undefined,
+      route_price: route.route_price ?? undefined,
       duration_hours: route.duration_hours ?? undefined,
     });
     setRouteError(null);
@@ -410,8 +414,7 @@ function LocationsHome() {
               <p>
                 No routes configured yet. Add a route to set the per-person
                 price between two locations — the booking form will then
-                auto-calculate the fare (× passenger count, minimum 4) when a
-                customer selects those stops.
+                use that flat route rate when a customer selects those stops.
               </p>
             </div>
           )}
@@ -455,10 +458,10 @@ function LocationsHome() {
                 </div>
                 <div className={styles.routeMetaRow}>
                   <div className={styles.routePrice}>
-                    {route.price_per_trip != null ? (
+                    {route.route_price != null ? (
                       <>
-                        {formatPrice(route.price_per_trip)}
-                        <span className={styles.routePriceUnit}>/person</span>
+                        {formatPrice(route.route_price)}
+                        <span className={styles.routePriceUnit}>/route</span>
                       </>
                     ) : (
                       <span className={styles.routePriceUnset}>
@@ -489,6 +492,23 @@ function LocationsHome() {
             </div>
             <div className={styles.curfewCardBody}>
               <p className={styles.curfewCardTitle}>Boat Curfew Time</p>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={curfewEnabled}
+                  onChange={handleToggleCurfewEnabled}
+                  disabled={isSavingCurfew}
+                  style={{ accentColor: '#007bff' }}
+                />
+                Enable curfew for boats
+              </label>
               <p className={styles.curfewCardHint}>
                 Boats cannot be booked if the cruise (plus 1&nbsp;hr buffer)
                 ends after this time. Leave blank to disable the curfew.
@@ -499,12 +519,12 @@ function LocationsHome() {
                   className={styles.curfewInput}
                   value={curfewInput}
                   onChange={(e) => setCurfewInput(e.target.value)}
-                  disabled={isSavingCurfew}
+                  disabled={isSavingCurfew || !curfewEnabled}
                 />
                 <Button
                   variant="primary"
                   onClick={handleCurfewSave}
-                  disabled={isSavingCurfew || !curfewInput}
+                  disabled={isSavingCurfew || !curfewInput || !curfewEnabled}
                 >
                   {isSavingCurfew ? 'Saving…' : 'Save'}
                 </Button>
@@ -673,9 +693,9 @@ function LocationsHome() {
                     </FormInput>
                   </div>
                   <FormInput
-                    id="price_per_trip"
+                    id="route_price"
                     type="number"
-                    label="Price per Person (₦)"
+                    label="Route Price (₦)"
                     formActions={routeFormActions}
                     disabled={isSavingRoute}
                     placeholder="e.g. 25000"
