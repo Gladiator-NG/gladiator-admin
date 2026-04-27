@@ -28,6 +28,7 @@ interface UseEditBookingFormArgs {
   locations: { id: string; name: string }[];
   transportRoutes: TransportRoute[];
   curfewTime: string | null;
+  curfewEnabled: boolean;
 }
 
 export function useEditBookingForm({
@@ -37,6 +38,7 @@ export function useEditBookingForm({
   locations,
   transportRoutes,
   curfewTime,
+  curfewEnabled,
 }: UseEditBookingFormArgs) {
   const { update, isPending: isUpdating } = useUpdateBooking();
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
@@ -442,6 +444,7 @@ export function useEditBookingForm({
       data.booking_type === 'boat_cruise' &&
       data.start_time &&
       Number(data.hours) > 0 &&
+      curfewEnabled &&
       curfewTime
     ) {
       const endT = boatAvailabilityEndTime(data.start_time, Number(data.hours));

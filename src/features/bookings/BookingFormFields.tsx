@@ -59,7 +59,6 @@ export function BookingFormFields({
   watchBeachHouseBookingMode,
   watchParentBookingId,
   watchBeachHouseId,
-  watchPickupLocation: _watchPickupLocation,
   transportRoutes,
   watchTransportRouteId,
   bookings,

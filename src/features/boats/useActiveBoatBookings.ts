@@ -4,7 +4,7 @@ import { useBookings } from '../bookings/useBookings';
 // Returns the number of active (upcoming or ongoing) boat bookings
 export function useActiveBoatBookings() {
   const { bookings, isLoading } = useBookings();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA');
 
   const active = useMemo(() => {
     if (!bookings) return 0;

@@ -58,6 +58,7 @@ function BookingsHome() {
   const { routes: transportRoutes } = useTransportRoutes();
   const { settings } = useSettings();
   const curfewTime = settings?.boat_curfew_time ?? null;
+  const curfewEnabled = settings?.boat_curfew_enabled ?? true;
   const { remove, isPending: isDeleting } = useDeleteBooking();
   const { updateStatus, isPending: isStatusUpdating } = useUpdateBookingStatus();
 
@@ -113,6 +114,7 @@ function BookingsHome() {
     locations,
     transportRoutes,
     curfewTime,
+    curfewEnabled,
   });
 
   const editForm = useEditBookingForm({
@@ -122,6 +124,7 @@ function BookingsHome() {
     locations,
     transportRoutes,
     curfewTime,
+    curfewEnabled,
   });
 
   const {

@@ -4,7 +4,7 @@ import { useBookings } from '../bookings/useBookings';
 // Returns the number of beach house bookings with check-in today
 export function useTodayCheckins() {
   const { bookings, isLoading } = useBookings();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA');
 
   const checkins = useMemo(() => {
     if (!bookings) return 0;

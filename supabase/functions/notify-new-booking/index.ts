@@ -4,7 +4,7 @@ import '@supabase/functions-js/edge-runtime.d.ts';
 interface BookingRecord {
   id: string;
   reference_code: string | null;
-  booking_type: 'boat' | 'beach_house' | null;
+  booking_type: 'boat_cruise' | 'beach_house' | 'boat_rental' | null;
   customer_name: string | null;
   customer_email: string | null;
   customer_phone: string | null;
@@ -19,7 +19,7 @@ interface BookingRecord {
   payment_reference: string | null;
   source: string | null;
   notes: string | null;
-  transport_type: string | null;
+  rental_type: string | null;
   created_at: string | null;
   // joined names from the webhook (may or may not be present)
   boat_name?: string | null;
@@ -68,7 +68,8 @@ function statusBadge(status: string | null): string {
 
 function typeLabel(type: string | null): string {
   if (type === 'beach_house') return '🏠 Beach House';
-  if (type === 'boat') return '🚢 Boat';
+  if (type === 'boat_cruise') return '🚢 Boat Cruise';
+  if (type === 'boat_rental') return '🚤 Boat Rental';
   return type ?? '—';
 }
 
@@ -159,7 +160,7 @@ function buildEmailText(b: BookingRecord): string {
     '='.repeat(40),
     `Reference:   ${b.reference_code ?? '—'}`,
     `Status:      ${b.status ?? '—'}`,
-    `Type:        ${b.booking_type ?? '—'}`,
+    `Type:        ${typeLabel(b.booking_type)}`,
     `Asset:       ${assetName}`,
     `Customer:    ${b.customer_name ?? '—'}`,
     `Email:       ${b.customer_email ?? '—'}`,

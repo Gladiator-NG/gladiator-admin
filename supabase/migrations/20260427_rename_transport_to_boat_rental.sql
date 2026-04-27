@@ -75,7 +75,7 @@ alter table public.bookings
     booking_range with &&
   )
   where (
-    status <> 'cancelled'
+    status in ('pending', 'confirmed')
     and beach_house_id is not null
     and booking_type <> 'boat_rental'
   );
