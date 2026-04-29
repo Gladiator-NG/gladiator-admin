@@ -3,12 +3,15 @@ import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import supabase from '../services/supabase';
 import { AuthContext } from './authContextValue';
+import { isPasswordReady, isPasswordSetupRequired } from '../services/apiAuth';
 
 const SESSION_VALIDATION_INTERVAL_MS = 15000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const requiresPasswordSetup = isPasswordSetupRequired(user);
+  const passwordReady = isPasswordReady(user);
 
   useEffect(() => {
     // Hydrate session on mount
@@ -56,7 +59,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error || !currentUser || currentUser.id !== activeUser.id) {
         await terminateLocalSession();
+        return;
       }
+
+      setUser((previousUser) => {
+        const previousMetadata = JSON.stringify(
+          previousUser?.user_metadata ?? {},
+        );
+        const currentMetadata = JSON.stringify(currentUser.user_metadata ?? {});
+
+        if (
+          previousUser?.id === currentUser.id &&
+          previousUser.email === currentUser.email &&
+          previousMetadata === currentMetadata
+        ) {
+          return previousUser;
+        }
+
+        return currentUser;
+      });
     }
 
     async function subscribeToRevocations() {
@@ -109,7 +130,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: Boolean(user), isLoading }}
+      value={{
+        user,
+        isAuthenticated: Boolean(user),
+        isPasswordReady: passwordReady,
+        requiresPasswordSetup,
+        isLoading,
+      }}
     >
       {children}
     </AuthContext.Provider>

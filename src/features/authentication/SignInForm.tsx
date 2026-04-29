@@ -13,6 +13,7 @@ import {
   completePasswordRecovery,
   ensureRecoverySessionFromUrl,
   getAuthUrlType,
+  isCurrentInviteSetupSession,
   isInviteCallbackUrl,
   isPasswordSetupRequired,
   markPasswordSetupRequired,
@@ -156,7 +157,7 @@ function SignInForm() {
           const isInviteSetup =
             type === 'invite' ||
             searchParams.get('setup') === 'password' ||
-            isPasswordSetupRequired(session.user);
+            isCurrentInviteSetupSession(session.user);
 
           if (isInviteSetup) {
             markPasswordSetupRequired(session.user.id);
@@ -207,7 +208,9 @@ function SignInForm() {
 
       if (event === 'SIGNED_IN' && session?.user) {
         const isInvite =
-          isInviteCallbackUrl() || isPasswordSetupRequired(session.user);
+          isInviteCallbackUrl() ||
+          new URLSearchParams(location.search).get('setup') === 'password' ||
+          isCurrentInviteSetupSession(session.user);
 
         if (isInvite) {
           markPasswordSetupRequired(session.user.id);

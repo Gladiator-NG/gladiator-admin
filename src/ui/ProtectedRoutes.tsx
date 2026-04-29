@@ -3,14 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../features/authentication/useUser';
 import {
   isInviteCallbackUrl,
-  isPasswordSetupRequired,
   markPasswordSetupRequired,
 } from '../services/apiAuth';
 
 function ProtectedRoutes({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isLoading, isAuthenticated } = useUser();
+  const {
+    user,
+    isLoading,
+    isAuthenticated,
+    isPasswordReady,
+    requiresPasswordSetup,
+  } = useUser();
 
   useEffect(
     function () {
@@ -30,20 +35,28 @@ function ProtectedRoutes({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (isPasswordSetupRequired(user)) {
+      if (requiresPasswordSetup) {
         navigate('/signin?setup=password', { replace: true });
       }
     },
-    [isAuthenticated, isLoading, location.hash, navigate, user],
+    [
+      isAuthenticated,
+      isLoading,
+      isPasswordReady,
+      location.hash,
+      navigate,
+      requiresPasswordSetup,
+      user,
+    ],
   );
 
   if (isLoading) return <p>Loading...</p>;
 
   if (isInviteCallbackUrl()) return null;
 
-  if (isPasswordSetupRequired(user)) return null;
+  if (requiresPasswordSetup) return null;
 
-  if (isAuthenticated) return <>{children}</>;
+  if (isAuthenticated && isPasswordReady) return <>{children}</>;
 
   return null;
 }

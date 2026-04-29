@@ -33,15 +33,16 @@ export function isPasswordSetupRequired(user: User | null | undefined) {
   if (!user) return false;
 
   const metadata = user.user_metadata ?? {};
-  const setupRequiredFromMetadata =
-    metadata.invite_pending === true && metadata.password_changed !== true;
+  return metadata.password_changed !== true;
+}
 
-  const setupRequiredFromCurrentInvite =
-    canUseSessionStorage() &&
-    window.sessionStorage.getItem(PASSWORD_SETUP_STORAGE_KEY) === user.id &&
-    metadata.password_changed !== true;
+export function isPasswordReady(user: User | null | undefined) {
+  return Boolean(user) && !isPasswordSetupRequired(user);
+}
 
-  return setupRequiredFromMetadata || setupRequiredFromCurrentInvite;
+export function isCurrentInviteSetupSession(user: User | null | undefined) {
+  if (!user || !canUseSessionStorage()) return false;
+  return window.sessionStorage.getItem(PASSWORD_SETUP_STORAGE_KEY) === user.id;
 }
 
 export async function signInWithEmail({
@@ -159,10 +160,11 @@ export async function verifyAndUpdatePassword({
   // Current password verified — now update to the new one and mark changed
   const { data, error: updateError } = await supabase.auth.updateUser({
     password: newPassword,
-    data: { password_changed: true },
+    data: { password_changed: true, invite_pending: false },
   });
 
   if (updateError) throw new Error(updateError.message);
+  clearPasswordSetupRequired();
   return data;
 }
 
