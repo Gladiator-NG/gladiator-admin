@@ -12,6 +12,10 @@ import supabase from '../../services/supabase';
 import {
   completePasswordRecovery,
   ensureRecoverySessionFromUrl,
+  getAuthUrlType,
+  isInviteCallbackUrl,
+  isPasswordSetupRequired,
+  markPasswordSetupRequired,
   requestPasswordReset,
 } from '../../services/apiAuth';
 import styles from './styles/SignInForm.module.css';
@@ -105,15 +109,14 @@ function SignInForm() {
 
     async function prepareRecoverySession() {
       const searchParams = new URLSearchParams(location.search);
-      const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      const type = hashParams.get('type');
+      const type = getAuthUrlType();
       const isRecoveryUrl =
         searchParams.get('reset') === 'password' ||
+        searchParams.get('setup') === 'password' ||
         type === 'recovery' ||
         type === 'invite';
 
       if (!isRecoveryUrl) {
-        // Check if there's an existing session (from invite verification server-side)
         try {
           const {
             data: { session: existingSession },
@@ -121,8 +124,10 @@ function SignInForm() {
 
           if (!isMounted) return;
 
-          if (existingSession?.user) {
-            // Session exists from invite verification - show password setup
+          if (
+            existingSession?.user &&
+            isPasswordSetupRequired(existingSession.user)
+          ) {
             setRecoveryEmail(existingSession.user.email ?? '');
             setHasRecoverySession(true);
             setIsInviteFlow(true);
@@ -148,15 +153,25 @@ function SignInForm() {
         if (!isMounted) return;
 
         if (session?.user) {
+          const isInviteSetup =
+            type === 'invite' ||
+            searchParams.get('setup') === 'password' ||
+            isPasswordSetupRequired(session.user);
+
+          if (isInviteSetup) {
+            markPasswordSetupRequired(session.user.id);
+          }
+
           setRecoveryEmail(session.user.email ?? '');
           setHasRecoverySession(true);
-          setIsInviteFlow(type === 'invite');
+          setIsInviteFlow(isInviteSetup);
           setView('reset-password');
         } else {
           setHasRecoverySession(false);
           setIsInviteFlow(false);
           setView('forgot-password');
-          const isInvite = type === 'invite';
+          const isInvite =
+            type === 'invite' || searchParams.get('setup') === 'password';
           const errorMsg = isInvite
             ? 'Invitation link is invalid or expired. Request a new one.'
             : 'Recovery link is invalid or expired. Request a new one.';
@@ -182,10 +197,23 @@ function SignInForm() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+      if (event === 'PASSWORD_RECOVERY') {
         if (session?.user) {
           setRecoveryEmail(session.user.email ?? '');
           setHasRecoverySession(Boolean(session));
+          setView('reset-password');
+        }
+      }
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        const isInvite =
+          isInviteCallbackUrl() || isPasswordSetupRequired(session.user);
+
+        if (isInvite) {
+          markPasswordSetupRequired(session.user.id);
+          setRecoveryEmail(session.user.email ?? '');
+          setHasRecoverySession(true);
+          setIsInviteFlow(true);
           setView('reset-password');
         }
       }

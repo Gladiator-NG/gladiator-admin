@@ -1,4 +1,4 @@
-import { useAuthContext } from '../../context/AuthContext';
+import { useAuthContext } from '../../context/useAuthContext';
 
 export function useUser() {
   const { user, isAuthenticated, isLoading } = useAuthContext();

@@ -55,7 +55,12 @@ Deno.serve(async (req) => {
 
     const { data, error: authError } =
       await supabase.auth.admin.inviteUserByEmail(email, {
-        data: { full_name: fullName, role },
+        data: {
+          full_name: fullName,
+          role,
+          invite_pending: true,
+          password_changed: false,
+        },
         redirectTo,
       });
 

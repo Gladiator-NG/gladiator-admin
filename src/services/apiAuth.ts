@@ -1,5 +1,48 @@
 import supabase from './supabase';
 import { buildAppUrl } from '../config/app';
+import type { User } from '@supabase/supabase-js';
+
+const PASSWORD_SETUP_STORAGE_KEY = 'gladiator:password-setup-required';
+
+function canUseSessionStorage() {
+  return typeof window !== 'undefined' && Boolean(window.sessionStorage);
+}
+
+export function getAuthUrlType() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+
+  return hashParams.get('type') ?? searchParams.get('type');
+}
+
+export function isInviteCallbackUrl() {
+  return getAuthUrlType() === 'invite';
+}
+
+export function markPasswordSetupRequired(userId: string) {
+  if (!canUseSessionStorage()) return;
+  window.sessionStorage.setItem(PASSWORD_SETUP_STORAGE_KEY, userId);
+}
+
+export function clearPasswordSetupRequired() {
+  if (!canUseSessionStorage()) return;
+  window.sessionStorage.removeItem(PASSWORD_SETUP_STORAGE_KEY);
+}
+
+export function isPasswordSetupRequired(user: User | null | undefined) {
+  if (!user) return false;
+
+  const metadata = user.user_metadata ?? {};
+  const setupRequiredFromMetadata =
+    metadata.invite_pending === true && metadata.password_changed !== true;
+
+  const setupRequiredFromCurrentInvite =
+    canUseSessionStorage() &&
+    window.sessionStorage.getItem(PASSWORD_SETUP_STORAGE_KEY) === user.id &&
+    metadata.password_changed !== true;
+
+  return setupRequiredFromMetadata || setupRequiredFromCurrentInvite;
+}
 
 export async function signInWithEmail({
   email,
@@ -17,6 +60,21 @@ export async function signInWithEmail({
 
   const signedInUser = data.user;
   if (signedInUser?.id) {
+    if (signedInUser.user_metadata?.password_changed !== true) {
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { password_changed: true, invite_pending: false },
+      });
+
+      if (metadataError) {
+        console.warn(
+          'Unable to sync password setup metadata:',
+          metadataError.message,
+        );
+      } else {
+        clearPasswordSetupRequired();
+      }
+    }
+
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
@@ -111,10 +169,11 @@ export async function verifyAndUpdatePassword({
 export async function completePasswordRecovery(newPassword: string) {
   const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
-    data: { password_changed: true },
+    data: { password_changed: true, invite_pending: false },
   });
 
   if (error) throw new Error(error.message);
+  clearPasswordSetupRequired();
   return data;
 }
 
