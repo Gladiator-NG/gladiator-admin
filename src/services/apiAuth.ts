@@ -180,10 +180,31 @@ export async function completePasswordRecovery(newPassword: string) {
 }
 
 export async function ensureRecoverySessionFromUrl() {
+  const searchParams = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
-  const type = hashParams.get('type');
+  const type = hashParams.get('type') ?? searchParams.get('type');
+  const code = searchParams.get('code');
   const accessToken = hashParams.get('access_token');
   const refreshToken = hashParams.get('refresh_token');
+
+  function cleanAuthCallbackUrl() {
+    const cleanSearchParams = new URLSearchParams(window.location.search);
+    cleanSearchParams.delete('code');
+    cleanSearchParams.delete('type');
+
+    const cleanSearch = cleanSearchParams.toString();
+    const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}`;
+
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) throw new Error(error.message);
+
+    cleanAuthCallbackUrl();
+  }
 
   if (
     (type === 'recovery' || type === 'invite') &&
@@ -197,8 +218,7 @@ export async function ensureRecoverySessionFromUrl() {
 
     if (error) throw new Error(error.message);
 
-    const cleanUrl = `${window.location.pathname}${window.location.search}`;
-    window.history.replaceState({}, document.title, cleanUrl);
+    cleanAuthCallbackUrl();
   }
 
   const {

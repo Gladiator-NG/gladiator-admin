@@ -64,7 +64,7 @@ export async function createUser({
   fullName: string;
   role: string;
 }): Promise<Profile> {
-  const redirectTo = buildAppUrl('/signin');
+  const redirectTo = buildAppUrl('/signin?setup=password');
 
   const { data, error } = await supabase.functions.invoke('create-user', {
     body: { email, fullName, role, redirectTo },
