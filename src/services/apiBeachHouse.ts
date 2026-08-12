@@ -58,6 +58,8 @@ export interface BeachHouse {
   slug: string;
   description: string | null;
   location: string | null;
+  experience_location_id: string | null;
+  arrival_jetty_location_id: string | null;
   address: string | null;
   max_guests: number | null;
   bedrooms: number | null;
@@ -78,6 +80,8 @@ export interface BeachHouse {
   updated_at: string;
   // Joined from beach_house_images
   images?: BeachHouseImage[];
+  experience_location?: { id: string; name: string } | null;
+  arrival_jetty?: { id: string; name: string } | null;
 }
 
 export interface CreateBeachHouseInput {
@@ -85,6 +89,8 @@ export interface CreateBeachHouseInput {
   slug: string;
   description?: string;
   location?: string;
+  experience_location_id?: string | null;
+  arrival_jetty_location_id?: string | null;
   address?: string;
   max_guests?: number;
   bedrooms?: number;
@@ -111,7 +117,7 @@ export type UpdateBeachHouseInput = Partial<CreateBeachHouseInput> & {
 export async function getBeachHouses(): Promise<BeachHouse[]> {
   const { data, error } = await supabase
     .from('beach_houses')
-    .select('*, images:beach_house_images!beach_house_id(*)')
+    .select('*, images:beach_house_images!beach_house_id(*), experience_location:experience_locations!experience_location_id(id, name), arrival_jetty:locations!arrival_jetty_location_id(id, name)')
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -121,7 +127,7 @@ export async function getBeachHouses(): Promise<BeachHouse[]> {
 export async function getBeachHouse(id: string): Promise<BeachHouse> {
   const { data, error } = await supabase
     .from('beach_houses')
-    .select('*, images:beach_house_images!beach_house_id(*)')
+    .select('*, images:beach_house_images!beach_house_id(*), experience_location:experience_locations!experience_location_id(id, name), arrival_jetty:locations!arrival_jetty_location_id(id, name)')
     .eq('id', id)
     .single();
 

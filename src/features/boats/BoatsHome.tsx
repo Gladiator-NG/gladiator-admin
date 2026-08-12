@@ -70,6 +70,7 @@ interface BoatFields {
   slug: string;
   description: string;
   pickup_location: string;
+  jetty_location_id: string;
   max_guests: number;
   cabins: number;
   boat_type: string;
@@ -185,7 +186,7 @@ function BoatFormFields({
         <FormInput id="slug" label="Slug" formActions={formActions} disabled />
       </div>
       <FormInput
-        id="pickup_location"
+        id="jetty_location_id"
         type="select"
         label="Boarding / Jetty Location"
         formActions={formActions}
@@ -194,7 +195,7 @@ function BoatFormFields({
       >
         <option value="">Select jetty…</option>
         {locations.map((l) => (
-          <option key={l.id} value={l.name}>
+          <option key={l.id} value={l.id}>
             {l.name}
           </option>
         ))}
@@ -483,7 +484,9 @@ function BoatsHome() {
     create(
       {
         ...data,
-        location: data.pickup_location || undefined,
+        location: undefined,
+        pickup_location: undefined,
+        jetty_location_id: data.jetty_location_id || null,
         max_guests: Number(data.max_guests) || undefined,
         cabins: Number(data.cabins) || undefined,
         price_per_hour: Number(data.price_per_hour) || undefined,
@@ -557,6 +560,7 @@ function BoatsHome() {
       slug: boat.slug,
       description: boat.description ?? '',
       pickup_location: boat.pickup_location ?? boat.location ?? '',
+      jetty_location_id: boat.jetty_location_id ?? '',
       max_guests: boat.max_guests ?? ('' as unknown as number),
       cabins: boat.cabins ?? ('' as unknown as number),
       boat_type: boat.boat_type ?? '',
@@ -582,7 +586,9 @@ function BoatsHome() {
       {
         id: editingBoat.id,
         ...data,
-        location: data.pickup_location || undefined,
+        location: undefined,
+        pickup_location: undefined,
+        jetty_location_id: data.jetty_location_id || null,
         max_guests: Number(data.max_guests) || undefined,
         cabins: Number(data.cabins) || undefined,
         price_per_hour: Number(data.price_per_hour) || undefined,
@@ -1023,7 +1029,7 @@ function BoatsHome() {
                   <EditImageGrid
                     images={createImages}
                     onChange={setCreateImages}
-                    max={8}
+                    max={12}
                     disabled={isCreateBusy}
                   />
                   {createImageError && (
@@ -1104,7 +1110,7 @@ function BoatsHome() {
                   <EditImageGrid
                     images={editableImages}
                     onChange={setEditableImages}
-                    max={8}
+                    max={12}
                     disabled={isEditBusy}
                   />
                   {editImageError && (
@@ -1227,7 +1233,7 @@ function BoatsHome() {
                 <EditImageGrid
                   images={manageEditableImages}
                   onChange={setManageEditableImages}
-                  max={8}
+                  max={12}
                   disabled={isSavingManage}
                 />
                 {manageSubmitError && (

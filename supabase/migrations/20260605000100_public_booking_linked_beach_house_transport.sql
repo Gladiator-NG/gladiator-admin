@@ -168,11 +168,13 @@ begin
           raise exception 'The linked waterfront stay could not be verified.';
         end if;
 
-        if p_rental_type = 'return' and v_pickup is distinct from v_house.location then
+        if p_rental_type = 'return'
+          and v_route.from_location_id is distinct from v_house.arrival_jetty_location_id then
           raise exception 'Please choose a route that starts from the linked waterfront stay.';
         end if;
 
-        if p_rental_type <> 'return' and v_dropoff is distinct from v_house.location then
+        if p_rental_type <> 'return'
+          and v_route.to_location_id is distinct from v_house.arrival_jetty_location_id then
           raise exception 'Please choose a route that goes to the linked waterfront stay.';
         end if;
 

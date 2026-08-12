@@ -150,12 +150,16 @@ function App() {
                     path="locations"
                     element={withMeta(
                       {
-                        title: 'Transport Locations',
+                        title: 'Locations',
                         description:
-                          'Manage transport locations, pricing routes, and curfew settings used for booking logistics.',
+                          'Manage jetties, waterfront destinations, transfer pricing routes, and boat curfew settings.',
                       },
                       <LocationsHome />,
                     )}
+                  />
+                  <Route
+                    path="experience-locations"
+                    element={<Navigate to="/locations" replace />}
                   />
                 </Route>
                 {/* Help — protected but no AppLayout wrapper */}

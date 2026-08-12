@@ -40,6 +40,7 @@ import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import { slugify, formatPrice } from '../../utils/format';
 import { useBeachHouses } from './useBeachHouses';
 import { useLocations } from '../bookings/useLocations';
+import { getAllExperienceLocations } from '../../services/apiExperienceLocation';
 import { useCreateBeachHouse } from './useCreateBeachHouse';
 import { useUpdateBeachHouse } from './useUpdateBeachHouse';
 import { useDeleteBeachHouse } from './useDeleteBeachHouse';
@@ -59,6 +60,8 @@ interface HouseFields {
   slug: string;
   description: string;
   location: string;
+  experience_location_id: string;
+  arrival_jetty_location_id: string;
   address: string;
   max_guests: number;
   bedrooms: number;
@@ -167,6 +170,10 @@ function BeachHousesHome() {
   const queryClient = useQueryClient();
   const { beachHouses, isLoading, error } = useBeachHouses();
   const { locations } = useLocations();
+  const { data: experienceLocations = [] } = useQuery({
+    queryKey: ['experience_locations_all'],
+    queryFn: getAllExperienceLocations,
+  });
   const { create, isPending: isCreating } = useCreateBeachHouse();
   const { update, isPending: isUpdating } = useUpdateBeachHouse();
   const { remove, isPending: isDeleting } = useDeleteBeachHouse();
@@ -347,6 +354,9 @@ function BeachHousesHome() {
     create(
       {
         ...data,
+        location: undefined,
+        experience_location_id: data.experience_location_id || null,
+        arrival_jetty_location_id: data.arrival_jetty_location_id || null,
         amenities: data.amenities
           ? data.amenities
               .split(',')
@@ -435,6 +445,8 @@ function BeachHousesHome() {
       slug: house.slug,
       description: house.description ?? '',
       location: house.location ?? '',
+      experience_location_id: house.experience_location_id ?? '',
+      arrival_jetty_location_id: house.arrival_jetty_location_id ?? '',
       address: house.address ?? '',
       max_guests: house.max_guests ?? ('' as unknown as number),
       bedrooms: house.bedrooms ?? ('' as unknown as number),
@@ -471,6 +483,9 @@ function BeachHousesHome() {
       {
         id: editingHouse.id,
         ...data,
+        location: undefined,
+        experience_location_id: data.experience_location_id || null,
+        arrival_jetty_location_id: data.arrival_jetty_location_id || null,
         amenities: data.amenities
           ? data.amenities
               .split(',')
@@ -570,12 +585,14 @@ function BeachHousesHome() {
     formActions,
     disabled,
     onNameChange,
-    locations,
+    jettyLocations,
+    experienceLocations,
   }: {
     formActions: typeof createFormActions;
     disabled: boolean;
     onNameChange?: React.ChangeEventHandler<HTMLInputElement>;
-    locations: { id: string; name: string }[];
+    jettyLocations: { id: string; name: string }[];
+    experienceLocations: { id: string; name: string; is_active?: boolean }[];
   }) {
     return (
       <>
@@ -605,16 +622,16 @@ function BeachHousesHome() {
         />
         <div className={styles.formRow}>
           <FormInput
-            id="location"
+            id="experience_location_id"
             type="select"
-            label="Location"
+            label="Experience Location"
             formActions={formActions}
             disabled={disabled}
             required={false}
           >
-            <option value="">Select location…</option>
-            {locations.map((l) => (
-              <option key={l.id} value={l.name}>
+            <option value="">Select waterfront destination…</option>
+            {experienceLocations.map((l) => (
+              <option key={l.id} value={l.id}>
                 {l.name}
               </option>
             ))}
@@ -627,6 +644,21 @@ function BeachHousesHome() {
             required={false}
           />
         </div>
+        <FormInput
+          id="arrival_jetty_location_id"
+          type="select"
+          label="Arrival Jetty (optional)"
+          formActions={formActions}
+          disabled={disabled}
+          required={false}
+        >
+          <option value="">No linked transfer jetty</option>
+          {jettyLocations.map((jetty) => (
+            <option key={jetty.id} value={jetty.id}>
+              {jetty.name}
+            </option>
+          ))}
+        </FormInput>
         <div className={styles.formRow3}>
           <FormInput
             id="max_guests"
@@ -1131,12 +1163,13 @@ function BeachHousesHome() {
                     formActions={createFormActions}
                     disabled={isCreateBusy}
                     onNameChange={handleCreateNameChange}
-                    locations={locations}
+                    jettyLocations={locations}
+                    experienceLocations={experienceLocations}
                   />
                   <EditImageGrid
                     images={createImages}
                     onChange={setCreateImages}
-                    max={6}
+                    max={12}
                     disabled={isCreateBusy}
                   />
                   {createImageError && (
@@ -1212,12 +1245,13 @@ function BeachHousesHome() {
                   <HouseFormFields
                     formActions={editFormActions}
                     disabled={isEditBusy}
-                    locations={locations}
+                    jettyLocations={locations}
+                    experienceLocations={experienceLocations}
                   />
                   <EditImageGrid
                     images={editableImages}
                     onChange={setEditableImages}
-                    max={6}
+                    max={12}
                     disabled={isEditBusy}
                   />
                   {editImageError && (
@@ -1341,7 +1375,7 @@ function BeachHousesHome() {
                 <EditImageGrid
                   images={manageEditableImages}
                   onChange={setManageEditableImages}
-                  max={6}
+                  max={12}
                   disabled={isSavingManage}
                 />
 

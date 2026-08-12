@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Clock,
   GripVertical,
+  MapPinned,
 } from 'lucide-react';
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
 import {
@@ -29,6 +30,8 @@ import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import FormInput from '../../ui/formElements/FormInput';
 import Button from '../../ui/Button';
 import { useSettings, useUpdateSetting } from '../settings/useSettings';
+import ExperienceLocationsHome from '../experience-locations/ExperienceLocationsHome';
+import { getAllExperienceLocations } from '../../services/apiExperienceLocation';
 import styles from './LocationsHome.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -75,6 +78,10 @@ function LocationsHome() {
   const queryClient = useQueryClient();
   const { locations, isLoading } = useAllLocations();
   const { routes } = useAllRoutes();
+  const { data: destinations = [] } = useQuery({
+    queryKey: ['experience_locations_all'],
+    queryFn: getAllExperienceLocations,
+  });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['locations_all'] });
@@ -84,14 +91,16 @@ function LocationsHome() {
   };
 
   // ── Active tab ──────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<'locations' | 'routes' | 'curfew'>(
-    'locations',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'locations' | 'destinations' | 'routes' | 'curfew'
+  >('locations');
 
   // ── Curfew settings ─────────────────────────────────────────────────────
   const { settings } = useSettings();
   const { updateSetting, isPending: isSavingCurfew } = useUpdateSetting();
   const [curfewInput, setCurfewInput] = useState<string>('');
+  const [curfewReopenInput, setCurfewReopenInput] = useState<string>('08:00');
+  const [whatsappInput, setWhatsappInput] = useState<string>('2348000000000');
   const curfewEnabled = settings?.boat_curfew_enabled ?? true;
 
   useEffect(() => {
@@ -100,13 +109,20 @@ function LocationsHome() {
     }
   }, [settings?.boat_curfew_time]);
 
+  useEffect(() => {
+    if (settings?.boat_curfew_reopen_time) {
+      setCurfewReopenInput(settings.boat_curfew_reopen_time);
+    }
+  }, [settings?.boat_curfew_reopen_time]);
+
+  useEffect(() => {
+    if (settings?.booking_whatsapp_number) {
+      setWhatsappInput(settings.booking_whatsapp_number);
+    }
+  }, [settings?.booking_whatsapp_number]);
+
   function handleToggleCurfewEnabled() {
     updateSetting({ key: 'boat_curfew_enabled', value: !curfewEnabled });
-  }
-
-  function handleCurfewSave() {
-    if (!curfewInput) return;
-    updateSetting({ key: 'boat_curfew_time', value: curfewInput });
   }
 
   // ── Location create/edit ────────────────────────────────────────────────
@@ -265,23 +281,11 @@ function LocationsHome() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Transport Locations</h1>
+          <h1 className={styles.pageTitle}>Locations</h1>
           <p className={styles.pageSubtitle}>
-            Manage the jetties and drop-off points used for transport bookings,
-            and set prices between them.
+            Manage operational jetties, customer-facing waterfront destinations,
+            and the routes that connect them.
           </p>
-        </div>
-        <div
-          className={styles.headerActionWrap}
-          style={{ visibility: activeTab === 'curfew' ? 'hidden' : 'visible' }}
-        >
-          <Button
-            variant="primary"
-            onClick={activeTab === 'locations' ? openNewLocation : openNewRoute}
-          >
-            <Plus size={16} />
-            {activeTab === 'locations' ? 'Add Location' : 'Add Route'}
-          </Button>
         </div>
       </div>
 
@@ -292,8 +296,16 @@ function LocationsHome() {
           onClick={() => setActiveTab('locations')}
         >
           <MapPin size={15} />
-          Locations
+          Jetties
           <span className={styles.tabBadge}>{locations.length}</span>
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'destinations' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('destinations')}
+        >
+          <MapPinned size={15} />
+          Destinations
+          <span className={styles.tabBadge}>{destinations.length}</span>
         </button>
         <button
           className={`${styles.tab} ${activeTab === 'routes' ? styles.tabActive : ''}`}
@@ -308,9 +320,43 @@ function LocationsHome() {
           onClick={() => setActiveTab('curfew')}
         >
           <Clock size={15} />
-          Transport Curfew
+          Booking Hours
         </button>
       </div>
+
+      {activeTab === 'destinations' && <ExperienceLocationsHome embedded />}
+
+      {activeTab === 'locations' && (
+        <div className={styles.pageHeader}>
+          <p className={styles.pageSubtitle}>
+            Operational boarding and drop-off points used for yacht cruises and
+            boat transfers.
+          </p>
+          <Button variant="primary" onClick={openNewLocation}>
+            <Plus size={16} /> Add Jetty
+          </Button>
+        </div>
+      )}
+
+      {activeTab === 'routes' && (
+        <div className={styles.pageHeader}>
+          <p className={styles.pageSubtitle}>
+            Fixed prices and travel times between jetty locations.
+          </p>
+          <Button variant="primary" onClick={openNewRoute}>
+            <Plus size={16} /> Add Route
+          </Button>
+        </div>
+      )}
+
+      {activeTab === 'curfew' && (
+        <div className={styles.pageHeader}>
+          <p className={styles.pageSubtitle}>
+            Set when online boat bookings pause and where customers can contact
+            the team after hours.
+          </p>
+        </div>
+      )}
 
       {/* ── Locations list ──────────────────────────────────────────────── */}
       {activeTab === 'locations' && (
@@ -491,7 +537,7 @@ function LocationsHome() {
               <Clock size={20} />
             </div>
             <div className={styles.curfewCardBody}>
-              <p className={styles.curfewCardTitle}>Boat Curfew Time</p>
+              <p className={styles.curfewCardTitle}>Online Boat Booking Hours</p>
               <label
                 style={{
                   display: 'flex',
@@ -507,27 +553,63 @@ function LocationsHome() {
                   disabled={isSavingCurfew}
                   style={{ accentColor: '#007bff' }}
                 />
-                Enable curfew for boats
+                Enable online booking cutoff
               </label>
               <p className={styles.curfewCardHint}>
-                Boats cannot be booked if the cruise (plus 1&nbsp;hr buffer)
-                ends after this time. Leave blank to disable the curfew.
+                Yacht cruises and boat transfers outside this window move to a
+                WhatsApp-assisted booking instead of online checkout.
               </p>
-              <div className={styles.curfewRow}>
-                <input
-                  type="time"
-                  className={styles.curfewInput}
-                  value={curfewInput}
-                  onChange={(e) => setCurfewInput(e.target.value)}
-                  disabled={isSavingCurfew || !curfewEnabled}
-                />
-                <Button
-                  variant="primary"
-                  onClick={handleCurfewSave}
-                  disabled={isSavingCurfew || !curfewInput || !curfewEnabled}
-                >
-                  {isSavingCurfew ? 'Saving…' : 'Save'}
-                </Button>
+              <div className={styles.curfewFields}>
+                <label className={styles.curfewField}>
+                  <span>Online booking opens</span>
+                  <input
+                    type="time"
+                    className={styles.curfewInput}
+                    value={curfewReopenInput}
+                    onChange={(e) => setCurfewReopenInput(e.target.value)}
+                    onBlur={() =>
+                      updateSetting({
+                        key: 'boat_curfew_reopen_time',
+                        value: curfewReopenInput,
+                      })
+                    }
+                    disabled={isSavingCurfew || !curfewEnabled}
+                  />
+                </label>
+                <label className={styles.curfewField}>
+                  <span>Online booking closes</span>
+                  <input
+                    type="time"
+                    className={styles.curfewInput}
+                    value={curfewInput}
+                    onChange={(e) => setCurfewInput(e.target.value)}
+                    onBlur={() =>
+                      updateSetting({
+                        key: 'boat_curfew_time',
+                        value: curfewInput,
+                      })
+                    }
+                    disabled={isSavingCurfew || !curfewEnabled}
+                  />
+                </label>
+                <label className={`${styles.curfewField} ${styles.curfewFieldFull}`}>
+                  <span>WhatsApp number</span>
+                  <input
+                    type="tel"
+                    className={styles.curfewInput}
+                    value={whatsappInput}
+                    onChange={(e) => setWhatsappInput(e.target.value)}
+                    onBlur={() =>
+                      updateSetting({
+                        key: 'booking_whatsapp_number',
+                        value: whatsappInput,
+                      })
+                    }
+                    placeholder="2348000000000"
+                    disabled={isSavingCurfew}
+                  />
+                  <small>Use international format without the + sign.</small>
+                </label>
               </div>
             </div>
           </div>
@@ -550,7 +632,7 @@ function LocationsHome() {
               <div className={styles.modalBody}>
                 <div className={styles.modalHeader}>
                   <h2 className={styles.modalTitle}>
-                    {editingLocation ? 'Edit Location' : 'Add Location'}
+                    {editingLocation ? 'Edit Jetty' : 'Add Jetty'}
                   </h2>
                   <button
                     className={styles.closeBtn}
@@ -566,7 +648,7 @@ function LocationsHome() {
                 >
                   <FormInput
                     id="name"
-                    label="Location Name"
+                    label="Jetty Name"
                     formActions={locFormActions}
                     disabled={isSavingLocation}
                     placeholder="e.g. Victoria Island Jetty"
@@ -622,7 +704,7 @@ function LocationsHome() {
                         ? 'Saving…'
                         : editingLocation
                           ? 'Save Changes'
-                          : 'Add Location'}
+                          : 'Add Jetty'}
                     </Button>
                   </div>
                 </form>

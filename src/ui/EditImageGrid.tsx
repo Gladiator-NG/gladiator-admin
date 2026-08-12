@@ -35,7 +35,7 @@ export default function EditImageGrid({
   images,
   onChange,
   min = 0,
-  max = 6,
+  max = 12,
   disabled = false,
 }: EditImageGridProps) {
   const inputRef = useRef<HTMLInputElement>(null);
