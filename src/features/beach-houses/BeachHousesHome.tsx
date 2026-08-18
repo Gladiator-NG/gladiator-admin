@@ -76,7 +76,6 @@ interface HouseFields {
   extra_guest_fee_per_head: number;
   amenities: string;
   is_active: boolean;
-  rental_price: number;
 }
 
 // ── Image edit helper ────────────────────────────────
@@ -373,7 +372,6 @@ function BeachHousesHome() {
         late_checkout_price_per_hour:
           Number(data.late_checkout_price_per_hour) || null,
         extra_guest_fee_per_head: Number(data.extra_guest_fee_per_head) || null,
-        rental_price: Number(data.rental_price) || null,
       },
       {
         onSuccess: async (newHouse) => {
@@ -464,7 +462,6 @@ function BeachHousesHome() {
         house.extra_guest_fee_per_head ?? ('' as unknown as number),
       amenities: house.amenities?.join(', ') ?? '',
       is_active: house.is_active,
-      rental_price: house.rental_price ?? ('' as unknown as number),
     });
   }
 
@@ -502,7 +499,6 @@ function BeachHousesHome() {
         late_checkout_price_per_hour:
           Number(data.late_checkout_price_per_hour) || null,
         extra_guest_fee_per_head: Number(data.extra_guest_fee_per_head) || null,
-        rental_price: Number(data.rental_price) || null,
       },
       {
         onSuccess: async () => {
@@ -775,17 +771,6 @@ function BeachHousesHome() {
           disabled={disabled}
           required={false}
         />
-        <div className={styles.formRow}>
-          <FormInput
-            id="rental_price"
-            type="number"
-            label="Rental Price Override (₦)"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-            placeholder="Leave blank to use route rate"
-          />
-        </div>
       </>
     );
   }

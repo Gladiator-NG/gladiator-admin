@@ -361,9 +361,6 @@ export function BookingFormFields({
             ).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.from_location?.name ?? '?'} {'→'} {r.to_location?.name ?? '?'}
-                {r.route_price != null
-                  ? ` · ₦${r.route_price.toLocaleString()}/route`
-                  : ''}
               </option>
             ))}
           </FormInput>
@@ -372,8 +369,8 @@ export function BookingFormFields({
           <input type="hidden" {...formActions.register('dropoff_location')} />
 
           <p className={styles.transportPricingHint}>
-            Pricing is a flat <strong>per-route</strong> rate. Round trip doubles the
-            selected route price.
+            Each boat has its own <strong>full transfer price</strong> for this
+            route.
           </p>
 
           {watchTransportRouteId
@@ -384,7 +381,14 @@ export function BookingFormFields({
                 const availableBoats = boats.filter(
                   (b) =>
                     b.is_available_for_rental &&
-                    b.pickup_location === selectedRoute?.from_location?.name,
+                    (b.jetty_location_id === selectedRoute?.from_location_id ||
+                      (!b.jetty_location_id &&
+                        b.pickup_location === selectedRoute?.from_location?.name)) &&
+                    (selectedRoute?.boat_prices?.some(
+                      (price) => price.boat_id === b.id && price.is_active,
+                    ) ||
+                      (watchTransportType === 'round_trip' &&
+                        b.id === watchBoatId)),
                 );
                 if (availableBoats.length === 0) {
                   return (
@@ -413,6 +417,16 @@ export function BookingFormFields({
                           {b.max_guests
                             ? ` (${b.max_guests} passengers max)`
                             : ''}
+                          {selectedRoute?.boat_prices?.find(
+                            (price) => price.boat_id === b.id && price.is_active,
+                          )?.price != null
+                            ? ` · ₦${selectedRoute.boat_prices
+                                .find(
+                                  (price) =>
+                                    price.boat_id === b.id && price.is_active,
+                                )!
+                                .price.toLocaleString()}`
+                            : ''}
                         </option>
                       ))}
                     </FormInput>
@@ -426,18 +440,13 @@ export function BookingFormFields({
               })()
             : null}
 
-          <FormInput
-            id="rental_type"
-            type="select"
-            label="Rental Type"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          >
-            <option value="">Not specified</option>
-            <option value="outbound">One Way</option>
-            <option value="round_trip">Round Trip</option>
-          </FormInput>
+          <input type="hidden" {...formActions.register('rental_type')} />
+          {watchTransportType === 'round_trip' && (
+            <p className={styles.transportPricingHint}>
+              This is a historical round-trip booking. Existing return details
+              remain editable, but new round-trip bookings can no longer be created.
+            </p>
+          )}
 
           <div className={styles.linkedStaySection}>
             <p className={styles.linkedStayHeading}>

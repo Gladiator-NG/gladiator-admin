@@ -12,6 +12,7 @@ import {
 } from '../../services/apiExperienceLocation';
 import type { ExperienceLocation } from '../../services/apiExperienceLocation';
 import Button from '../../ui/Button';
+import ConfirmDeleteModal from '../../ui/ConfirmDeleteModal';
 import FormInput from '../../ui/formElements/FormInput';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import styles from '../locations/LocationsHome.module.css';
@@ -37,6 +38,8 @@ export default function ExperienceLocationsHome({
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ExperienceLocation | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<ExperienceLocation | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setOrderedLocations(locations));
@@ -82,10 +85,15 @@ export default function ExperienceLocationsHome({
       setSubmitError(error instanceof Error ? error.message : String(error)),
   });
 
-  const { mutate: remove } = useMutation({
+  const { mutate: remove, isPending: isDeleting } = useMutation({
     mutationFn: deleteExperienceLocation,
-    onSuccess: invalidate,
-    onError: (error) => alert(error instanceof Error ? error.message : String(error)),
+    onSuccess: () => {
+      invalidate();
+      setDeleting(null);
+      setDeleteError(null);
+    },
+    onError: (error) =>
+      setDeleteError(error instanceof Error ? error.message : String(error)),
   });
 
   const { mutate: saveOrder, isPending: isSavingOrder } = useMutation({
@@ -187,9 +195,8 @@ export default function ExperienceLocationsHome({
                     <button
                       className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                       onClick={() => {
-                        if (confirm(`Delete experience location "${location.name}"? Beach houses will remain but lose this destination.`)) {
-                          remove(location.id);
-                        }
+                        setDeleteError(null);
+                        setDeleting(location);
                       }}
                       title="Delete"
                     >
@@ -281,6 +288,24 @@ export default function ExperienceLocationsHome({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDeleteModal
+        error={deleteError}
+        isPending={isDeleting}
+        onClose={() => {
+          setDeleting(null);
+          setDeleteError(null);
+        }}
+        onConfirm={() => deleting && remove(deleting.id)}
+        open={deleting !== null}
+        title="Delete Destination?"
+      >
+        <p>
+          Delete <strong>{deleting?.name}</strong>? Beach houses will remain,
+          but they will lose this customer-facing destination. This cannot be
+          undone.
+        </p>
+      </ConfirmDeleteModal>
     </div>
   );
 }

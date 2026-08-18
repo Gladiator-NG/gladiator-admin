@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Booking, BookingStatus, BookingType } from '../../services/apiBooking';
-import { findRoutePrice } from '../../services/apiTransport';
+import { findBoatRoutePrice } from '../../services/apiTransport';
 import type { TransportRoute } from '../../services/apiTransport';
 import { useAvailabilityCheck } from './useAvailabilityCheck';
 import type { AvailabilityParams, AvailabilityState } from './useAvailabilityCheck';
@@ -68,7 +68,6 @@ export function useEditBookingForm({
   const watchEndDate = watch('end_date');
   const watchStartTime = watch('start_time');
   const watchPickupLocation = watch('pickup_location') ?? '';
-  const watchDropoffLocation = watch('dropoff_location') ?? '';
   const watchTransportRouteId = watch('rental_route_id') ?? '';
   const watchReturnPickupTime = watch('return_pickup_time') ?? '';
   const watchLateCheckoutHours = Number(watch('late_checkout_hours')) || 0;
@@ -125,40 +124,31 @@ export function useEditBookingForm({
       return null;
     }
     if (watchType === 'boat_rental') {
-      if (watchParentBookingId) {
-        const stay = bookings.find((b) => b.id === watchParentBookingId);
-        const house = beachHouses.find((h) => h.id === stay?.beach_house_id);
-        if (house?.rental_price) {
-          return house.rental_price * (watchTransportType === 'round_trip' ? 2 : 1);
-        }
+      if (watchTransportType === 'round_trip') {
+        return editingBooking?.total_amount ?? null;
       }
-      if (watchPickupLocation && watchDropoffLocation) {
-        const routePrice = findRoutePrice(
-          transportRoutes,
-          watchPickupLocation,
-          watchDropoffLocation,
-        );
-        const tripMultiplier = watchTransportType === 'round_trip' ? 2 : 1;
-        return routePrice !== null ? routePrice * tripMultiplier : null;
-      }
+      const routePrice = findBoatRoutePrice(
+        transportRoutes,
+        watchTransportRouteId,
+        watchBoatId,
+      );
+      return routePrice;
     }
     return null;
   }, [
     beachHouses,
-    bookings,
     boats,
     transportRoutes,
     watchBeachHouseId,
     watchBeachHouseBookingMode,
     watchBoatId,
-    watchDropoffLocation,
     watchEndDate,
     watchGuestCount,
     watchHours,
     effectiveDayUseHours,
+    editingBooking?.total_amount,
     watchLateCheckoutHours,
-    watchParentBookingId,
-    watchPickupLocation,
+    watchTransportRouteId,
     watchStartDate,
     watchTransportType,
     watchType,

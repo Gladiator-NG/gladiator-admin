@@ -180,7 +180,8 @@ function HelpPage() {
                   <tr>
                     <td>Locations</td>
                     <td>
-                      Manage jetties and destinations, route prices and travel
+                      Manage jetties, destinations, and boat-specific route
+                      prices
                       times, and the boat curfew.
                     </td>
                   </tr>
@@ -537,7 +538,8 @@ function HelpPage() {
                   <div className={styles.stepBody}>
                     <p className={styles.stepHead}>Check the calculated total</p>
                     <p className={styles.stepDesc}>
-                      The total comes from the current listing or route price.
+                      The total comes from the current listing or selected
+                      boat&apos;s route price.
                       Confirm it with the customer before saving.
                     </p>
                   </div>
@@ -713,25 +715,18 @@ function HelpPage() {
               </thead>
               <tbody>
                 <tr>
-                  <td>One Way</td>
+                  <td>Directional transfer</td>
                   <td>
-                    Uses one route price and the route&apos;s one-way travel time.
-                  </td>
-                </tr>
-                <tr>
-                  <td>Round Trip</td>
-                  <td>
-                    Uses twice the route price and requires a return date and
-                    boarding time.
+                    Charges the selected boat&apos;s full price for the chosen
+                    directional route. Book the reverse route separately when needed.
                   </td>
                 </tr>
                 <tr>
                   <td>Linked to a stay</td>
                   <td>
                     Connects both records. Dates and times are guided by the
-                    stay and the route&apos;s travel time. A property-level rental
-                    price override may replace the normal route price in the
-                    admin form.
+                    stay and the route&apos;s operational travel time. The selected
+                    boat&apos;s route price remains authoritative.
                   </td>
                 </tr>
               </tbody>
@@ -924,13 +919,6 @@ function HelpPage() {
                   </td>
                 </tr>
                 <tr>
-                  <td>Rental price override</td>
-                  <td>
-                    Optional price used by the admin form for a transfer linked
-                    to that property; otherwise the normal route price is used.
-                  </td>
-                </tr>
-                <tr>
                   <td>Amenities, address, photos, cover</td>
                   <td>Public-facing information used to present the property.</td>
                 </tr>
@@ -971,10 +959,10 @@ function HelpPage() {
             <div className={styles.subSection}>
               <h3 className={styles.subTitle}>Pricing routes</h3>
               <p className={styles.subText}>
-                A route connects one saved location to another. The price is a
-                <strong> flat price per route</strong>, not a price per person.
-                Round trips double it. The one-way duration is used for arrival
-                estimates, linked-stay pickup timing, and availability checks.
+                A route connects one saved location to another. After saving it,
+                enter the <strong>full transfer price for each eligible boat</strong>.
+                A missing boat price means that boat cannot be booked on the route.
+                Operational travel time is retained internally for availability.
               </p>
               <div className={styles.callout + ' ' + styles.calloutInfo}>
                 <Info />
@@ -1251,9 +1239,9 @@ function HelpPage() {
               <p className={styles.subText}>
                 Recheck the listing&apos;s current rate, number of hours or nights,
                 total versus additional guests, extra-guest fee, late checkout,
-                route direction, round-trip multiplier, and any property rental
-                override. Existing bookings keep their saved amount after a
-                catalogue price changes.
+                route direction, and the selected boat&apos;s full route price.
+                Existing bookings keep their saved amount after a catalogue
+                price changes.
               </p>
             </div>
 

@@ -241,7 +241,7 @@ function BoatFormFields({
         <FormInput
           id="price_per_hour"
           type="number"
-          label="Price per Hour (₦)"
+          label="Cruise Price per Hour (₦)"
           formActions={formActions}
           disabled={disabled}
           required={false}
@@ -249,7 +249,7 @@ function BoatFormFields({
         <FormInput
           id="min_booking_hours"
           type="number"
-          label="Min Hours"
+          label="Cruise Min Hours"
           formActions={formActions}
           disabled={disabled}
           required={false}
@@ -257,7 +257,7 @@ function BoatFormFields({
         <FormInput
           id="max_booking_hours"
           type="number"
-          label="Max Hours"
+          label="Cruise Max Hours"
           formActions={formActions}
           disabled={disabled}
           required={false}
@@ -277,7 +277,7 @@ function BoatFormFields({
         <FormInput
           id="is_available_for_rental"
           type="select"
-          label="Available for Rental"
+          label="Available for Boat Transfers"
           formActions={formActions}
           disabled={disabled}
         >

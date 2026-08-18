@@ -32,10 +32,12 @@ alter table public.notifications         enable row level security;
 alter table public.notification_reads    enable row level security;
 alter table public.notification_preferences enable row level security;
 
+drop policy if exists "Authenticated can read notifications" on public.notifications;
 create policy "Authenticated can read notifications"
   on public.notifications for select
   to authenticated using (true);
 
+drop policy if exists "Service role can insert notifications" on public.notifications;
 create policy "Service role can insert notifications"
   on public.notifications for insert
   to service_role with check (true);
@@ -44,18 +46,21 @@ create policy "Service role can insert notifications"
 -- to insert notifications by granting insert to postgres role
 grant insert on public.notifications to postgres;
 
+drop policy if exists "Users manage own reads" on public.notification_reads;
 create policy "Users manage own reads"
   on public.notification_reads for all
   to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists "Users manage own preferences" on public.notification_preferences;
 create policy "Users manage own preferences"
   on public.notification_preferences for all
   to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists "Service role reads preferences" on public.notification_preferences;
 create policy "Service role reads preferences"
   on public.notification_preferences for select
   to service_role using (true);

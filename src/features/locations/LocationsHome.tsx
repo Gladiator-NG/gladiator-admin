@@ -12,6 +12,8 @@ import {
   Clock,
   GripVertical,
   MapPinned,
+  Anchor,
+  Users,
 } from 'lucide-react';
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
 import {
@@ -23,12 +25,16 @@ import {
   deleteLocation,
   upsertTransportRoute,
   deleteTransportRoute,
+  saveBoatTransferPrice,
 } from '../../services/apiTransport';
 import type { Location, TransportRoute } from '../../services/apiTransport';
+import { getBoats } from '../../services/apiBoat';
+import type { Boat } from '../../services/apiBoat';
 import { formatPrice } from '../../utils/format';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import FormInput from '../../ui/formElements/FormInput';
 import Button from '../../ui/Button';
+import ConfirmDeleteModal from '../../ui/ConfirmDeleteModal';
 import { useSettings, useUpdateSetting } from '../settings/useSettings';
 import ExperienceLocationsHome from '../experience-locations/ExperienceLocationsHome';
 import { getAllExperienceLocations } from '../../services/apiExperienceLocation';
@@ -46,22 +52,26 @@ interface LocationFields {
 interface RouteFields {
   from_location_id: string;
   to_location_id: string;
-  route_price: number;
-  duration_hours: number;
 }
+
+const EMPTY_LOCATIONS: Location[] = [];
+
+type DeleteTarget =
+  | { kind: 'location'; location: Location }
+  | { kind: 'route'; route: TransportRoute };
 
 // ── Hooks ──────────────────────────────────────────────────────────────────────
 
 function useAllLocations() {
   const {
-    data = [],
+    data,
     isLoading,
     error,
   } = useQuery({
     queryKey: ['locations_all'],
     queryFn: getAllLocations,
   });
-  return { locations: data, isLoading, error };
+  return { locations: data ?? EMPTY_LOCATIONS, isLoading, error };
 }
 
 function useAllRoutes() {
@@ -78,6 +88,10 @@ function LocationsHome() {
   const queryClient = useQueryClient();
   const { locations, isLoading } = useAllLocations();
   const { routes } = useAllRoutes();
+  const { data: boats = [] } = useQuery({
+    queryKey: ['boats'],
+    queryFn: getBoats,
+  });
   const { data: destinations = [] } = useQuery({
     queryKey: ['experience_locations_all'],
     queryFn: getAllExperienceLocations,
@@ -130,6 +144,8 @@ function LocationsHome() {
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [orderedLocations, setOrderedLocations] = useState<Location[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     setOrderedLocations(locations);
@@ -168,10 +184,15 @@ function LocationsHome() {
       setLocationError(err instanceof Error ? err.message : String(err)),
   });
 
-  const { mutate: removeLocation } = useMutation({
+  const { mutate: removeLocation, isPending: isDeletingLocation } = useMutation({
     mutationFn: deleteLocation,
-    onSuccess: invalidate,
-    onError: (err) => alert(err instanceof Error ? err.message : String(err)),
+    onSuccess: () => {
+      invalidate();
+      setDeleteTarget(null);
+      setDeleteError(null);
+    },
+    onError: (err) =>
+      setDeleteError(err instanceof Error ? err.message : String(err)),
   });
 
   const {
@@ -228,11 +249,9 @@ function LocationsHome() {
   const { mutate: saveRoute, isPending: isSavingRoute } = useMutation({
     mutationFn: (data: RouteFields) =>
       upsertTransportRoute({
+        id: editingRoute?.id,
         from_location_id: data.from_location_id,
         to_location_id: data.to_location_id,
-        route_price: data.route_price != null ? Number(data.route_price) : null,
-        duration_hours:
-          data.duration_hours != null ? Number(data.duration_hours) : null,
         is_active: true,
       }),
     onSuccess: () => {
@@ -246,10 +265,45 @@ function LocationsHome() {
       setRouteError(err instanceof Error ? err.message : String(err)),
   });
 
-  const { mutate: removeRoute } = useMutation({
+  const [priceModalTarget, setPriceModalTarget] = useState<{
+    route: TransportRoute;
+    boat: Boat;
+  } | null>(null);
+  const [priceInput, setPriceInput] = useState('');
+  const [priceError, setPriceError] = useState<string | null>(null);
+
+  const { mutate: saveTransferPrice, isPending: isSavingTransferPrice } =
+    useMutation({
+      mutationFn: saveBoatTransferPrice,
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['transport_routes_all'] });
+        queryClient.invalidateQueries({ queryKey: ['transport_routes'] });
+        setPriceModalTarget(null);
+        setPriceError(null);
+      },
+      onError: (err) =>
+        setPriceError(err instanceof Error ? err.message : String(err)),
+    });
+
+  function openPriceModal(
+    route: TransportRoute,
+    boat: Boat,
+    currentPrice: number | null,
+  ) {
+    setPriceModalTarget({ route, boat });
+    setPriceInput(currentPrice != null ? String(currentPrice) : '');
+    setPriceError(null);
+  }
+
+  const { mutate: removeRoute, isPending: isDeletingRoute } = useMutation({
     mutationFn: deleteTransportRoute,
-    onSuccess: invalidate,
-    onError: (err) => alert(err instanceof Error ? err.message : String(err)),
+    onSuccess: () => {
+      invalidate();
+      setDeleteTarget(null);
+      setDeleteError(null);
+    },
+    onError: (err) =>
+      setDeleteError(err instanceof Error ? err.message : String(err)),
   });
 
   function openNewRoute() {
@@ -257,8 +311,6 @@ function LocationsHome() {
     resetRoute({
       from_location_id: '',
       to_location_id: '',
-      route_price: undefined,
-      duration_hours: undefined,
     });
     setRouteError(null);
     setShowRouteForm(true);
@@ -269,8 +321,6 @@ function LocationsHome() {
     resetRoute({
       from_location_id: route.from_location_id,
       to_location_id: route.to_location_id,
-      route_price: route.route_price ?? undefined,
-      duration_hours: route.duration_hours ?? undefined,
     });
     setRouteError(null);
     setShowRouteForm(true);
@@ -341,7 +391,7 @@ function LocationsHome() {
       {activeTab === 'routes' && (
         <div className={styles.pageHeader}>
           <p className={styles.pageSubtitle}>
-            Fixed prices and travel times between jetty locations.
+            Define directional routes, then set the full price for each boat.
           </p>
           <Button variant="primary" onClick={openNewRoute}>
             <Plus size={16} /> Add Route
@@ -425,12 +475,8 @@ function LocationsHome() {
                     <button
                       className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                       onClick={() => {
-                        if (
-                          confirm(
-                            `Delete location "${loc.name}"? This cannot be undone.`,
-                          )
-                        )
-                          removeLocation(loc.id);
+                        setDeleteError(null);
+                        setDeleteTarget({ kind: 'location', location: loc });
                       }}
                       title="Delete"
                     >
@@ -458,27 +504,52 @@ function LocationsHome() {
             <div className={styles.routesHint}>
               <AlertTriangle size={18} />
               <p>
-                No routes configured yet. Add a route to set the per-person
-                price between two locations — the booking form will then
-                use that flat route rate when a customer selects those stops.
+                No routes configured yet. Add a directional route, then set a
+                separate full-transfer price for every eligible boat.
               </p>
             </div>
           )}
-          {routes.map((route) => (
-            <div
-              key={route.id}
-              className={`${styles.listRow} ${styles.routeRow}`}
-            >
-              <div className={styles.routeMain}>
-                <div className={styles.routeHeaderRow}>
-                  <div className={styles.routeLabel}>
-                    <span className={styles.routeFrom}>
-                      {route.from_location?.name ?? '—'}
+          {routes.map((route) => {
+            const eligibleBoats = boats.filter(
+              (boat) =>
+                boat.is_available_for_rental &&
+                (boat.jetty_location_id === route.from_location_id ||
+                  (!boat.jetty_location_id &&
+                    boat.pickup_location === route.from_location?.name)),
+            );
+            const pricedCount = eligibleBoats.filter((boat) =>
+              route.boat_prices?.some(
+                (price) => price.boat_id === boat.id && price.is_active,
+              ),
+            ).length;
+
+            return (
+              <div key={route.id} className={styles.routeCard}>
+                <div className={styles.routeCardHeader}>
+                  <div className={styles.routeCardTitle}>
+                    <span className={styles.routeIconBadge}>
+                      <Route size={15} />
                     </span>
-                    <span className={styles.routeArrow}>→</span>
-                    <span className={styles.routeTo}>
-                      {route.to_location?.name ?? '—'}
-                    </span>
+                    <div className={styles.routeLabel}>
+                      <span className={styles.routeFrom}>
+                        {route.from_location?.name ?? '—'}
+                      </span>
+                      <span className={styles.routeArrow}>→</span>
+                      <span className={styles.routeTo}>
+                        {route.to_location?.name ?? '—'}
+                      </span>
+                    </div>
+                    {eligibleBoats.length > 0 && (
+                      <span
+                        className={`${styles.routeCoverageBadge} ${
+                          pricedCount === eligibleBoats.length
+                            ? styles.routeCoverageBadgeComplete
+                            : ''
+                        }`}
+                      >
+                        {pricedCount}/{eligibleBoats.length} priced
+                      </span>
+                    )}
                   </div>
                   <div
                     className={`${styles.listRowActions} ${styles.routeActions}`}
@@ -493,8 +564,8 @@ function LocationsHome() {
                     <button
                       className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                       onClick={() => {
-                        if (confirm('Delete this route?'))
-                          removeRoute(route.id);
+                        setDeleteError(null);
+                        setDeleteTarget({ kind: 'route', route });
                       }}
                       title="Delete"
                     >
@@ -502,30 +573,65 @@ function LocationsHome() {
                     </button>
                   </div>
                 </div>
-                <div className={styles.routeMetaRow}>
-                  <div className={styles.routePrice}>
-                    {route.route_price != null ? (
-                      <>
-                        {formatPrice(route.route_price)}
-                        <span className={styles.routePriceUnit}>/route</span>
-                      </>
-                    ) : (
-                      <span className={styles.routePriceUnset}>
-                        Price not set
-                      </span>
-                    )}
-                  </div>
-                  {route.duration_hours != null && (
-                    <div className={styles.routeDuration}>
-                      <span className={styles.routePriceUnit}>
-                        {route.duration_hours}hr one-way
-                      </span>
-                    </div>
+                <div className={styles.boatPriceList}>
+                  {eligibleBoats.map((boat) => {
+                    const savedPrice = route.boat_prices?.find(
+                      (price) => price.boat_id === boat.id && price.is_active,
+                    );
+                    return (
+                      <div className={styles.boatPriceRow} key={boat.id}>
+                        <div className={styles.boatIdentity}>
+                          <span className={styles.boatAvatar}>
+                            <Anchor size={14} />
+                          </span>
+                          <div className={styles.boatIdentityText}>
+                            <strong>{boat.name}</strong>
+                            <span className={styles.boatCapacity}>
+                              <Users size={11} />
+                              {boat.max_guests
+                                ? `${boat.max_guests} passengers`
+                                : 'Capacity not set'}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          className={`${styles.priceDisplay} ${
+                            !savedPrice ? styles.priceDisplayUnset : ''
+                          }`}
+                          onClick={() =>
+                            openPriceModal(
+                              route,
+                              boat,
+                              savedPrice?.price ?? null,
+                            )
+                          }
+                          type="button"
+                        >
+                          {savedPrice ? (
+                            <span className={styles.priceValue}>
+                              {formatPrice(savedPrice.price)}
+                            </span>
+                          ) : (
+                            <span className={styles.priceUnsetLabel}>
+                              Not priced
+                            </span>
+                          )}
+                          <span className={styles.priceEditIcon}>
+                            <Pencil size={12} />
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {eligibleBoats.length === 0 && (
+                    <p className={styles.routePriceUnset}>
+                      No transfer-enabled boats are assigned to this departure jetty.
+                    </p>
                   )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -774,25 +880,10 @@ function LocationsHome() {
                       ))}
                     </FormInput>
                   </div>
-                  <FormInput
-                    id="route_price"
-                    type="number"
-                    label="Route Price (₦)"
-                    formActions={routeFormActions}
-                    disabled={isSavingRoute}
-                    placeholder="e.g. 25000"
-                  />
-                  <FormInput
-                    id="duration_hours"
-                    type="number"
-                    label="One-way Trip Duration (hours)"
-                    formActions={routeFormActions}
-                    disabled={isSavingRoute}
-                    required={false}
-                    placeholder="e.g. 2"
-                    min={0.5}
-                    step={0.5}
-                  />
+                  <p className={styles.routeFormHint}>
+                    Save the route first, then enter the full transfer price for
+                    each eligible boat from the route list.
+                  </p>
                   {routeError && (
                     <p className={styles.submitError}>{routeError}</p>
                   )}
@@ -823,6 +914,132 @@ function LocationsHome() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Transfer price modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {priceModalTarget && (
+          <motion.div
+            className={styles.backdrop}
+            {...backdropAnim}
+            onClick={(e) =>
+              !isSavingTransferPrice &&
+              e.target === e.currentTarget &&
+              setPriceModalTarget(null)
+            }
+          >
+            <motion.div className={styles.modal} {...modalAnim}>
+              <div className={styles.modalBody}>
+                <div className={styles.modalHeader}>
+                  <h2 className={styles.modalTitle}>Transfer Price</h2>
+                  <button
+                    className={styles.closeBtn}
+                    onClick={() => setPriceModalTarget(null)}
+                    disabled={isSavingTransferPrice}
+                  >
+                    <X />
+                  </button>
+                </div>
+                <div className={styles.priceModalRoute}>
+                  <span className={styles.priceModalBoat}>
+                    <Anchor size={14} />
+                    {priceModalTarget.boat.name}
+                  </span>
+                  <span className={styles.priceModalPath}>
+                    {priceModalTarget.route.from_location?.name ?? '—'}
+                    <span className={styles.routeArrow}> → </span>
+                    {priceModalTarget.route.to_location?.name ?? '—'}
+                  </span>
+                </div>
+                <form
+                  className={styles.modalForm}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    saveTransferPrice({
+                      route_id: priceModalTarget.route.id,
+                      boat_id: priceModalTarget.boat.id,
+                      price: priceInput === '' ? null : Number(priceInput),
+                    });
+                  }}
+                >
+                  <label className={styles.priceModalLabel}>
+                    Full transfer price
+                    <div className={styles.priceField}>
+                      <span className={styles.priceFieldPrefix}>₦</span>
+                      <input
+                        autoFocus
+                        className={styles.priceFieldInput}
+                        disabled={isSavingTransferPrice}
+                        min="0"
+                        onChange={(e) => setPriceInput(e.target.value)}
+                        placeholder="0"
+                        type="number"
+                        value={priceInput}
+                      />
+                    </div>
+                  </label>
+                  {priceError && (
+                    <p className={styles.submitError}>{priceError}</p>
+                  )}
+                  <div className={styles.modalActions}>
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={() => setPriceModalTarget(null)}
+                      disabled={isSavingTransferPrice}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      disabled={isSavingTransferPrice}
+                    >
+                      {isSavingTransferPrice ? 'Saving…' : 'Confirm Price'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmDeleteModal
+        error={deleteError}
+        isPending={isDeletingLocation || isDeletingRoute}
+        onClose={() => {
+          setDeleteTarget(null);
+          setDeleteError(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget?.kind === 'location') {
+            removeLocation(deleteTarget.location.id);
+          } else if (deleteTarget?.kind === 'route') {
+            removeRoute(deleteTarget.route.id);
+          }
+        }}
+        open={deleteTarget !== null}
+        title={
+          deleteTarget?.kind === 'location'
+            ? 'Delete Jetty?'
+            : 'Delete Pricing Route?'
+        }
+      >
+        {deleteTarget?.kind === 'location' ? (
+          <p>
+            Delete <strong>{deleteTarget.location.name}</strong>? Connected
+            routes and their per-boat prices will also be removed. This cannot
+            be undone.
+          </p>
+        ) : deleteTarget?.kind === 'route' ? (
+          <p>
+            Delete the route from{' '}
+            <strong>{deleteTarget.route.from_location?.name ?? 'Unknown'}</strong>{' '}
+            to <strong>{deleteTarget.route.to_location?.name ?? 'Unknown'}</strong>?
+            Its per-boat prices will also be removed. This cannot be undone.
+          </p>
+        ) : null}
+      </ConfirmDeleteModal>
     </div>
   );
 }

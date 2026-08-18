@@ -195,7 +195,8 @@ The principal records are:
 | `beach_houses` | Property details, stay pricing, capacity, times and transfer override |
 | `beach_house_images` | Ordered public property photos and cover relationship |
 | `locations` | Ordered, active/inactive jetties and destinations |
-| `transport_routes` | Directional flat route price and one-way duration |
+| `transport_routes` | Directional origin/destination and internal travel duration |
+| `boat_transfer_prices` | Full boat-specific price for a directional route |
 | `customers` | Deduplicated customer record and aggregate statistics |
 | `bookings` | Shared operational booking record for all experience types |
 | `payment_attempts` | Server-only Paystack attempt, idempotency and reconciliation state |
@@ -210,7 +211,7 @@ Important `bookings` values:
 ```text
 booking_type: boat_cruise | beach_house | boat_rental
 beach_house_booking_mode: day_use | overnight
-rental_type: outbound | return | round_trip
+rental_type: outbound | return | round_trip (historical only)
 status: pending | confirmed | cancelled | expired | completed
 payment_status: pending | paid | failed
 source: admin | web | mobile
@@ -258,9 +259,8 @@ Operational consequences:
   public availability false. Existing bookings are retained.
 - `is_available_for_rental = true` is additionally required for a boat to
   appear under public boat transfers.
-- Boat transfer selection depends on an active route and an eligible boat. The
-  admin form also filters rental boats by the route origin matching the boat's
-  pickup location.
+- Boat transfer selection depends on an active route, an eligible boat, and an
+  active `boat_transfer_prices` row for that exact combination.
 - A route is directional. Its unique pair is `from_location_id` plus
   `to_location_id`.
 - Images are compressed to WebP at approximately 300 KB maximum before upload.
@@ -355,15 +355,13 @@ Beach house overnight
   + late_checkout_price_per_hour × extension hours (admin-created booking)
 
 Boat rental
-  route_price × (2 for round trip, otherwise 1)
-
-Admin linked-stay boat rental
-  beach_house.rental_price when set, otherwise route_price
-  × trip multiplier
+  boat_transfer_prices.price for the selected boat and directional route
 ```
 
-`transport_routes.route_price` is a flat route amount, not a per-passenger
-amount. Old migration comments and UI copy that say “per person” are stale.
+Each boat-transfer price is the complete charge for one directional transfer,
+not a per-person or hourly amount. Reverse travel is a separate directional
+route and booking. Legacy `transport_routes.route_price`, property transfer
+overrides, and `round_trip` values remain only for historical compatibility.
 
 The website server must remain the authority for public quotes. Do not trust
 `total_amount` posted by the browser.
@@ -449,7 +447,7 @@ For any booking or pricing change, test at least:
 
 - Admin create and edit for all three booking types.
 - Day use and overnight stays.
-- One-way and round-trip transfers.
+- Boat-specific directional transfers and separately booked reverse routes.
 - A transfer linked to a beach-house stay.
 - A capacity boundary and an extra-guest charge.
 - A conflicting pending booking and a non-blocking cancelled booking.
@@ -485,13 +483,12 @@ The normal website uses the Paystack flow, but a caller can bypass it. Refactor
 the insertion helper into a service-role-only function; expose only the boolean
 availability check and server checkout route publicly.
 
-### High: linked-transfer quote can disagree with database total
+### Resolved: linked-transfer quote and database total
 
-The website server quotes `transport_routes.route_price`, while the public
-booking RPC may replace that value with `beach_houses.rental_price` for a linked
-stay. If the override differs, payment succeeds but confirmation raises “price
-changed” and the attempt needs manual attention. Use the same authoritative
-quote function for initialization and confirmation.
+Boat transfers now use the same active `boat_transfer_prices` row in the
+website quote and database confirmation path. Property-level transfer overrides
+are retained only as legacy data and are no longer editable or used for new
+bookings.
 
 ### High: fresh database bootstrap is not fully represented
 

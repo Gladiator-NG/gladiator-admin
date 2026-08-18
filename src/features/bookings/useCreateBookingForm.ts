@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Booking, BookingStatus, BookingType } from '../../services/apiBooking';
-import { findRoutePrice } from '../../services/apiTransport';
+import { findBoatRoutePrice } from '../../services/apiTransport';
 import type { TransportRoute } from '../../services/apiTransport';
 import { useCreateBooking } from './useCreateBooking';
 import { useAvailabilityCheck } from './useAvailabilityCheck';
@@ -63,6 +63,7 @@ export function useCreateBookingForm({
       hours: 1,
       guest_count: 1,
       late_checkout_hours: 0,
+      rental_type: 'outbound',
     },
   });
 
@@ -80,7 +81,6 @@ export function useCreateBookingForm({
   const watchEndDate = watch('end_date');
   const watchStartTime = watch('start_time');
   const watchPickupLocation = watch('pickup_location') ?? '';
-  const watchDropoffLocation = watch('dropoff_location') ?? '';
   const watchTransportRouteId = watch('rental_route_id') ?? '';
   const watchReturnPickupTime = watch('return_pickup_time') ?? '';
   const watchLateCheckoutHours = Number(watch('late_checkout_hours')) || 0;
@@ -137,41 +137,27 @@ export function useCreateBookingForm({
       return null;
     }
     if (watchType === 'boat_rental') {
-      if (watchParentBookingId) {
-        const stay = bookings.find((b) => b.id === watchParentBookingId);
-        const house = beachHouses.find((h) => h.id === stay?.beach_house_id);
-        if (house?.rental_price) {
-          return house.rental_price * (watchTransportType === 'round_trip' ? 2 : 1);
-        }
-      }
-      if (watchPickupLocation && watchDropoffLocation) {
-        const routePrice = findRoutePrice(
-          transportRoutes,
-          watchPickupLocation,
-          watchDropoffLocation,
-        );
-        const tripMultiplier = watchTransportType === 'round_trip' ? 2 : 1;
-        return routePrice !== null ? routePrice * tripMultiplier : null;
-      }
+      const routePrice = findBoatRoutePrice(
+        transportRoutes,
+        watchTransportRouteId,
+        watchBoatId,
+      );
+      return routePrice;
     }
     return null;
   }, [
     beachHouses,
-    bookings,
     boats,
     transportRoutes,
     watchBeachHouseId,
     watchBeachHouseBookingMode,
-    watchDropoffLocation,
     watchEndDate,
     watchGuestCount,
     watchHours,
     effectiveDayUseHours,
     watchLateCheckoutHours,
-    watchParentBookingId,
-    watchPickupLocation,
+    watchTransportRouteId,
     watchStartDate,
-    watchTransportType,
     watchType,
     watchBoatId,
   ]);
@@ -385,6 +371,7 @@ export function useCreateBookingForm({
       hours: 1,
       guest_count: 1,
       late_checkout_hours: 0,
+      rental_type: 'outbound',
     });
     setCreateSubmitError(null);
     setShowCreate(true);
