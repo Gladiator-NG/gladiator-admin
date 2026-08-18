@@ -16,7 +16,7 @@ export interface TransportRoute {
   from_location_id: string;
   to_location_id: string;
   route_price: number | null;
-  duration_hours: number | null; // one-way trip duration in hours
+  duration_hours: number | null; // hours the boat is blocked out for this route
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -130,7 +130,8 @@ export async function getTransportRoutes(): Promise<TransportRoute[]> {
   const { data, error } = await supabase
     .from('transport_routes')
     .select(ROUTE_SELECT)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as TransportRoute[];
 }
@@ -138,7 +139,10 @@ export async function getTransportRoutes(): Promise<TransportRoute[]> {
 export async function getAllTransportRoutes(): Promise<TransportRoute[]> {
   const { data, error } = await supabase
     .from('transport_routes')
-    .select(ROUTE_SELECT);
+    .select(ROUTE_SELECT)
+    // created_at never changes on edit, unlike an unordered scan (which can
+    // reorder rows after an UPDATE), so an edited route stays in place.
+    .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as TransportRoute[];
 }
@@ -147,6 +151,7 @@ export async function upsertTransportRoute(input: {
   id?: string;
   from_location_id: string;
   to_location_id: string;
+  duration_hours: number;
   is_active?: boolean;
 }): Promise<TransportRoute> {
   const { id, ...rest } = input;

@@ -52,6 +52,7 @@ interface LocationFields {
 interface RouteFields {
   from_location_id: string;
   to_location_id: string;
+  duration_hours: number;
 }
 
 const EMPTY_LOCATIONS: Location[] = [];
@@ -252,6 +253,7 @@ function LocationsHome() {
         id: editingRoute?.id,
         from_location_id: data.from_location_id,
         to_location_id: data.to_location_id,
+        duration_hours: Number(data.duration_hours),
         is_active: true,
       }),
     onSuccess: () => {
@@ -311,6 +313,7 @@ function LocationsHome() {
     resetRoute({
       from_location_id: '',
       to_location_id: '',
+      duration_hours: undefined,
     });
     setRouteError(null);
     setShowRouteForm(true);
@@ -321,6 +324,7 @@ function LocationsHome() {
     resetRoute({
       from_location_id: route.from_location_id,
       to_location_id: route.to_location_id,
+      duration_hours: route.duration_hours ?? undefined,
     });
     setRouteError(null);
     setShowRouteForm(true);
@@ -880,6 +884,29 @@ function LocationsHome() {
                       ))}
                     </FormInput>
                   </div>
+                  <FormInput
+                    id="duration_hours"
+                    type="number"
+                    label="Boat Downtime (hours)"
+                    formActions={routeFormActions}
+                    disabled={isSavingRoute}
+                    min={0.5}
+                    step={0.5}
+                    placeholder="e.g. 1.5"
+                    validation={{
+                      min: {
+                        value: 0.5,
+                        message: 'Duration must be at least 0.5 hours',
+                      },
+                    }}
+                  />
+                  <p className={styles.routeFormHint}>
+                    How long the boat should be blocked from other bookings for
+                    this route — include the full time it takes out of service,
+                    however that plays out for this route. The system uses this
+                    to check availability and avoid scheduling clashes with
+                    other bookings.
+                  </p>
                   <p className={styles.routeFormHint}>
                     Save the route first, then enter the full transfer price for
                     each eligible boat from the route list.
