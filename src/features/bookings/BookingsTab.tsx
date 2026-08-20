@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Booking, BookingStatus } from '../../services/apiBooking';
+import { BOOKING_CHANNEL_LABELS } from '../../services/apiBooking';
 import { MetricCard } from '../../ui/MetricCard';
 import { formatPrice } from '../../utils/format';
 import styles from './BookingsHome.module.css';
@@ -511,6 +512,11 @@ export function BookingsTab({
                         <div className={styles.detailBlock}>
                           <p className={styles.detailLabel}>Source / Guests</p>
                           <p className={styles.detailValue}>{b.source}</p>
+                          {b.booking_channel && (
+                            <p className={styles.detailSub}>
+                              via {BOOKING_CHANNEL_LABELS[b.booking_channel]}
+                            </p>
+                          )}
                           <p className={styles.detailSub}>
                             {b.guest_count} guest{b.guest_count !== 1 ? 's' : ''}
                           </p>

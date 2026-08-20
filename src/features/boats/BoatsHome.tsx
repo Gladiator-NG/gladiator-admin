@@ -40,7 +40,6 @@ import { MetricCard } from '../../ui/MetricCard';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
 import { slugify, formatPrice } from '../../utils/format';
 import { useBoats } from './useBoats';
-import { useLocations } from '../bookings/useLocations';
 import { useCreateBoat } from './useCreateBoat';
 import { useUpdateBoat } from './useUpdateBoat';
 import { useDeleteBoat } from './useDeleteBoat';
@@ -70,7 +69,6 @@ interface BoatFields {
   slug: string;
   description: string;
   pickup_location: string;
-  jetty_location_id: string;
   max_guests: number;
   cabins: number;
   boat_type: string;
@@ -163,7 +161,6 @@ function BoatFormFields({
   formActions,
   disabled,
   onNameChange,
-  locations,
 }: {
   formActions: {
     register: ReturnType<typeof useForm<BoatFields>>['register'];
@@ -171,7 +168,6 @@ function BoatFormFields({
   };
   disabled?: boolean;
   onNameChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  locations: { id: string; name: string }[];
 }) {
   return (
     <>
@@ -185,21 +181,6 @@ function BoatFormFields({
         />
         <FormInput id="slug" label="Slug" formActions={formActions} disabled />
       </div>
-      <FormInput
-        id="jetty_location_id"
-        type="select"
-        label="Boarding / Jetty Location"
-        formActions={formActions}
-        disabled={disabled}
-        required={false}
-      >
-        <option value="">Select jetty…</option>
-        {locations.map((l) => (
-          <option key={l.id} value={l.id}>
-            {l.name}
-          </option>
-        ))}
-      </FormInput>
       <div className={styles.formRow3}>
         <FormInput
           id="max_guests"
@@ -305,7 +286,6 @@ function BoatsHome() {
     useActiveBoatBookings();
   const queryClient = useQueryClient();
   const { boats, isLoading, error } = useBoats();
-  const { locations } = useLocations();
   const { create, isPending: isCreating } = useCreateBoat();
   const { update, isPending: isUpdating } = useUpdateBoat();
   const { remove, isPending: isDeleting } = useDeleteBoat();
@@ -486,7 +466,6 @@ function BoatsHome() {
         ...data,
         location: undefined,
         pickup_location: undefined,
-        jetty_location_id: data.jetty_location_id || null,
         max_guests: Number(data.max_guests) || undefined,
         cabins: Number(data.cabins) || undefined,
         price_per_hour: Number(data.price_per_hour) || undefined,
@@ -560,7 +539,6 @@ function BoatsHome() {
       slug: boat.slug,
       description: boat.description ?? '',
       pickup_location: boat.pickup_location ?? boat.location ?? '',
-      jetty_location_id: boat.jetty_location_id ?? '',
       max_guests: boat.max_guests ?? ('' as unknown as number),
       cabins: boat.cabins ?? ('' as unknown as number),
       boat_type: boat.boat_type ?? '',
@@ -588,7 +566,6 @@ function BoatsHome() {
         ...data,
         location: undefined,
         pickup_location: undefined,
-        jetty_location_id: data.jetty_location_id || null,
         max_guests: Number(data.max_guests) || undefined,
         cabins: Number(data.cabins) || undefined,
         price_per_hour: Number(data.price_per_hour) || undefined,
@@ -1024,7 +1001,6 @@ function BoatsHome() {
                     formActions={createFormActions}
                     disabled={isCreateBusy}
                     onNameChange={handleCreateNameChange}
-                    locations={locations}
                   />
                   <EditImageGrid
                     images={createImages}
@@ -1105,7 +1081,6 @@ function BoatsHome() {
                   <BoatFormFields
                     formActions={editFormActions}
                     disabled={isEditBusy}
-                    locations={locations}
                   />
                   <EditImageGrid
                     images={editableImages}

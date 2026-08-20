@@ -14,6 +14,41 @@ export type PaymentStatus = 'pending' | 'paid' | 'failed';
 export type RentalType = 'outbound' | 'return' | 'round_trip';
 export type BookingSource = 'admin' | 'web' | 'mobile';
 
+/** Where the lead actually came from, tracked separately from `source`. */
+export type BookingChannel =
+  | 'instagram'
+  | 'tiktok'
+  | 'facebook'
+  | 'whatsapp'
+  | 'x'
+  | 'phone_call'
+  | 'email'
+  | 'walk_in'
+  | 'referral'
+  | 'returning_customer'
+  | 'website'
+  | 'other';
+
+export const BOOKING_CHANNEL_LABELS: Record<BookingChannel, string> = {
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  facebook: 'Facebook',
+  whatsapp: 'WhatsApp',
+  x: 'X (Twitter)',
+  phone_call: 'Phone call',
+  email: 'Email',
+  walk_in: 'Walk-in',
+  referral: 'Referral',
+  returning_customer: 'Returning customer',
+  website: 'Website',
+  other: 'Other',
+};
+
+/** Display order for channel pickers and reports. */
+export const BOOKING_CHANNEL_OPTIONS = Object.keys(
+  BOOKING_CHANNEL_LABELS,
+) as BookingChannel[];
+
 export interface Booking {
   id: string;
   booking_type: BookingType;
@@ -50,6 +85,7 @@ export interface Booking {
   payment_status: PaymentStatus;
   payment_reference: string | null;
   source: BookingSource;
+  booking_channel: BookingChannel | null;
 
   notes: string | null;
 
@@ -115,6 +151,7 @@ export interface CreateBookingInput {
   payment_status?: PaymentStatus;
   payment_reference?: string | null;
   source?: BookingSource;
+  booking_channel?: BookingChannel | null;
   notes?: string | null;
 }
 

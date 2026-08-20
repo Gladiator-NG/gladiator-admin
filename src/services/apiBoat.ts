@@ -55,7 +55,6 @@ export interface Boat {
   description: string | null;
   location: string | null;
   pickup_location: string | null;
-  jetty_location_id: string | null;
   max_guests: number | null;
   cabins: number | null;
   boat_type: string | null;
@@ -68,7 +67,6 @@ export interface Boat {
   updated_at: string;
   // Joined
   images?: BoatImage[];
-  jetty_location?: { id: string; name: string } | null;
 }
 
 export interface CreateBoatInput {
@@ -77,7 +75,6 @@ export interface CreateBoatInput {
   description?: string;
   location?: string;
   pickup_location?: string;
-  jetty_location_id?: string | null;
   max_guests?: number;
   cabins?: number;
   boat_type?: string;
@@ -97,7 +94,7 @@ export type UpdateBoatInput = Partial<CreateBoatInput> & {
 export async function getBoats(): Promise<Boat[]> {
   const { data, error } = await supabase
     .from('boats')
-    .select('*, images:boat_images!boat_id(*), jetty_location:locations!jetty_location_id(id, name)')
+    .select('*, images:boat_images!boat_id(*)')
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);

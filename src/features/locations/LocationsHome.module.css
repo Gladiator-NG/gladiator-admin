@@ -658,7 +658,8 @@
 
 .formRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …) so wide controls shrink instead of overflowing the modal. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.6rem;
 }
 

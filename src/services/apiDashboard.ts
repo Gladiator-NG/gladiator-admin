@@ -1,4 +1,6 @@
 import supabase from './supabase';
+import { BOOKING_CHANNEL_LABELS } from './apiBooking';
+import type { BookingChannel } from './apiBooking';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -40,6 +42,11 @@ export interface SourceSlice {
   value: number;
 }
 
+export interface ChannelSlice {
+  name: string;
+  value: number;
+}
+
 export interface AssetBar {
   name: string;
   kind: 'boat' | 'beach_house';
@@ -64,6 +71,9 @@ export interface DashboardData {
   byType: TypeSlice[];
   byStatus: StatusSlice[];
   bySource: SourceSlice[];
+  byChannel: ChannelSlice[];
+  /** Bookings with no channel recorded — shown as a caveat, not a slice. */
+  channelUnrecorded: number;
   byAsset: AssetBar[];
   recentBookings: RecentBooking[];
 }
@@ -92,7 +102,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const { data: bookings, error: bErr } = await supabase
     .from('bookings')
     .select(
-      'id, reference_code, booking_type, status, payment_status, total_amount, guest_count, source, start_date, created_at, customer_name, boat_id, beach_house_id',
+      'id, reference_code, booking_type, status, payment_status, total_amount, guest_count, source, booking_channel, start_date, created_at, customer_name, boat_id, beach_house_id',
     )
     .order('created_at', { ascending: false });
 
@@ -228,6 +238,25 @@ export async function getDashboardData(): Promise<DashboardData> {
     value: v,
   }));
 
+  // ── By acquisition channel ────────────────────────────────────────────────
+  // Only bookings with a recorded channel are counted; unrecorded ones are
+  // surfaced separately so the split is not read as complete when it isn't.
+  const channelMap: Record<string, number> = {};
+  let channelUnrecorded = 0;
+  for (const b of all) {
+    if (b.booking_channel) {
+      channelMap[b.booking_channel] = (channelMap[b.booking_channel] ?? 0) + 1;
+    } else {
+      channelUnrecorded += 1;
+    }
+  }
+  const byChannel: ChannelSlice[] = Object.entries(channelMap)
+    .map(([k, v]) => ({
+      name: BOOKING_CHANNEL_LABELS[k as BookingChannel] ?? k,
+      value: v,
+    }))
+    .sort((a, b) => b.value - a.value);
+
   // ── By asset ─────────────────────────────────────────────────────────────
   const assetMap: Record<string, AssetBar> = {};
   for (const b of active) {
@@ -286,6 +315,8 @@ export async function getDashboardData(): Promise<DashboardData> {
     byType,
     byStatus,
     bySource,
+    byChannel,
+    channelUnrecorded,
     byAsset,
     recentBookings,
   };

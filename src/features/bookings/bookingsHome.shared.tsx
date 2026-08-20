@@ -63,6 +63,7 @@ export interface BookingFields {
   payment_status: PaymentStatus;
   payment_reference: string;
   source: string;
+  booking_channel: string;
   notes: string;
   return_pickup_time?: string;
 }
@@ -72,7 +73,6 @@ export interface BookingBoatOption {
   name: string;
   price_per_hour?: number | null;
   pickup_location?: string | null;
-  jetty_location_id?: string | null;
   max_guests?: number | null;
   min_booking_hours?: number | null;
   max_booking_hours?: number | null;

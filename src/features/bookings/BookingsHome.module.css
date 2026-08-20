@@ -1295,7 +1295,9 @@
 
 .formRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr) rather than 1fr: a bare 1fr floors each column at the
+     item's min-content width, so wide controls overflow the row. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.6rem;
 }
 

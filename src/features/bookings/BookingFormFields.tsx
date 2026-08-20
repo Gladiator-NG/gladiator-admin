@@ -1,6 +1,10 @@
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import type { Booking, BookingStatus, BookingType } from '../../services/apiBooking';
+import {
+  BOOKING_CHANNEL_LABELS,
+  BOOKING_CHANNEL_OPTIONS,
+} from '../../services/apiBooking';
 import type { TransportRoute } from '../../services/apiTransport';
 import FormInput from '../../ui/formElements/FormInput';
 import { useSettings } from '../settings/useSettings';
@@ -24,6 +28,7 @@ interface BookingFormFieldsProps {
   disabled?: boolean;
   boats: BookingBoatOption[];
   beachHouses: BookingBeachHouseOption[];
+  locations: { id: string; name: string }[];
   watchType: BookingType;
   watchTransportType: string;
   watchStatus: BookingStatus;
@@ -52,6 +57,7 @@ export function BookingFormFields({
   disabled,
   boats,
   beachHouses,
+  locations,
   watchType,
   watchTransportType,
   watchStatus,
@@ -152,6 +158,20 @@ export function BookingFormFields({
               yourself)
             </p>
           )}
+          <FormInput
+            id="pickup_location"
+            type="select"
+            label="Pickup Jetty"
+            formActions={formActions}
+            disabled={disabled}
+          >
+            <option value="">Select a jetty…</option>
+            {locations.map((l) => (
+              <option key={l.id} value={l.name}>
+                {l.name}
+              </option>
+            ))}
+          </FormInput>
           <FormInput
             key={`boat-hours-${watchBoatId || 'default'}`}
             id="hours"
@@ -378,12 +398,11 @@ export function BookingFormFields({
                 const selectedRoute = transportRoutes.find(
                   (r) => r.id === watchTransportRouteId,
                 );
+                // Boats aren't tied to a home jetty for transfers — any boat
+                // available for rental with a price on this route qualifies.
                 const availableBoats = boats.filter(
                   (b) =>
                     b.is_available_for_rental &&
-                    (b.jetty_location_id === selectedRoute?.from_location_id ||
-                      (!b.jetty_location_id &&
-                        b.pickup_location === selectedRoute?.from_location?.name)) &&
                     (selectedRoute?.boat_prices?.some(
                       (price) => price.boat_id === b.id && price.is_active,
                     ) ||
@@ -393,11 +412,8 @@ export function BookingFormFields({
                 if (availableBoats.length === 0) {
                   return (
                     <p className={styles.noBoatsMsg}>
-                      No rental boats depart from{' '}
-                      <strong>
-                        {selectedRoute?.from_location?.name ?? 'this location'}
-                      </strong>
-                      . Update a boat&apos;s jetty in the Boats page to enable it.
+                      No boats are priced for this route yet. Set a transfer
+                      price in Locations → Pricing Routes to enable one.
                     </p>
                   );
                 }
@@ -879,6 +895,25 @@ export function BookingFormFields({
         required={paymentRefRequired}
         placeholder="e.g. transfer receipt reference"
       />
+      <FormInput
+        id="booking_channel"
+        type="select"
+        label="Booking Channel (where did this booking come from?)"
+        formActions={formActions}
+        disabled={disabled}
+        required={false}
+      >
+        <option value="">Not recorded</option>
+        {BOOKING_CHANNEL_OPTIONS.map((channel) => (
+          <option key={channel} value={channel}>
+            {BOOKING_CHANNEL_LABELS[channel]}
+          </option>
+        ))}
+      </FormInput>
+      <p className={styles.capacityHint}>
+        Recorded for conversion tracking — it does not affect pricing or
+        availability.
+      </p>
       <FormInput
         id="notes"
         type="textarea"

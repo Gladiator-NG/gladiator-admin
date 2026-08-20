@@ -514,12 +514,10 @@ function LocationsHome() {
             </div>
           )}
           {routes.map((route) => {
+            // Boats aren't tied to a home jetty for transfers — any boat
+            // marked available for rental can be priced on any route.
             const eligibleBoats = boats.filter(
-              (boat) =>
-                boat.is_available_for_rental &&
-                (boat.jetty_location_id === route.from_location_id ||
-                  (!boat.jetty_location_id &&
-                    boat.pickup_location === route.from_location?.name)),
+              (boat) => boat.is_available_for_rental,
             );
             const pricedCount = eligibleBoats.filter((boat) =>
               route.boat_prices?.some(
@@ -629,7 +627,8 @@ function LocationsHome() {
                   })}
                   {eligibleBoats.length === 0 && (
                     <p className={styles.routePriceUnset}>
-                      No transfer-enabled boats are assigned to this departure jetty.
+                      No boats are marked available for transfer yet. Enable a
+                      boat for rental in Boats to price it here.
                     </p>
                   )}
                 </div>

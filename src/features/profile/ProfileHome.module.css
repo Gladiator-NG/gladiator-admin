@@ -130,7 +130,8 @@
 /* ── Forms row ────────────────────────────────────── */
 .formsRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …) so wide controls shrink instead of overflowing the row. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 2.4rem;
 }
 

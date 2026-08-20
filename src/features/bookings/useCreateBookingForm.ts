@@ -538,6 +538,7 @@ export function useCreateBookingForm({
         payment_status: derivePaymentStatus(data.status),
         payment_reference: data.payment_reference || null,
         source: 'admin' as never,
+        booking_channel: (data.booking_channel || null) as never,
         notes: data.notes || null,
       },
       {

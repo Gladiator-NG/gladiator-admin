@@ -44,6 +44,15 @@ const AMBER = '#d97706';
 const ROSE = '#e11d48';
 const VIOLET = '#7c3aed';
 const SLATE = '#64748b';
+// Brand tokens (--color-sky-blue / --color-sun-yellow / --color-sunset) plus
+// two neutrals, so the channel chart has enough distinct slices while staying
+// in the same family as the other dashboard charts.
+const SKY = '#71bce6';
+const SUN = '#fdca0f';
+const SUNSET = '#ea483a';
+const GREEN = '#16a34a';
+const INDIGO = '#4f46e5';
+const SLATE_LIGHT = '#94a3b8';
 
 const TYPE_COLORS: Record<string, string> = {
   'Boat Cruise': OCEAN,
@@ -59,6 +68,25 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const SOURCE_COLORS = [OCEAN, VIOLET, TEAL];
+
+// Keyed by the display labels from BOOKING_CHANNEL_LABELS. Drawn from the
+// dashboard palette above so this chart reads as part of the same system as
+// Booking Status / Source / Type. Fixed per channel rather than assigned by
+// rank, so a channel keeps its colour as the ordering shifts.
+const CHANNEL_COLORS: Record<string, string> = {
+  Instagram: OCEAN,
+  TikTok: VIOLET,
+  Facebook: SKY,
+  WhatsApp: TEAL,
+  'X (Twitter)': SLATE,
+  'Phone call': AMBER,
+  Email: ROSE,
+  'Walk-in': GREEN,
+  Referral: SUN,
+  'Returning customer': SUNSET,
+  Website: INDIGO,
+  Other: SLATE_LIGHT,
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function pct(current: number, prev: number) {
@@ -617,7 +645,117 @@ function DashboardHome() {
         </ChartCard>
       </div>
 
-      {/* ── Row 3: Asset performance + Guest trend ─────────────────────── */}
+      {/* ── Row 3: Booking channel ─────────────────────────────────────── */}
+      <div className={`${styles.chartRow} ${styles.chartRow60_40}`}>
+        <ChartCard
+          title="Booking Channel"
+          subtitle="Which channels bring in bookings"
+          span="half"
+          viewAllTo="/bookings"
+        >
+          {isLoading ? (
+            <Skeleton className={styles.chartSkeleton} />
+          ) : (data?.byChannel.length ?? 0) === 0 ? (
+            <p className={styles.channelEmpty}>
+              No booking channels recorded yet. Set the channel when creating or
+              editing a booking to start tracking where bookings come from.
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={data?.byChannel}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="44%"
+                  innerRadius="44%"
+                  outerRadius="70%"
+                  paddingAngle={3}
+                  strokeWidth={0}
+                >
+                  {data?.byChannel.map((entry) => (
+                    <Cell
+                      key={entry.name}
+                      fill={CHANNEL_COLORS[entry.name] ?? SLATE}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) => [value, 'Bookings']}
+                  contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
+                />
+                <Legend
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 11 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Top Channels"
+          subtitle="Ranked by booking count"
+          span="half"
+        >
+          {isLoading ? (
+            <Skeleton className={styles.chartSkeleton} />
+          ) : (
+            <div className={styles.channelList}>
+              {(data?.byChannel ?? []).map((entry) => {
+                const total = (data?.byChannel ?? []).reduce(
+                  (sum, item) => sum + item.value,
+                  0,
+                );
+                const share = total > 0 ? (entry.value / total) * 100 : 0;
+                return (
+                  <div className={styles.channelRow} key={entry.name}>
+                    <span className={styles.channelName}>
+                      <span
+                        className={styles.channelDot}
+                        style={{
+                          background: CHANNEL_COLORS[entry.name] ?? SLATE,
+                        }}
+                      />
+                      {entry.name}
+                    </span>
+                    <span className={styles.channelBarTrack}>
+                      <span
+                        className={styles.channelBarFill}
+                        style={{
+                          width: `${share}%`,
+                          background: CHANNEL_COLORS[entry.name] ?? SLATE,
+                        }}
+                      />
+                    </span>
+                    <span className={styles.channelCount}>
+                      {entry.value}
+                      <small>{Math.round(share)}%</small>
+                    </span>
+                  </div>
+                );
+              })}
+              {(data?.byChannel.length ?? 0) === 0 && (
+                <p className={styles.channelEmpty}>Nothing recorded yet.</p>
+              )}
+              {(data?.channelUnrecorded ?? 0) > 0 && (
+                <p className={styles.channelNote}>
+                  {data?.channelUnrecorded} booking
+                  {data?.channelUnrecorded === 1 ? '' : 's'} with no channel
+                  recorded {data?.channelUnrecorded === 1 ? 'is' : 'are'}{' '}
+                  excluded from this split.
+                </p>
+              )}
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* ── Row 4: Asset performance + Guest trend ─────────────────────── */}
       <div className={`${styles.chartRow} ${styles.chartRow60_40}`}>
         <ChartCard
           title="Asset Performance"

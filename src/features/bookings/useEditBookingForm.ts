@@ -401,6 +401,7 @@ export function useEditBookingForm({
       payment_status: booking.payment_status,
       payment_reference: booking.payment_reference ?? '',
       source: booking.source,
+      booking_channel: booking.booking_channel ?? '',
       notes: booking.notes ?? '',
     });
   }
@@ -539,6 +540,7 @@ export function useEditBookingForm({
         payment_status: derivePaymentStatus(data.status),
         payment_reference: data.payment_reference || null,
         source: data.source as never,
+        booking_channel: (data.booking_channel || null) as never,
         notes: data.notes || null,
       },
       {
