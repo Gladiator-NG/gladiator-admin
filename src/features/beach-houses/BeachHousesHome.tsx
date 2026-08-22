@@ -66,13 +66,8 @@ interface HouseFields {
   max_guests: number;
   bedrooms: number;
   bathrooms: number;
-  price_per_night: number;
-  day_use_price_per_hour: number;
-  day_use_min_hours: number;
-  day_use_max_hours: number;
-  check_in_time: string;
-  check_out_time: string;
-  late_checkout_price_per_hour: number;
+  day_rate: number;
+  overnight_rate: number;
   extra_guest_fee_per_head: number;
   amenities: string;
   is_active: boolean;
@@ -309,9 +304,9 @@ function BeachHousesHome() {
     list = [...list].sort((a, b) => {
       if (sortKey === 'name_asc') return a.name.localeCompare(b.name);
       if (sortKey === 'price_asc')
-        return (a.price_per_night ?? 0) - (b.price_per_night ?? 0);
+        return (a.overnight_rate ?? 0) - (b.overnight_rate ?? 0);
       if (sortKey === 'price_desc')
-        return (b.price_per_night ?? 0) - (a.price_per_night ?? 0);
+        return (b.overnight_rate ?? 0) - (a.overnight_rate ?? 0);
       // newest: default order from API (created_at desc)
       return 0;
     });
@@ -365,12 +360,8 @@ function BeachHousesHome() {
         max_guests: Number(data.max_guests) || undefined,
         bedrooms: Number(data.bedrooms) || undefined,
         bathrooms: Number(data.bathrooms) || undefined,
-        price_per_night: Number(data.price_per_night) || undefined,
-        day_use_price_per_hour: Number(data.day_use_price_per_hour) || undefined,
-        day_use_min_hours: Number(data.day_use_min_hours) || undefined,
-        day_use_max_hours: Number(data.day_use_max_hours) || undefined,
-        late_checkout_price_per_hour:
-          Number(data.late_checkout_price_per_hour) || null,
+        day_rate: Number(data.day_rate) || undefined,
+        overnight_rate: Number(data.overnight_rate) || undefined,
         extra_guest_fee_per_head: Number(data.extra_guest_fee_per_head) || null,
       },
       {
@@ -449,15 +440,8 @@ function BeachHousesHome() {
       max_guests: house.max_guests ?? ('' as unknown as number),
       bedrooms: house.bedrooms ?? ('' as unknown as number),
       bathrooms: house.bathrooms ?? ('' as unknown as number),
-      price_per_night: house.price_per_night ?? ('' as unknown as number),
-      day_use_price_per_hour:
-        house.day_use_price_per_hour ?? ('' as unknown as number),
-      day_use_min_hours: house.day_use_min_hours ?? ('' as unknown as number),
-      day_use_max_hours: house.day_use_max_hours ?? ('' as unknown as number),
-      check_in_time: house.check_in_time ?? '',
-      check_out_time: house.check_out_time ?? '',
-      late_checkout_price_per_hour:
-        house.late_checkout_price_per_hour ?? ('' as unknown as number),
+      day_rate: house.day_rate ?? ('' as unknown as number),
+      overnight_rate: house.overnight_rate ?? ('' as unknown as number),
       extra_guest_fee_per_head:
         house.extra_guest_fee_per_head ?? ('' as unknown as number),
       amenities: house.amenities?.join(', ') ?? '',
@@ -492,12 +476,8 @@ function BeachHousesHome() {
         max_guests: Number(data.max_guests) || undefined,
         bedrooms: Number(data.bedrooms) || undefined,
         bathrooms: Number(data.bathrooms) || undefined,
-        price_per_night: Number(data.price_per_night) || undefined,
-        day_use_price_per_hour: Number(data.day_use_price_per_hour) || undefined,
-        day_use_min_hours: Number(data.day_use_min_hours) || undefined,
-        day_use_max_hours: Number(data.day_use_max_hours) || undefined,
-        late_checkout_price_per_hour:
-          Number(data.late_checkout_price_per_hour) || null,
+        day_rate: Number(data.day_rate) || undefined,
+        overnight_rate: Number(data.overnight_rate) || undefined,
         extra_guest_fee_per_head: Number(data.extra_guest_fee_per_head) || null,
       },
       {
@@ -592,185 +572,148 @@ function BeachHousesHome() {
   }) {
     return (
       <>
-        <div className={styles.formRow}>
+        <section className={styles.formSection}>
+          <div className={styles.formSectionHeader}>
+            <span>01</span>
+            <div>
+              <h3>Property details</h3>
+              <p>The guest-facing name and description of this beach house.</p>
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <FormInput
+              id="name"
+              label="Property Name"
+              formActions={formActions}
+              disabled={disabled}
+              onChange={onNameChange}
+            />
+            <FormInput
+              id="slug"
+              label="URL Slug"
+              placeholder="auto-generated"
+              formActions={formActions}
+              disabled
+            />
+          </div>
           <FormInput
-            id="name"
-            label="Name"
+            id="description"
+            type="textarea"
+            label="Description"
             formActions={formActions}
             disabled={disabled}
-            onChange={onNameChange}
+            required={false}
           />
+        </section>
+
+        <section className={styles.formSection}>
+          <div className={styles.formSectionHeader}>
+            <span>02</span>
+            <div>
+              <h3>Location & arrival</h3>
+              <p>Connect the property to its destination and transfer point.</p>
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <FormInput
+              id="experience_location_id"
+              type="select"
+              label="Experience Location"
+              formActions={formActions}
+              disabled={disabled}
+              required={false}
+            >
+              <option value="">Select waterfront destination…</option>
+              {experienceLocations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </FormInput>
+            <FormInput
+              id="address"
+              label="Street Address"
+              formActions={formActions}
+              disabled={disabled}
+              required={false}
+            />
+          </div>
           <FormInput
-            id="slug"
-            label="Slug"
-            placeholder="auto-generated"
-            formActions={formActions}
-            disabled
-          />
-        </div>
-        <FormInput
-          id="description"
-          type="textarea"
-          label="Description"
-          formActions={formActions}
-          disabled={disabled}
-          required={false}
-        />
-        <div className={styles.formRow}>
-          <FormInput
-            id="experience_location_id"
+            id="arrival_jetty_location_id"
             type="select"
-            label="Experience Location"
+            label="Arrival Jetty (optional)"
             formActions={formActions}
             disabled={disabled}
             required={false}
           >
-            <option value="">Select waterfront destination…</option>
-            {experienceLocations.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
+            <option value="">No linked transfer jetty</option>
+            {jettyLocations.map((jetty) => (
+              <option key={jetty.id} value={jetty.id}>
+                {jetty.name}
               </option>
             ))}
           </FormInput>
-          <FormInput
-            id="address"
-            label="Address"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-        </div>
-        <FormInput
-          id="arrival_jetty_location_id"
-          type="select"
-          label="Arrival Jetty (optional)"
-          formActions={formActions}
-          disabled={disabled}
-          required={false}
-        >
-          <option value="">No linked transfer jetty</option>
-          {jettyLocations.map((jetty) => (
-            <option key={jetty.id} value={jetty.id}>
-              {jetty.name}
-            </option>
-          ))}
-        </FormInput>
-        <div className={styles.formRow3}>
-          <FormInput
-            id="max_guests"
-            type="number"
-            label="Max Guests"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-          <FormInput
-            id="bedrooms"
-            type="number"
-            label="Bedrooms"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-          <FormInput
-            id="bathrooms"
-            type="number"
-            label="Bathrooms"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-        </div>
-        <div className={styles.formRow}>
-          <FormInput
-            id="price_per_night"
-            type="number"
-            label="Overnight Rate (₦ / night)"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-          <FormInput
-            id="day_use_price_per_hour"
-            type="number"
-            label="Day Use Rate (₦ / hour)"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-        </div>
-        <div className={styles.formRow3}>
-          <FormInput
-            id="day_use_min_hours"
-            type="number"
-            label="Day Use Min Hours"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-          <FormInput
-            id="day_use_max_hours"
-            type="number"
-            label="Day Use Max Hours"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-          <FormInput
-            id="is_active"
-            type="select"
-            label="Status"
-            formActions={formActions}
-            disabled={disabled}
-          >
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-          </FormInput>
-        </div>
-        <div className={styles.formRow}>
-          <FormInput
-            id="check_in_time"
-            type="time"
-            label="Default Overnight Check-in"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-          <FormInput
-            id="check_out_time"
-            type="time"
-            label="Default Overnight Check-out"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-        </div>
-        <div className={styles.formRow}>
-          <FormInput
-            id="late_checkout_price_per_hour"
-            type="number"
-            label="Late Checkout Fee (₦ / hour)"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-          <FormInput
-            id="extra_guest_fee_per_head"
-            type="number"
-            label="Extra Guest Fee (₦ / head)"
-            formActions={formActions}
-            disabled={disabled}
-            required={false}
-          />
-        </div>
-        <FormInput
-          id="amenities"
-          label="Amenities"
-          placeholder="Pool, WiFi, Generator, AC (comma-separated)"
-          formActions={formActions}
-          disabled={disabled}
-          required={false}
-        />
+        </section>
+
+        <section className={styles.formSection}>
+          <div className={styles.formSectionHeader}>
+            <span>03</span>
+            <div>
+              <h3>Capacity</h3>
+              <p>Set clear limits and accommodation details for guests.</p>
+            </div>
+          </div>
+          <div className={styles.formRow3}>
+            <FormInput id="max_guests" type="number" label="Maximum Guests" formActions={formActions} disabled={disabled} required={false} min={1} />
+            <FormInput id="bedrooms" type="number" label="Bedrooms" formActions={formActions} disabled={disabled} required={false} min={0} />
+            <FormInput id="bathrooms" type="number" label="Bathrooms" formActions={formActions} disabled={disabled} required={false} min={0} />
+          </div>
+        </section>
+
+        <section className={`${styles.formSection} ${styles.pricingSection}`}>
+          <div className={styles.formSectionHeader}>
+            <span>04</span>
+            <div>
+              <h3>Stay pricing</h3>
+              <p>Rates are fixed booking blocks, never hourly charges.</p>
+            </div>
+          </div>
+          <div className={styles.pricingNote}>
+            <strong>Multi-day pricing</strong>
+            <span>
+              Each overnight block is charged, plus a day-stay block for every
+              full daytime period between consecutive nights.
+            </span>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.rateField}>
+              <FormInput id="day_rate" type="number" label="Day Stay Rate (₦)" formActions={formActions} disabled={disabled} required={false} min={0} />
+              <small>One fixed block · 12:00 PM–8:00 PM</small>
+            </div>
+            <div className={styles.rateField}>
+              <FormInput id="overnight_rate" type="number" label="Overnight Block Rate (₦)" formActions={formActions} disabled={disabled} required={false} min={0} />
+              <small>One fixed block · 8:00 PM–9:00 AM</small>
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <FormInput id="extra_guest_fee_per_head" type="number" label="Extra Guest Fee (₦ per guest)" formActions={formActions} disabled={disabled} required={false} min={0} />
+            <FormInput id="is_active" type="select" label="Listing Status" formActions={formActions} disabled={disabled}>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </FormInput>
+          </div>
+        </section>
+
+        <section className={styles.formSection}>
+          <div className={styles.formSectionHeader}>
+            <span>05</span>
+            <div>
+              <h3>Amenities</h3>
+              <p>Add comma-separated highlights guests should know about.</p>
+            </div>
+          </div>
+          <FormInput id="amenities" label="Property Amenities" placeholder="Pool, WiFi, Generator, Air conditioning" formActions={formActions} disabled={disabled} required={false} />
+        </section>
       </>
     );
   }
@@ -1033,15 +976,15 @@ function BeachHousesHome() {
                   )}
                 </div>
 
-                {house.price_per_night != null && (
+                {house.overnight_rate != null && (
                   <p className={styles.cardPrice}>
-                    {formatPrice(house.price_per_night)}
-                    <span> / night</span>
+                    {formatPrice(house.overnight_rate)}
+                    <span> · overnight block</span>
                   </p>
                 )}
-                {house.day_use_price_per_hour != null && (
+                {house.day_rate != null && (
                   <p className={styles.cardLocation}>
-                    Day use: {formatPrice(house.day_use_price_per_hour)} / hour
+                    Day stay: {formatPrice(house.day_rate)} · 12 PM–8 PM
                   </p>
                 )}
                 {house.extra_guest_fee_per_head != null && (

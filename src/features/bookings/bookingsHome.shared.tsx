@@ -35,6 +35,11 @@ export type CustomerSortKey =
 export type CustomerView = 'card' | 'table';
 export type BeachHouseBookingMode = 'day_use' | 'overnight';
 
+export const DAY_BOOKING_START = '12:00';
+export const DAY_BOOKING_END = '20:00';
+export const OVERNIGHT_BOOKING_START = '20:00';
+export const OVERNIGHT_BOOKING_END = '09:00';
+
 export const CUSTOMER_PAGE_SIZE = 12;
 export const PAGE_SIZE = 15;
 
@@ -82,17 +87,14 @@ export interface BookingBoatOption {
 export interface BookingBeachHouseOption {
   id: string;
   name: string;
-  price_per_night?: number | null;
-  day_use_price_per_hour?: number | null;
-  day_use_min_hours?: number | null;
-  day_use_max_hours?: number | null;
+  day_rate?: number | null;
+  overnight_rate?: number | null;
   location?: string | null;
   rental_price?: number | null;
   max_guests?: number | null;
   extra_guest_fee_per_head?: number | null;
   check_in_time?: string | null;
   check_out_time?: string | null;
-  late_checkout_price_per_hour?: number | null;
 }
 
 export function formatDate(d: string | null | undefined) {

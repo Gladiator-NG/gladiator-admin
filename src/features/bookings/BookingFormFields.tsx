@@ -72,10 +72,7 @@ export function BookingFormFields({
   availabilityState,
   watchGuestCount,
   watchHours,
-  watchLateCheckoutHours,
   watchStartDate,
-  watchStartTime,
-  watchEndTime,
   watchReturnPickupTime,
   minBookingDate,
 }: BookingFormFieldsProps) {
@@ -103,9 +100,6 @@ export function BookingFormFields({
     watchType === 'beach_house'
       ? (beachHouses.find((h) => h.id === watchBeachHouseId) ?? null)
       : null;
-  const dayUseMinHours = selectedBeachHouse?.day_use_min_hours ?? null;
-  const dayUseMaxHours = selectedBeachHouse?.day_use_max_hours ?? null;
-  const lateCheckoutFee = selectedBeachHouse?.late_checkout_price_per_hour ?? null;
   const extraGuestFee = selectedBeachHouse?.extra_guest_fee_per_head ?? null;
   const extraGuestCount =
     watchType === 'beach_house' && selectedBeachHouse?.max_guests != null
@@ -238,8 +232,8 @@ export function BookingFormFields({
               <option key={h.id} value={h.id}>
                 {h.name}
                 {h.max_guests ? ` (max ${h.max_guests})` : ''}
-                {h.price_per_night
-                  ? ` — ₦${h.price_per_night.toLocaleString()}/night`
+                {h.overnight_rate
+                  ? ` — ₦${h.overnight_rate.toLocaleString()} overnight`
                   : ''}
               </option>
             ))}
@@ -258,104 +252,30 @@ export function BookingFormFields({
             disabled={disabled}
           >
             <option value="overnight">Overnight Stay</option>
-            <option value="day_use">Day Use</option>
+            <option value="day_use">Day Stay</option>
           </FormInput>
           {watchBeachHouseBookingMode === 'day_use' ? (
             <>
-              {selectedBeachHouse?.day_use_price_per_hour != null && (
+              {selectedBeachHouse?.day_rate != null && (
                 <p className={styles.capacityHint}>
-                  Day use rate:{' '}
+                  Day stay rate:{' '}
                   <strong>
-                    ₦{selectedBeachHouse.day_use_price_per_hour.toLocaleString()}
+                    ₦{selectedBeachHouse.day_rate.toLocaleString()}
                   </strong>{' '}
-                  / hour
+                  · 12:00 PM–8:00 PM
                 </p>
               )}
-              {(dayUseMinHours !== null || dayUseMaxHours !== null) && (
-                <p className={styles.capacityHint}>
-                  Allowed day-use duration:{' '}
-                  {dayUseMinHours !== null && dayUseMaxHours !== null ? (
-                    <>
-                      <strong>
-                        {dayUseMinHours}-{dayUseMaxHours}
-                      </strong>{' '}
-                      hrs
-                    </>
-                  ) : dayUseMinHours !== null ? (
-                    <>
-                      min <strong>{dayUseMinHours}</strong> hr
-                      {dayUseMinHours !== 1 ? 's' : ''}
-                    </>
-                  ) : (
-                    <>
-                      max <strong>{dayUseMaxHours}</strong> hrs
-                    </>
-                  )}
-                </p>
-              )}
-              <FormInput
-                key={`day-use-hours-${watchBeachHouseId || 'default'}`}
-                id="hours"
-                type="number"
-                label="Day Use Hours"
-                formActions={formActions}
-                disabled={disabled}
-                required={false}
-                min={dayUseMinHours ?? 1}
-                max={dayUseMaxHours ?? undefined}
-                validation={{
-                  min: dayUseMinHours
-                    ? {
-                        value: dayUseMinHours,
-                        message: `Minimum ${dayUseMinHours} hours for day use`,
-                      }
-                    : { value: 1, message: 'Must be at least 1 hour' },
-                  ...(dayUseMaxHours
-                    ? {
-                        max: {
-                          value: dayUseMaxHours,
-                          message: `Maximum ${dayUseMaxHours} hours for day use`,
-                        },
-                      }
-                    : {}),
-                }}
-              />
             </>
           ) : (
             <>
-              {selectedBeachHouse?.price_per_night != null && (
+              {selectedBeachHouse?.overnight_rate != null && (
                 <p className={styles.capacityHint}>
-                  Overnight rate:{' '}
+                  Overnight block rate:{' '}
                   <strong>
-                    ₦{selectedBeachHouse.price_per_night.toLocaleString()}
+                    ₦{selectedBeachHouse.overnight_rate.toLocaleString()}
                   </strong>{' '}
-                  / night
-                </p>
-              )}
-              <p className={styles.capacityHint}>
-                Overnight stays use the property&apos;s default check-in and
-                checkout times. Late checkout, if needed, is billed separately.
-              </p>
-              {lateCheckoutFee != null && (
-                <FormInput
-                  id="late_checkout_hours"
-                  type="number"
-                  label="Late Checkout Extension (hours)"
-                  formActions={formActions}
-                  disabled={disabled}
-                  required={false}
-                  min={0}
-                />
-              )}
-              {lateCheckoutFee != null && watchLateCheckoutHours > 0 && (
-                <p className={styles.capacityHint}>
-                  Late checkout fee:{' '}
-                  <strong>
-                    ₦
-                    {(
-                      lateCheckoutFee * watchLateCheckoutHours
-                    ).toLocaleString()}
-                  </strong>
+                  · 8:00 PM–9:00 AM. Multi-night stays also include each
+                  intervening daytime block.
                 </p>
               )}
             </>
@@ -610,58 +530,13 @@ export function BookingFormFields({
                 disabled={disabled}
                 min={watchStartDate || minBookingDate}
               />
-            ) : (
-              <FormInput
-                id="start_time"
-                type="time"
-                label="Day Use Check-in Time"
-                formActions={formActions}
-                disabled={disabled}
-                required={false}
-              />
-            )}
+            ) : null}
           </div>
-          {watchBeachHouseBookingMode === 'overnight' ? (
-            <>
-              <div className={styles.formRow}>
-                <FormInput
-                  id="start_time"
-                  type="time"
-                  label="Check-in Time"
-                  formActions={formActions}
-                  disabled={disabled}
-                  required={false}
-                />
-                <FormInput
-                  id="end_time"
-                  type="time"
-                  label="Checkout Time"
-                  formActions={formActions}
-                  disabled
-                  required={false}
-                />
-              </div>
-              {selectedBeachHouse?.check_out_time && (
-                <p className={styles.capacityHint}>
-                  Default check-in:{' '}
-                  <strong>
-                    {formatTime12(selectedBeachHouse.check_in_time) ?? '—'}
-                  </strong>
-                  {' · '}
-                  Default checkout:{' '}
-                  <strong>{formatTime12(selectedBeachHouse.check_out_time)}</strong>
-                  {lateCheckoutFee != null
-                    ? ` · extension ₦${lateCheckoutFee.toLocaleString()}/hour`
-                    : ''}
-                </p>
-              )}
-            </>
-          ) : watchHours > 0 ? (
-            <p className={styles.capacityHint}>
-              Day use checkout:{' '}
-              <strong>{formatTime12(watchEndTime || watchStartTime) ?? '—'}</strong>
-            </p>
-          ) : null}
+          <p className={styles.capacityHint}>
+            {watchBeachHouseBookingMode === 'day_use'
+              ? 'Fixed booking window: 12:00 PM–8:00 PM.'
+              : 'Fixed booking window: 8:00 PM–9:00 AM.'}
+          </p>
         </>
       )}
 

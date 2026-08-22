@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import type { Booking, BookingStatus, BookingType } from '../../services/apiBooking';
 import { findBoatRoutePrice } from '../../services/apiTransport';
 import type { TransportRoute } from '../../services/apiTransport';
+import { beachHouseStayPrice } from '../../utils/beachHousePricing';
 import { useAvailabilityCheck } from './useAvailabilityCheck';
 import type { AvailabilityParams, AvailabilityState } from './useAvailabilityCheck';
 import { useUpdateBooking } from './useUpdateBooking';
@@ -11,11 +12,14 @@ import {
   type BookingBoatOption,
   type BookingFields,
   boatAvailabilityEndTime,
-  clampHours,
   computeEndTime,
+  DAY_BOOKING_END,
+  DAY_BOOKING_START,
   derivePaymentStatus,
   findRouteDuration,
   parseBookingError,
+  OVERNIGHT_BOOKING_END,
+  OVERNIGHT_BOOKING_START,
   subtractTime,
   timeToMinutes,
   transportEndTime,
@@ -70,24 +74,12 @@ export function useEditBookingForm({
   const watchPickupLocation = watch('pickup_location') ?? '';
   const watchTransportRouteId = watch('rental_route_id') ?? '';
   const watchReturnPickupTime = watch('return_pickup_time') ?? '';
-  const watchLateCheckoutHours = Number(watch('late_checkout_hours')) || 0;
   const watchGuestCount = Number(watch('guest_count')) || 0;
   const watchEndTime = watch('end_time') ?? '';
   const selectedBeachHouse =
     watchType === 'beach_house'
       ? (beachHouses.find((h) => h.id === watchBeachHouseId) ?? null)
       : null;
-  const effectiveDayUseHours =
-    watchType === 'beach_house' &&
-    watchBeachHouseBookingMode === 'day_use' &&
-    selectedBeachHouse
-      ? clampHours(
-          watchHours,
-          selectedBeachHouse.day_use_min_hours ?? 1,
-          selectedBeachHouse.day_use_max_hours ?? Number.POSITIVE_INFINITY,
-        )
-      : watchHours;
-
   const computedTotal = useMemo(() => {
     if (watchType === 'boat_cruise') {
       const boat = boats.find((b) => b.id === watchBoatId);
@@ -101,24 +93,18 @@ export function useEditBookingForm({
       const extraGuests =
         house?.max_guests != null ? Math.max(0, totalGuests - house.max_guests) : 0;
       const extraGuestCharge = extraGuests * (house?.extra_guest_fee_per_head ?? 0);
-      if (
-        watchBeachHouseBookingMode === 'day_use' &&
-        house?.day_use_price_per_hour &&
-        effectiveDayUseHours > 0
-      ) {
-        return house.day_use_price_per_hour * effectiveDayUseHours + extraGuestCharge;
+      if (watchBeachHouseBookingMode === 'day_use' && house) {
+        const stayPrice = beachHouseStayPrice('day_use', house);
+        return stayPrice == null ? null : stayPrice + extraGuestCharge;
       }
-      if (house?.price_per_night && watchStartDate && watchEndDate) {
+      if (house && watchStartDate && watchEndDate) {
         const nights = Math.round(
           (new Date(watchEndDate).getTime() - new Date(watchStartDate).getTime()) /
             (1000 * 60 * 60 * 24),
         );
         if (nights > 0) {
-          return (
-            house.price_per_night * nights +
-            (house.late_checkout_price_per_hour ?? 0) * watchLateCheckoutHours +
-            extraGuestCharge
-          );
+          const stayPrice = beachHouseStayPrice('overnight', house, nights);
+          return stayPrice == null ? null : stayPrice + extraGuestCharge;
         }
       }
       return null;
@@ -145,9 +131,7 @@ export function useEditBookingForm({
     watchEndDate,
     watchGuestCount,
     watchHours,
-    effectiveDayUseHours,
     editingBooking?.total_amount,
-    watchLateCheckoutHours,
     watchTransportRouteId,
     watchStartDate,
     watchTransportType,
@@ -163,62 +147,21 @@ export function useEditBookingForm({
     if (!selectedBeachHouse) return;
 
     if (watchBeachHouseBookingMode === 'day_use') {
-      const normalizedHours = clampHours(
-        watchHours,
-        selectedBeachHouse.day_use_min_hours ?? 1,
-        selectedBeachHouse.day_use_max_hours ?? Number.POSITIVE_INFINITY,
-      );
       if (watchStartDate) setValue('end_date', watchStartDate);
       setValue('late_checkout_hours', 0);
-      setValue(
-        'end_time',
-        watchStartTime && normalizedHours > 0
-          ? computeEndTime(watchStartTime, normalizedHours)
-          : '',
-      );
+      setValue('start_time', DAY_BOOKING_START);
+      setValue('end_time', DAY_BOOKING_END);
       return;
     }
 
-    if (!watchStartTime && selectedBeachHouse.check_in_time) {
-      setValue('start_time', selectedBeachHouse.check_in_time);
-    }
-    setValue(
-      'end_time',
-      selectedBeachHouse.check_out_time
-        ? computeEndTime(selectedBeachHouse.check_out_time, watchLateCheckoutHours)
-        : '',
-    );
+    setValue('start_time', OVERNIGHT_BOOKING_START);
+    setValue('end_time', OVERNIGHT_BOOKING_END);
+    setValue('late_checkout_hours', 0);
   }, [
     selectedBeachHouse,
     setValue,
     watchBeachHouseBookingMode,
-    watchHours,
-    watchLateCheckoutHours,
     watchStartDate,
-    watchStartTime,
-    watchType,
-  ]);
-
-  useEffect(() => {
-    if (
-      watchType !== 'beach_house' ||
-      watchBeachHouseBookingMode !== 'day_use' ||
-      !selectedBeachHouse
-    ) {
-      return;
-    }
-
-    const minHours = selectedBeachHouse.day_use_min_hours ?? 1;
-    const maxHours = selectedBeachHouse.day_use_max_hours ?? Number.POSITIVE_INFINITY;
-
-    if (watchHours <= 0 || watchHours < minHours || watchHours > maxHours) {
-      setValue('hours', clampHours(watchHours || minHours, minHours, maxHours));
-    }
-  }, [
-    selectedBeachHouse,
-    setValue,
-    watchBeachHouseBookingMode,
-    watchBeachHouseId,
     watchType,
   ]);
 
@@ -378,8 +321,7 @@ export function useEditBookingForm({
       customer_phone: booking.customer_phone ?? '',
       guest_count: booking.guest_count,
       hours:
-        booking.booking_type === 'boat_cruise' ||
-        booking.beach_house_booking_mode === 'day_use'
+        booking.booking_type === 'boat_cruise'
           ? (booking.hours ?? undefined)
           : undefined,
       late_checkout_hours:
@@ -416,12 +358,7 @@ export function useEditBookingForm({
     setEditSubmitError(null);
     if (data.booking_type === 'beach_house') {
       if (data.beach_house_booking_mode === 'day_use') {
-        if (!data.start_time || Number(data.hours) <= 0) {
-          setEditSubmitError(
-            'Day-use bookings require a check-in time and a valid number of hours.',
-          );
-          return;
-        }
+        data.end_date = data.start_date;
       } else {
         if (!data.end_date || data.end_date <= data.start_date) {
           setEditSubmitError(
@@ -493,20 +430,20 @@ export function useEditBookingForm({
           data.beach_house_booking_mode === 'day_use'
             ? data.start_date
             : data.end_date,
-        start_time: data.start_time || null,
+        start_time:
+          data.booking_type === 'beach_house'
+            ? data.beach_house_booking_mode === 'day_use'
+              ? DAY_BOOKING_START
+              : OVERNIGHT_BOOKING_START
+            : data.start_time || null,
         end_time: (() => {
           if (data.booking_type === 'boat_cruise' && data.start_time && Number(data.hours) > 0) {
             return computeEndTime(data.start_time, Number(data.hours));
           }
           if (data.booking_type === 'beach_house') {
-            if (
-              data.beach_house_booking_mode === 'day_use' &&
-              data.start_time &&
-              Number(data.hours) > 0
-            ) {
-              return computeEndTime(data.start_time, Number(data.hours));
-            }
-            return data.end_time || null;
+            return data.beach_house_booking_mode === 'day_use'
+              ? DAY_BOOKING_END
+              : OVERNIGHT_BOOKING_END;
           }
           if (data.booking_type === 'boat_rental' && data.parent_beach_house_booking_id) {
             return data.end_time || null;
@@ -524,16 +461,15 @@ export function useEditBookingForm({
           return data.end_time || null;
         })(),
         hours:
-          (data.booking_type === 'boat_cruise' ||
-            (data.booking_type === 'beach_house' &&
-              data.beach_house_booking_mode === 'day_use')) &&
+          data.booking_type === 'boat_cruise' &&
           Number(data.hours) > 0
             ? Number(data.hours)
-            : null,
+            : data.booking_type === 'beach_house'
+              ? editingBooking.hours
+              : null,
         late_checkout_hours:
-          data.booking_type === 'beach_house' &&
-          data.beach_house_booking_mode === 'overnight'
-            ? Number(data.late_checkout_hours) || 0
+          data.booking_type === 'beach_house'
+            ? (editingBooking.late_checkout_hours ?? 0)
             : 0,
         total_amount: Number(data.total_amount) || 0,
         status: data.status,
@@ -574,7 +510,7 @@ export function useEditBookingForm({
     watchEndTime,
     watchGuestCount,
     watchHours,
-    watchLateCheckoutHours,
+    watchLateCheckoutHours: 0,
     watchStartDate,
     watchParentBookingId,
     watchPickupLocation,
