@@ -142,7 +142,11 @@ email function also expects:
 ```bash
 RESEND_API_KEY=
 NOTIFY_FROM_EMAIL="Gladiator NG Admin <bookings@example.com>"
+ADMIN_APP_URL="https://admin.gladiatorleisures.com"
 ```
+
+`ADMIN_APP_URL` is used for the booking detail link in notification emails. It
+defaults to the production admin domain when omitted.
 
 ## 4. Routes and access
 

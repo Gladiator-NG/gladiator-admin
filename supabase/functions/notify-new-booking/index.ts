@@ -14,7 +14,13 @@ interface BookingRecord {
   start_time: string | null;
   end_time: string | null;
   total_amount: number | null;
-  status: 'pending' | 'confirmed' | 'cancelled' | null;
+  status:
+    | 'pending'
+    | 'confirmed'
+    | 'cancelled'
+    | 'expired'
+    | 'completed'
+    | null;
   payment_status: string | null;
   payment_reference: string | null;
   source: string | null;
@@ -81,7 +87,65 @@ function row(label: string, value: string): string {
     </tr>`;
 }
 
-function buildEmailHtml(b: BookingRecord): string {
+function buildAdminBookingUrl(bookingId: string): string {
+  const adminAppUrl =
+    Deno.env.get('ADMIN_APP_URL') ?? 'https://admin.gladiatorleisures.com';
+  const url = new URL('/bookings', adminAppUrl);
+  url.searchParams.set('open', bookingId);
+  return url.toString();
+}
+
+async function loadCommittedBookingState(
+  booking: BookingRecord,
+): Promise<BookingRecord> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn(
+      'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is unavailable; using trigger snapshot',
+    );
+    return booking;
+  }
+
+  try {
+    const url = new URL('/rest/v1/bookings', supabaseUrl);
+    url.searchParams.set('id', `eq.${booking.id}`);
+    url.searchParams.set(
+      'select',
+      'status,payment_status,payment_reference',
+    );
+    url.searchParams.set('limit', '1');
+
+    const response = await fetch(url, {
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.warn(
+        `Unable to load committed booking state (${response.status}); using trigger snapshot`,
+      );
+      return booking;
+    }
+
+    const records = (await response.json()) as Array<
+      Pick<
+        BookingRecord,
+        'status' | 'payment_status' | 'payment_reference'
+      >
+    >;
+
+    return records[0] ? { ...booking, ...records[0] } : booking;
+  } catch (error) {
+    console.warn('Unable to load committed booking state:', error);
+    return booking;
+  }
+}
+
+function buildEmailHtml(b: BookingRecord, bookingUrl: string): string {
   const assetName = b.boat_name ?? b.beach_house_name ?? '—';
   const dateRange =
     b.start_date && b.end_date
@@ -138,10 +202,13 @@ function buildEmailHtml(b: BookingRecord): string {
 
     <!-- Footer -->
     <div style="background:#181818;border-radius:0 0 16px 16px;padding:20px 32px 28px;border:1px solid #2a2a2a;border-top:1px solid #2a2a2a;text-align:center;">
-      <a href="https://gladiator-admin.vercel.app/bookings?open=${b.id}"
+      <a href="${bookingUrl}"
          style="display:inline-block;padding:12px 28px;background:#ea580c;color:#fff;font-weight:700;font-size:14px;border-radius:8px;text-decoration:none;">
         View Booking in Admin
       </a>
+      <p style="margin:16px 0 0;font-size:11px;line-height:1.5;color:#6b7280;word-break:break-all;">
+        If the button does not open, copy and paste this address:<br/>${bookingUrl}
+      </p>
       <p style="margin:16px 0 0;font-size:12px;color:#4b5563;">
         This email was sent automatically by Gladiator NG Admin.<br/>
         You are receiving this because you are registered as an admin.
@@ -153,7 +220,7 @@ function buildEmailHtml(b: BookingRecord): string {
 </html>`;
 }
 
-function buildEmailText(b: BookingRecord): string {
+function buildEmailText(b: BookingRecord, bookingUrl: string): string {
   const assetName = b.boat_name ?? b.beach_house_name ?? '—';
   return [
     'NEW BOOKING — GLADIATOR NG ADMIN',
@@ -172,7 +239,7 @@ function buildEmailText(b: BookingRecord): string {
     b.notes ? `Notes:       ${b.notes}` : '',
     `Created:     ${fmt(b.created_at)}`,
     '',
-    `View in Admin: https://gladiator-admin.vercel.app/bookings?open=${b.id}`,
+    `View in Admin: ${bookingUrl}`,
   ]
     .filter((l) => l !== null)
     .join('\n');
@@ -211,10 +278,14 @@ Deno.serve(async (req: Request) => {
     return new Response('Ignored', { status: 200 });
   }
 
-  const booking = payload.record;
+  // pg_net dispatches after the inserting transaction commits. Re-read the
+  // status because paid website bookings are inserted as pending and confirmed
+  // later in that same transaction.
+  const booking = await loadCommittedBookingState(payload.record);
+  const bookingUrl = buildAdminBookingUrl(booking.id);
 
-  const html = buildEmailHtml(booking);
-  const text = buildEmailText(booking);
+  const html = buildEmailHtml(booking, bookingUrl);
+  const text = buildEmailText(booking, bookingUrl);
   const subject = `📋 New Booking: ${booking.reference_code ?? booking.id} — ${booking.customer_name ?? 'Unknown'}`;
 
   // Send via Resend
