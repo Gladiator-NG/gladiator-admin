@@ -79,6 +79,9 @@ export interface Booking {
   dropoff_location: string | null;
 
   total_amount: number;
+  subtotal_amount: number | null;
+  vat_rate: number | null;
+  vat_amount: number | null;
   currency: string;
 
   status: BookingStatus;

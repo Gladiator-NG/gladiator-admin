@@ -572,6 +572,25 @@
   white-space: nowrap;
 }
 
+.rowAmountBlock {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.compactVatBreakdown,
+.vatUnavailableCompact {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.compactVatBreakdown {
+  color: var(--color-ocean-blue);
+}
+
 .expandBtn {
   display: flex;
   align-items: center;
@@ -653,6 +672,54 @@
   color: var(--color-text-muted);
 }
 
+.paymentBreakdown {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.2rem 0 0.5rem;
+  padding: 1rem 1.1rem;
+}
+
+.paymentBreakdown > div {
+  align-items: baseline;
+  color: var(--color-text-muted);
+  display: flex;
+  font-size: 1.15rem;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.paymentBreakdown strong {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.paymentBreakdown .paymentVatRow span {
+  color: var(--color-ocean-blue);
+  font-weight: 700;
+}
+
+.paymentBreakdown .paymentTotalRow {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+  padding-top: 0.7rem;
+}
+
+.vatUnavailable {
+  background: rgba(107, 114, 128, 0.08);
+  border-radius: 0.6rem;
+  color: var(--color-text-muted);
+  font-size: 1.15rem;
+  padding: 0.7rem 0.9rem;
+  width: fit-content;
+}
+
 /* ── Transport sub-bookings section ──────────────── */
 .transportSection {
   padding: 0 2rem 1.6rem;
@@ -706,8 +773,12 @@
 }
 
 .transportLinkAmount {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
   font-size: 1.3rem;
   font-weight: 600;
+  gap: 0.2rem;
   color: var(--color-text);
   margin-left: auto;
 }
@@ -1604,6 +1675,15 @@
 
   .rowRight {
     flex-wrap: wrap;
+  }
+
+  .rowAmountBlock {
+    align-items: flex-start;
+  }
+
+  .compactVatBreakdown,
+  .vatUnavailableCompact {
+    white-space: normal;
   }
 }
 

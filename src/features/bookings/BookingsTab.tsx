@@ -74,6 +74,46 @@ interface BookingsTabProps {
   isStatusUpdating: boolean;
 }
 
+function VatBreakdown({ booking, compact = false }: { booking: Booking; compact?: boolean }) {
+  const hasRecordedVat =
+    booking.subtotal_amount != null &&
+    booking.vat_amount != null &&
+    booking.vat_rate != null;
+
+  if (!hasRecordedVat) {
+    return (
+      <span className={compact ? styles.vatUnavailableCompact : styles.vatUnavailable}>
+        VAT not recorded
+      </span>
+    );
+  }
+
+  const subtotal = booking.subtotal_amount ?? 0;
+  const vatAmount = booking.vat_amount ?? 0;
+  const ratePercent = (booking.vat_rate ?? 0) * 100;
+
+  return compact ? (
+    <span className={styles.compactVatBreakdown}>
+      Booking {formatPrice(subtotal)} · VAT {formatPrice(vatAmount)}
+    </span>
+  ) : (
+    <div className={styles.paymentBreakdown}>
+      <div>
+        <span>Booking subtotal</span>
+        <strong>{formatPrice(subtotal)}</strong>
+      </div>
+      <div className={styles.paymentVatRow}>
+        <span>VAT ({ratePercent.toLocaleString()}%)</span>
+        <strong>{formatPrice(vatAmount)}</strong>
+      </div>
+      <div className={styles.paymentTotalRow}>
+        <span>Total paid</span>
+        <strong>{formatPrice(booking.total_amount)}</strong>
+      </div>
+    </div>
+  );
+}
+
 export function BookingsTab({
   bookings,
   filtered,
@@ -348,7 +388,10 @@ export function BookingsTab({
                     </span>
                   </div>
                   <div className={styles.rowRight}>
-                    <span className={styles.amount}>{formatPrice(b.total_amount)}</span>
+                    <div className={styles.rowAmountBlock}>
+                      <span className={styles.amount}>{formatPrice(b.total_amount)}</span>
+                      <VatBreakdown booking={b} compact />
+                    </div>
                     <div className={styles.rowBadges}>
                       <StatusBadge status={b.status} />
                       <PaymentBadge status={b.payment_status} />
@@ -500,7 +543,7 @@ export function BookingsTab({
                         )}
                         <div className={styles.detailBlock}>
                           <p className={styles.detailLabel}>Payment</p>
-                          <p className={styles.detailValue}>{formatPrice(b.total_amount)}</p>
+                          <VatBreakdown booking={b} />
                           <PaymentBadge status={b.payment_status} />
                           {b.payment_reference && (
                             <p className={styles.detailSub}>
@@ -598,7 +641,8 @@ export function BookingsTab({
                                     </span>
                                   )}
                                   <span className={styles.transportLinkAmount}>
-                                    {formatPrice(t.total_amount)}
+                                    <strong>{formatPrice(t.total_amount)}</strong>
+                                    <VatBreakdown booking={t} compact />
                                   </span>
                                   <StatusBadge status={t.status} />
                                   <PaymentBadge status={t.payment_status} />
