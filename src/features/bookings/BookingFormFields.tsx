@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, ReceiptText, XCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import type { Booking, BookingStatus, BookingType } from '../../services/apiBooking';
 import {
@@ -6,6 +6,7 @@ import {
   BOOKING_CHANNEL_OPTIONS,
 } from '../../services/apiBooking';
 import type { TransportRoute } from '../../services/apiTransport';
+import type { VatBreakdown } from '../../utils/vat';
 import FormInput from '../../ui/formElements/FormInput';
 import { useSettings } from '../settings/useSettings';
 import type { AvailabilityState } from './useAvailabilityCheck';
@@ -40,7 +41,8 @@ interface BookingFormFieldsProps {
   transportRoutes: TransportRoute[];
   watchTransportRouteId: string;
   bookings: Booking[];
-  computedTotal: number | null;
+  pricingBreakdown: VatBreakdown | null;
+  watchApplyVat: boolean;
   availabilityState: AvailabilityState;
   watchGuestCount: number;
   watchHours: number;
@@ -68,7 +70,8 @@ export function BookingFormFields({
   transportRoutes,
   watchTransportRouteId,
   bookings,
-  computedTotal,
+  pricingBreakdown,
+  watchApplyVat,
   availabilityState,
   watchGuestCount,
   watchHours,
@@ -717,12 +720,41 @@ export function BookingFormFields({
       )}
 
       <div className={styles.formSectionLabel}>Payment</div>
-      <div className={styles.computedTotalBox}>
-        <span className={styles.computedTotalLabel}>Total Amount</span>
-        {computedTotal !== null ? (
-          <span className={styles.computedTotalValue}>
-            ₦{computedTotal.toLocaleString()}
+      <div className={styles.vatControl}>
+        <label className={styles.vatToggleRow}>
+          <span className={styles.vatToggleCopy}>
+            <span className={styles.vatToggleTitle}>Apply 7.5% VAT</span>
+            <span className={styles.vatToggleHint}>
+              Adds VAT to the booking price and records the breakdown for accounting.
+            </span>
           </span>
+          <span className={styles.vatSwitch}>
+            <input
+              type="checkbox"
+              {...formActions.register('apply_vat')}
+              disabled={disabled}
+            />
+            <span className={styles.vatSwitchTrack} aria-hidden="true" />
+          </span>
+        </label>
+
+        {pricingBreakdown !== null ? (
+          <div className={styles.pricingBreakdown}>
+            <div className={styles.pricingBreakdownRow}>
+              <span>Booking subtotal</span>
+              <strong>₦{pricingBreakdown.subtotal.toLocaleString()}</strong>
+            </div>
+            <div className={styles.pricingBreakdownRow}>
+              <span>VAT {watchApplyVat ? '(7.5%)' : '(not applied)'}</span>
+              <strong>₦{pricingBreakdown.vatAmount.toLocaleString()}</strong>
+            </div>
+            <div className={styles.pricingBreakdownTotal}>
+              <span>
+                <ReceiptText size={17} /> Total payable
+              </span>
+              <strong>₦{pricingBreakdown.totalAmount.toLocaleString()}</strong>
+            </div>
+          </div>
         ) : (
           <span className={styles.computedTotalPlaceholder}>
             {watchType === 'boat_cruise'

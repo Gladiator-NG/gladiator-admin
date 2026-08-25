@@ -63,6 +63,7 @@ export interface BookingFields {
   pickup_location: string;
   dropoff_location: string;
   rental_route_id: string;
+  apply_vat: boolean;
   total_amount: number;
   status: BookingStatus;
   payment_status: PaymentStatus;

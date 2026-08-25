@@ -1564,6 +1564,134 @@
   text-align: right;
 }
 
+.vatControl {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 1.2rem;
+  background: var(--color-surface-2);
+}
+
+.vatToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.5rem 1.6rem;
+  cursor: pointer;
+}
+
+.vatToggleCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.vatToggleTitle {
+  color: var(--color-text);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.vatToggleHint {
+  color: var(--color-text-muted);
+  font-size: 1.15rem;
+  line-height: 1.45;
+}
+
+.vatSwitch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 4.4rem;
+  height: 2.4rem;
+}
+
+.vatSwitch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.vatSwitchTrack {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--color-border);
+  transition: background-color 0.18s ease;
+}
+
+.vatSwitchTrack::after {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.3rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(20, 34, 48, 0.22);
+  content: '';
+  transition: transform 0.18s ease;
+}
+
+.vatSwitch input:checked + .vatSwitchTrack {
+  background: var(--color-ocean-blue);
+}
+
+.vatSwitch input:checked + .vatSwitchTrack::after {
+  transform: translateX(2rem);
+}
+
+.vatSwitch input:focus-visible + .vatSwitchTrack {
+  outline: 3px solid rgba(47, 140, 202, 0.2);
+  outline-offset: 2px;
+}
+
+.pricingBreakdown {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.pricingBreakdownRow,
+.pricingBreakdownTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.6rem;
+}
+
+.pricingBreakdownRow {
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+}
+
+.pricingBreakdownRow strong {
+  color: var(--color-text);
+  font-weight: 650;
+}
+
+.pricingBreakdownTotal {
+  margin-top: 0.2rem;
+  border-top: 1px dashed var(--color-border);
+  color: var(--color-text);
+}
+
+.pricingBreakdownTotal span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.pricingBreakdownTotal strong {
+  color: var(--color-ocean-blue);
+  font-size: 2rem;
+  font-weight: 800;
+}
+
 .modalActions {
   display: flex;
   justify-content: flex-end;

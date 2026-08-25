@@ -5,6 +5,7 @@ import type { Booking, BookingStatus, BookingType } from '../../services/apiBook
 import { findBoatRoutePrice } from '../../services/apiTransport';
 import type { TransportRoute } from '../../services/apiTransport';
 import { beachHouseStayPrice } from '../../utils/beachHousePricing';
+import { calculateVatBreakdown } from '../../utils/vat';
 import { useCreateBooking } from './useCreateBooking';
 import { useAvailabilityCheck } from './useAvailabilityCheck';
 import type { AvailabilityParams, AvailabilityState } from './useAvailabilityCheck';
@@ -68,6 +69,7 @@ export function useCreateBookingForm({
       guest_count: 1,
       late_checkout_hours: 0,
       rental_type: 'outbound',
+      apply_vat: true,
     },
   });
 
@@ -88,6 +90,7 @@ export function useCreateBookingForm({
   const watchTransportRouteId = watch('rental_route_id') ?? '';
   const watchReturnPickupTime = watch('return_pickup_time') ?? '';
   const watchGuestCount = Number(watch('guest_count')) || 0;
+  const watchApplyVat = watch('apply_vat') ?? true;
   const watchEndTime = watch('end_time') ?? '';
   const selectedBeachHouse =
     watchType === 'beach_house'
@@ -146,9 +149,19 @@ export function useCreateBookingForm({
     watchBoatId,
   ]);
 
+  const pricingBreakdown = useMemo(
+    () =>
+      computedTotal === null
+        ? null
+        : calculateVatBreakdown(computedTotal, watchApplyVat),
+    [computedTotal, watchApplyVat],
+  );
+
   useEffect(() => {
-    if (computedTotal !== null) setValue('total_amount', computedTotal);
-  }, [computedTotal, setValue]);
+    if (pricingBreakdown !== null) {
+      setValue('total_amount', pricingBreakdown.totalAmount);
+    }
+  }, [pricingBreakdown, setValue]);
 
   useEffect(() => {
     if (watchType !== 'beach_house') return;
@@ -315,6 +328,7 @@ export function useCreateBookingForm({
       guest_count: 1,
       late_checkout_hours: 0,
       rental_type: 'outbound',
+      apply_vat: true,
     });
     setCreateSubmitError(null);
     setShowCreate(true);
@@ -466,7 +480,10 @@ export function useCreateBookingForm({
             : null,
         late_checkout_hours:
           0,
-        total_amount: Number(data.total_amount) || 0,
+        subtotal_amount: pricingBreakdown?.subtotal ?? 0,
+        vat_rate: pricingBreakdown?.vatRate ?? 0,
+        vat_amount: pricingBreakdown?.vatAmount ?? 0,
+        total_amount: pricingBreakdown?.totalAmount ?? 0,
         status: data.status,
         payment_status: derivePaymentStatus(data.status),
         payment_reference: data.payment_reference || null,
@@ -492,6 +509,7 @@ export function useCreateBookingForm({
   return {
     availability,
     computedTotal,
+    pricingBreakdown,
     createSubmitError,
     formActions,
     handleSubmit,
@@ -517,5 +535,6 @@ export function useCreateBookingForm({
     watchTransportRouteId,
     watchTransportType,
     watchType,
+    watchApplyVat,
   };
 }

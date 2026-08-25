@@ -4,6 +4,7 @@ import type { Booking, BookingStatus, BookingType } from '../../services/apiBook
 import { findBoatRoutePrice } from '../../services/apiTransport';
 import type { TransportRoute } from '../../services/apiTransport';
 import { beachHouseStayPrice } from '../../utils/beachHousePricing';
+import { calculateVatBreakdown } from '../../utils/vat';
 import { useAvailabilityCheck } from './useAvailabilityCheck';
 import type { AvailabilityParams, AvailabilityState } from './useAvailabilityCheck';
 import { useUpdateBooking } from './useUpdateBooking';
@@ -75,6 +76,7 @@ export function useEditBookingForm({
   const watchTransportRouteId = watch('rental_route_id') ?? '';
   const watchReturnPickupTime = watch('return_pickup_time') ?? '';
   const watchGuestCount = Number(watch('guest_count')) || 0;
+  const watchApplyVat = watch('apply_vat') ?? false;
   const watchEndTime = watch('end_time') ?? '';
   const selectedBeachHouse =
     watchType === 'beach_house'
@@ -111,7 +113,9 @@ export function useEditBookingForm({
     }
     if (watchType === 'boat_rental') {
       if (watchTransportType === 'round_trip') {
-        return editingBooking?.total_amount ?? null;
+        return (
+          editingBooking?.subtotal_amount ?? editingBooking?.total_amount ?? null
+        );
       }
       const routePrice = findBoatRoutePrice(
         transportRoutes,
@@ -131,6 +135,7 @@ export function useEditBookingForm({
     watchEndDate,
     watchGuestCount,
     watchHours,
+    editingBooking?.subtotal_amount,
     editingBooking?.total_amount,
     watchTransportRouteId,
     watchStartDate,
@@ -138,9 +143,19 @@ export function useEditBookingForm({
     watchType,
   ]);
 
+  const pricingBreakdown = useMemo(
+    () =>
+      computedTotal === null
+        ? null
+        : calculateVatBreakdown(computedTotal, watchApplyVat),
+    [computedTotal, watchApplyVat],
+  );
+
   useEffect(() => {
-    if (computedTotal !== null) setValue('total_amount', computedTotal);
-  }, [computedTotal, setValue]);
+    if (pricingBreakdown !== null) {
+      setValue('total_amount', pricingBreakdown.totalAmount);
+    }
+  }, [pricingBreakdown, setValue]);
 
   useEffect(() => {
     if (watchType !== 'beach_house') return;
@@ -339,6 +354,7 @@ export function useEditBookingForm({
           ? (booking.end_time ?? '')
           : '',
       total_amount: booking.total_amount,
+      apply_vat: (booking.vat_rate ?? 0) > 0,
       status: booking.status,
       payment_status: booking.payment_status,
       payment_reference: booking.payment_reference ?? '',
@@ -471,7 +487,10 @@ export function useEditBookingForm({
           data.booking_type === 'beach_house'
             ? (editingBooking.late_checkout_hours ?? 0)
             : 0,
-        total_amount: Number(data.total_amount) || 0,
+        subtotal_amount: pricingBreakdown?.subtotal ?? 0,
+        vat_rate: pricingBreakdown?.vatRate ?? 0,
+        vat_amount: pricingBreakdown?.vatAmount ?? 0,
+        total_amount: pricingBreakdown?.totalAmount ?? 0,
         status: data.status,
         payment_status: derivePaymentStatus(data.status),
         payment_reference: data.payment_reference || null,
@@ -496,6 +515,7 @@ export function useEditBookingForm({
     availability,
     closeEdit,
     computedTotal,
+    pricingBreakdown,
     editSubmitError,
     editingBooking,
     formActions,
@@ -520,5 +540,6 @@ export function useEditBookingForm({
     watchTransportRouteId,
     watchTransportType,
     watchType,
+    watchApplyVat,
   };
 }

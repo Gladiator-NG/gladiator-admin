@@ -149,6 +149,9 @@ export interface CreateBookingInput {
   rental_route_id?: string | null;
   pickup_location?: string | null;
   dropoff_location?: string | null;
+  subtotal_amount?: number | null;
+  vat_rate?: number | null;
+  vat_amount?: number | null;
   total_amount: number;
   status?: BookingStatus;
   payment_status?: PaymentStatus;
