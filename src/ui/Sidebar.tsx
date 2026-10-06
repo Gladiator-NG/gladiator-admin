@@ -8,6 +8,7 @@ import {
   User,
   X,
   MapPin,
+  Tag,
 } from 'lucide-react';
 import SidebarLink from './SidebarLink';
 import { useIsAdmin } from '../features/authentication/useIsAdmin';
@@ -19,6 +20,7 @@ const baseLinks = [
   { icon: <Ship />, label: 'Boats', to: '/boats' },
   { icon: <Home />, label: 'Beach Houses', to: '/beach-houses' },
   { icon: <MapPin />, label: 'Locations', to: '/locations' },
+  { icon: <Tag />, label: 'Discount codes', to: '/discounts', adminOnly: true },
   { icon: <Users />, label: 'Users', to: '/users', adminOnly: true },
   { icon: <User />, label: 'Profile', to: '/profile' },
 ];

@@ -79,6 +79,9 @@ export interface Booking {
   dropoff_location: string | null;
 
   total_amount: number;
+  discount_code?: string | null;
+  discount_amount?: number;
+  original_subtotal?: number | null;
   subtotal_amount: number | null;
   vat_rate: number | null;
   vat_amount: number | null;
@@ -149,6 +152,7 @@ export interface CreateBookingInput {
   rental_route_id?: string | null;
   pickup_location?: string | null;
   dropoff_location?: string | null;
+  original_subtotal?: number | null;
   subtotal_amount?: number | null;
   vat_rate?: number | null;
   vat_amount?: number | null;

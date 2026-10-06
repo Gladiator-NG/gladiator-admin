@@ -13,6 +13,7 @@ import AdminRoute from './ui/AdminRoute';
 import ScrollToTop from './ui/ScrollToTop';
 import MetaTags from './ui/MetaTags';
 
+const DiscountsHome = lazy(() => import('./features/discounts/DiscountsHome'));
 const DashboardHome = lazy(() => import('./features/dashboard/DashboardHome'));
 const BookingsHome = lazy(() => import('./features/bookings/BookingsHome'));
 const BoatsHome = lazy(() => import('./features/boats/BoatsHome'));
@@ -122,6 +123,7 @@ function App() {
                       <BeachHousesHome />,
                     )}
                   />
+                  <Route path="discounts" element={withMeta({ title: 'Discount Codes', description: 'Manage partner offers, code validity, and usage limits.' }, <AdminRoute><DiscountsHome /></AdminRoute>)} />
                   <Route
                     path="users"
                     element={withMeta(

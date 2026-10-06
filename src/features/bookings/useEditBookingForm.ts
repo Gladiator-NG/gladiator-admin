@@ -147,8 +147,8 @@ export function useEditBookingForm({
     () =>
       computedTotal === null
         ? null
-        : calculateVatBreakdown(computedTotal, watchApplyVat),
-    [computedTotal, watchApplyVat],
+        : calculateVatBreakdown(Math.max(0, computedTotal - (editingBooking?.discount_amount ?? 0)), watchApplyVat),
+    [computedTotal, watchApplyVat, editingBooking?.discount_amount],
   );
 
   useEffect(() => {
@@ -372,6 +372,10 @@ export function useEditBookingForm({
   function submit(data: BookingFields) {
     if (!editingBooking) return;
     setEditSubmitError(null);
+    if (editingBooking.discount_code && (computedTotal == null || computedTotal <= (editingBooking.discount_amount ?? 0))) {
+      setEditSubmitError('The revised subtotal must exceed the recorded discount.');
+      return;
+    }
     if (data.booking_type === 'beach_house') {
       if (data.beach_house_booking_mode === 'day_use') {
         data.end_date = data.start_date;
@@ -487,6 +491,7 @@ export function useEditBookingForm({
           data.booking_type === 'beach_house'
             ? (editingBooking.late_checkout_hours ?? 0)
             : 0,
+        original_subtotal: computedTotal,
         subtotal_amount: pricingBreakdown?.subtotal ?? 0,
         vat_rate: pricingBreakdown?.vatRate ?? 0,
         vat_amount: pricingBreakdown?.vatAmount ?? 0,

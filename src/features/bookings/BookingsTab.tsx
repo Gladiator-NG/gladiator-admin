@@ -95,9 +95,11 @@ function VatBreakdown({ booking, compact = false }: { booking: Booking; compact?
   return compact ? (
     <span className={styles.compactVatBreakdown}>
       Booking {formatPrice(subtotal)} · VAT {formatPrice(vatAmount)}
+      {booking.discount_code && ` · ${booking.discount_code}: −${formatPrice(booking.discount_amount ?? 0)}`}
     </span>
   ) : (
     <div className={styles.paymentBreakdown}>
+      {booking.discount_code && <div><span>Discount ({booking.discount_code})</span><strong>−{formatPrice(booking.discount_amount ?? 0)}</strong></div>}
       <div>
         <span>Booking subtotal</span>
         <strong>{formatPrice(subtotal)}</strong>
