@@ -515,6 +515,7 @@ function BookingsHome() {
             watchTransportRouteId: createForm.watchTransportRouteId,
             bookings,
             pricingBreakdown: createForm.pricingBreakdown,
+            discount: createForm.discount,
             watchApplyVat: createForm.watchApplyVat,
             availabilityState: createForm.availability,
             watchGuestCount: createForm.watchGuestCount,

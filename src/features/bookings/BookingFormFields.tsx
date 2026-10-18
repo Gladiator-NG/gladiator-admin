@@ -7,6 +7,8 @@ import {
 } from '../../services/apiBooking';
 import type { TransportRoute } from '../../services/apiTransport';
 import type { VatBreakdown } from '../../utils/vat';
+import type { BookingDiscountControl } from './useBookingDiscount';
+import Button from '../../ui/Button';
 import FormInput from '../../ui/formElements/FormInput';
 import { useSettings } from '../settings/useSettings';
 import type { AvailabilityState } from './useAvailabilityCheck';
@@ -42,6 +44,7 @@ interface BookingFormFieldsProps {
   watchTransportRouteId: string;
   bookings: Booking[];
   pricingBreakdown: VatBreakdown | null;
+  discount?: BookingDiscountControl;
   watchApplyVat: boolean;
   availabilityState: AvailabilityState;
   watchGuestCount: number;
@@ -71,6 +74,7 @@ export function BookingFormFields({
   watchTransportRouteId,
   bookings,
   pricingBreakdown,
+  discount,
   watchApplyVat,
   availabilityState,
   watchGuestCount,
@@ -720,6 +724,24 @@ export function BookingFormFields({
       )}
 
       <div className={styles.formSectionLabel}>Payment</div>
+      {discount && (
+        <div className={styles.discountControl}>
+          <label htmlFor="booking-discount-code">Discount code <span>(optional)</span></label>
+          <div className={styles.discountInputRow}>
+            <input id="booking-discount-code" value={discount.code} maxLength={40}
+              placeholder="Enter a partner or customer code" disabled={disabled}
+              onChange={(event) => discount.changeCode(event.target.value.toUpperCase())} />
+            <Button type="button" variant="secondary" onClick={discount.apply}
+              disabled={disabled || discount.isChecking || !discount.code.trim()}>
+              {discount.isChecking ? 'Checking…' : 'Apply'}
+            </Button>
+            {discount.code && <Button type="button" variant="ghost" disabled={disabled} onClick={discount.reset}>Remove</Button>}
+          </div>
+          {discount.error && <p role="alert" className={styles.discountError}>{discount.error}</p>}
+          {discount.applied && <p role="status">{discount.applied.code} applied. Discount is deducted before VAT.</p>}
+          {discount.code.trim() && !discount.applied && !discount.isChecking && !discount.error && <p>Apply the code to confirm the discount for these booking details.</p>}
+        </div>
+      )}
       <div className={styles.vatControl}>
         <label className={styles.vatToggleRow}>
           <span className={styles.vatToggleCopy}>
@@ -740,8 +762,12 @@ export function BookingFormFields({
 
         {pricingBreakdown !== null ? (
           <div className={styles.pricingBreakdown}>
+            {discount?.applied && <div className={styles.pricingBreakdownRow}>
+              <span>Discount ({discount.applied.code})</span>
+              <strong>−₦{discount.applied.discountAmount.toLocaleString()}</strong>
+            </div>}
             <div className={styles.pricingBreakdownRow}>
-              <span>Booking subtotal</span>
+              <span>{discount?.applied ? 'Subtotal after discount' : 'Booking subtotal'}</span>
               <strong>₦{pricingBreakdown.subtotal.toLocaleString()}</strong>
             </div>
             <div className={styles.pricingBreakdownRow}>

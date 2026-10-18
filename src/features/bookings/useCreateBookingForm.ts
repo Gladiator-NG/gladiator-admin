@@ -7,6 +7,7 @@ import type { TransportRoute } from '../../services/apiTransport';
 import { beachHouseStayPrice } from '../../utils/beachHousePricing';
 import { calculateVatBreakdown } from '../../utils/vat';
 import { useCreateBooking } from './useCreateBooking';
+import { useBookingDiscount } from './useBookingDiscount';
 import { useAvailabilityCheck } from './useAvailabilityCheck';
 import type { AvailabilityParams, AvailabilityState } from './useAvailabilityCheck';
 import {
@@ -149,12 +150,13 @@ export function useCreateBookingForm({
     watchBoatId,
   ]);
 
+  const discount = useBookingDiscount(computedTotal, watchType, watch('customer_email') ?? '');
   const pricingBreakdown = useMemo(
     () =>
       computedTotal === null
         ? null
-        : calculateVatBreakdown(computedTotal, watchApplyVat),
-    [computedTotal, watchApplyVat],
+        : calculateVatBreakdown(computedTotal - (discount.applied?.discountAmount ?? 0), watchApplyVat),
+    [computedTotal, watchApplyVat, discount.applied?.discountAmount],
   );
 
   useEffect(() => {
@@ -319,6 +321,7 @@ export function useCreateBookingForm({
   const availability: AvailabilityState = useAvailabilityCheck(availabilityParams);
 
   function openCreate() {
+    discount.reset();
     reset({
       booking_type: 'boat_cruise',
       beach_house_booking_mode: 'overnight',
@@ -341,6 +344,10 @@ export function useCreateBookingForm({
 
   function submit(data: BookingFields) {
     setCreateSubmitError(null);
+    if (discount.code.trim() && !discount.applied) {
+      setCreateSubmitError('Apply the discount code to the current booking details, or remove it before saving.');
+      return;
+    }
     const today = new Date().toLocaleDateString('en-CA');
 
     if (data.start_date < today) {
@@ -480,6 +487,8 @@ export function useCreateBookingForm({
             : null,
         late_checkout_hours:
           0,
+        discount_code: discount.applied?.code ?? null,
+        original_subtotal: computedTotal,
         subtotal_amount: pricingBreakdown?.subtotal ?? 0,
         vat_rate: pricingBreakdown?.vatRate ?? 0,
         vat_amount: pricingBreakdown?.vatAmount ?? 0,
@@ -507,6 +516,7 @@ export function useCreateBookingForm({
   }
 
   return {
+    discount,
     availability,
     computedTotal,
     pricingBreakdown,

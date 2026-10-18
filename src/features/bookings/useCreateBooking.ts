@@ -15,6 +15,7 @@ export function useCreateBooking() {
     mutationFn: createBooking,
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['discount-codes'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       const {
         data: { user },

@@ -132,6 +132,7 @@ export interface Customer {
 }
 
 export interface CreateBookingInput {
+  discount_code?: string | null;
   booking_type: BookingType;
   boat_id?: string | null;
   beach_house_id?: string | null;

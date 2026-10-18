@@ -30,6 +30,7 @@ test('discount validation, durable limits, VAT snapshots, permissions and operat
     await migration('20261006000300_staff_booking_notice_override');
     await db.exec('create trigger notice before insert or update on bookings for each row execute function enforce_booking_minimum_notice()');
     await migration('20261006000200_discount_codes');
+    await migration('20261018000100_admin_booking_discounts');
     // Stub only asset booking creation; execute the actual payment confirmation RPCs.
     for (const [file, name, type] of [
       ['20260819000100_customer_selected_pickup_jetty','submit_public_booking_request','boat_cruise'],
@@ -108,5 +109,37 @@ test('discount validation, durable limits, VAT snapshots, permissions and operat
     await db.exec('reset role; set role anon');
     await assert.rejects(q('select * from discount_codes'), /permission denied/);
     await assert.rejects(reserve('bad','bad'), /permission denied/);
+    await assert.rejects(q("select quote_admin_discount('PAYTEST',10000,'boat_cruise','paid@example.com')"), /permission denied/);
+    await db.exec('reset role');
+
+    // Manual bookings share limits with checkout and preserve usage after deletion.
+    await q("insert into discount_codes(code,discount_type,value,max_uses,max_uses_per_customer) values('MANUAL10','percentage',10,2,1)");
+    await db.exec("select set_config('test.uid','22222222-2222-2222-2222-222222222222',false); set role authenticated");
+    assert.equal((await q("select quote_admin_discount(' manual10 ',10000,'boat_cruise','manual@example.com') as q"))[0].q.discountAmount,1000);
+    await db.exec('reset role');
+    const insertManual = (email, total=9675, vat=0.075) => q("insert into bookings(source,discount_code,original_subtotal,subtotal_amount,vat_rate,total_amount,customer_email) values('admin','manual10',10000,10000,$1,$2,$3) returning *",[vat,total,email]);
+    await assert.rejects(insertManual('manual@example.com',1), /discount changed/);
+    assert.equal((await q('select count(*) as n from admin_discount_redemptions'))[0].n,0);
+    const [manual] = await insertManual('manual@example.com');
+    assert.equal(Number(manual.discount_amount),1000);
+    assert.equal(Number(manual.subtotal_amount),9000);
+    assert.equal(Number(manual.vat_amount),675);
+    assert.equal(Number(manual.total_amount),9675);
+    await assert.rejects(quote('MANUAL10',' MANUAL@example.com '), /usage limit/);
+    await q("update bookings set status='confirmed' where id=$1",[manual.id]);
+    await q("update bookings set status='confirmed' where id=$1",[manual.id]);
+    assert.equal((await q('select count(*) as n from admin_discount_redemptions'))[0].n,1);
+    await q('select reserve_discount_checkout($1,$1,$2,10000)', ['shared-slot',JSON.stringify({discount_code:'MANUAL10',booking_type:'boat_cruise',customer_email:'online@example.com',total_amount:9675})]);
+    await assert.rejects(insertManual('third@example.com'), /usage limit/);
+    await db.exec("select set_config('test.uid','11111111-1111-1111-1111-111111111111',false)");
+    const usage = (await q('select * from discount_code_usage() where discount_code_id=$1',[manual.discount_code_id]))[0];
+    assert.equal(usage.reserved,2); assert.equal(usage.redeemed,1);
+    await q('delete from bookings where id=$1',[manual.id]);
+    await assert.rejects(quote('MANUAL10','third@example.com'), /usage limit/);
+    await q("insert into discount_codes(code,discount_type,value) values('NOVAT','fixed',500)");
+    const [noVat] = await q("insert into bookings(source,discount_code,original_subtotal,vat_rate,total_amount) values('admin','NOVAT',10000,0,9500) returning total_amount,vat_amount");
+    assert.equal(Number(noVat.total_amount),9500); assert.equal(Number(noVat.vat_amount),0);
+    await db.exec("select set_config('test.uid','',false)");
+    await assert.rejects(q("insert into bookings(source,discount_code,original_subtotal,vat_rate,total_amount) values('admin','NOVAT',10000,0,9500)"), /Only Admin and Staff/);
   } finally { await db.close(); }
 });

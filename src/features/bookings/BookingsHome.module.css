@@ -2123,3 +2123,27 @@
     justify-content: center;
   }
 }
+.discountControl {
+  display: grid;
+  gap: .8rem;
+  padding: 1.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface-2);
+}
+.discountControl label { font-weight: 700; }
+.discountControl label span, .discountControl p { color: var(--color-text-muted); font-size: 1.2rem; }
+.discountControl p { margin: 0; }
+.discountInputRow { display: flex; flex-wrap: wrap; gap: .8rem; }
+.discountInputRow input {
+  min-width: 16rem;
+  flex: 1;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: .8rem;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+.discountInputRow input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.discountControl .discountError { color: var(--color-danger); }
