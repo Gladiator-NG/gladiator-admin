@@ -1,4 +1,5 @@
 import '@supabase/functions-js/edge-runtime.d.ts';
+import { authorizeBookingEmailRequest } from '../_shared/booking-email-auth.ts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface BookingRecord {
@@ -14,6 +15,10 @@ interface BookingRecord {
   start_time: string | null;
   end_time: string | null;
   total_amount: number | null;
+  subtotal_amount: number | null;
+  vat_amount: number | null;
+  discount_code: string | null;
+  discount_amount: number | null;
   status:
     | 'pending'
     | 'confirmed'
@@ -192,6 +197,9 @@ function buildEmailHtml(b: BookingRecord, bookingUrl: string): string {
           ${row('Dates', dateRange)}
           ${b.start_time ? row('Time', `${b.start_time}${b.end_time ? ` – ${b.end_time}` : ''}`) : ''}
           ${row('Amount', `<strong style="font-size:16px;color:#10b981;">${fmtAmount(b.total_amount)}</strong>`)}
+          ${b.subtotal_amount != null ? row('Subtotal', fmtAmount(b.subtotal_amount)) : ''}
+          ${b.discount_amount != null && b.discount_amount > 0 ? row(`Discount${b.discount_code ? ` (${b.discount_code})` : ''}`, `<span style="color:#34d399;">-${fmtAmount(b.discount_amount)}</span>`) : ''}
+          ${b.vat_amount != null ? row('VAT (7.5%)', fmtAmount(b.vat_amount)) : ''}
           ${b.payment_status ? row('Payment', b.payment_status) : ''}
           ${b.source ? row('Source', b.source) : ''}
           ${b.notes ? row('Notes', `<em style="color:#d1d5db;">${b.notes}</em>`) : ''}
@@ -233,7 +241,10 @@ function buildEmailText(b: BookingRecord, bookingUrl: string): string {
     `Email:       ${b.customer_email ?? '—'}`,
     `Phone:       ${b.customer_phone ?? '—'}`,
     `Dates:       ${fmt(b.start_date)} → ${fmt(b.end_date)}`,
-    `Amount:      ${fmtAmount(b.total_amount)}`,
+    b.subtotal_amount != null ? `Subtotal:     ${fmtAmount(b.subtotal_amount)}` : '',
+    b.discount_amount != null && b.discount_amount > 0 ? `Discount${b.discount_code ? ` (${b.discount_code})` : ''}: -${fmtAmount(b.discount_amount)}` : '',
+    b.vat_amount != null ? `VAT (7.5%):  ${fmtAmount(b.vat_amount)}` : '',
+    `Total paid:   ${fmtAmount(b.total_amount)}`,
     `Payment:     ${b.payment_status ?? '—'}`,
     `Source:      ${b.source ?? '—'}`,
     b.notes ? `Notes:       ${b.notes}` : '',
@@ -250,6 +261,14 @@ Deno.serve(async (req: Request) => {
   // Only accept POST
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 });
+  }
+
+  try {
+    if (!await authorizeBookingEmailRequest(req)) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+  } catch {
+    return new Response('Authorization unavailable', { status: 503 });
   }
 
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
