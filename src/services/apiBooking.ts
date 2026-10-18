@@ -58,6 +58,8 @@ export interface Booking {
   beach_house_id: string | null;
   beach_house_booking_mode: BeachHouseBookingMode | null;
   parent_beach_house_booking_id: string | null;
+  /** For a return leg: the outbound transfer it belongs to. */
+  return_of_booking_id: string | null;
 
   customer_id: string | null;
   customer_name: string;
@@ -109,6 +111,13 @@ export interface Booking {
     start_date: string;
     end_date: string;
   } | null;
+  /** The outbound leg this booking is the return for. */
+  outbound_booking?: {
+    id: string;
+    reference_code: string;
+    start_date: string;
+    start_time: string | null;
+  } | null;
   rental_route?: {
     id: string;
     duration_hours: number | null;
@@ -138,6 +147,7 @@ export interface CreateBookingInput {
   beach_house_id?: string | null;
   beach_house_booking_mode?: BeachHouseBookingMode | null;
   parent_beach_house_booking_id?: string | null;
+  return_of_booking_id?: string | null;
   customer_id?: string | null;
   customer_name: string;
   customer_email: string;
@@ -176,6 +186,7 @@ const BOOKING_SELECT = `
   beach_house:beach_houses(id, name),
   customer:customers(*),
   parent_booking:bookings!parent_beach_house_booking_id(id, reference_code, booking_type, start_date, end_date),
+  outbound_booking:bookings!return_of_booking_id(id, reference_code, start_date, start_time),
   rental_route:transport_routes!rental_route_id(id, duration_hours, from_location:locations!from_location_id(id, name), to_location:locations!to_location_id(id, name))
 `;
 

@@ -47,6 +47,8 @@ interface LocationFields {
   description: string;
   sort_order: number;
   is_active: boolean;
+  available_for_cruises: boolean;
+  available_for_transfers: boolean;
 }
 
 interface RouteFields {
@@ -168,11 +170,15 @@ function LocationsHome() {
             description: data.description || undefined,
             sort_order: Number(data.sort_order) || 0,
             is_active: data.is_active,
+            available_for_cruises: data.available_for_cruises,
+            available_for_transfers: data.available_for_transfers,
           })
         : createLocation({
             name: data.name,
             description: data.description || undefined,
             sort_order: Number(data.sort_order) || 0,
+            available_for_cruises: data.available_for_cruises,
+            available_for_transfers: data.available_for_transfers,
           }),
     onSuccess: () => {
       invalidate();
@@ -217,7 +223,14 @@ function LocationsHome() {
 
   function openNewLocation() {
     setEditingLocation(null);
-    resetLoc({ name: '', description: '', sort_order: 0, is_active: true });
+    resetLoc({
+      name: '',
+      description: '',
+      sort_order: 0,
+      is_active: true,
+      available_for_cruises: true,
+      available_for_transfers: true,
+    });
     setLocationError(null);
     setShowLocationForm(true);
   }
@@ -229,6 +242,9 @@ function LocationsHome() {
       description: loc.description ?? '',
       sort_order: loc.sort_order,
       is_active: loc.is_active,
+      // Existing rows predating the capability columns read as enabled.
+      available_for_cruises: loc.available_for_cruises ?? true,
+      available_for_transfers: loc.available_for_transfers ?? true,
     });
     setLocationError(null);
     setShowLocationForm(true);
@@ -463,6 +479,22 @@ function LocationsHome() {
                     )}
                   </div>
                   <div className={styles.listRowMeta2}>
+                    {loc.available_for_cruises === false && (
+                      <span
+                        className={styles.capabilityBadge}
+                        title="Yacht cruises cannot depart from this jetty"
+                      >
+                        No cruises
+                      </span>
+                    )}
+                    {loc.available_for_transfers === false && (
+                      <span
+                        className={styles.capabilityBadge}
+                        title="This jetty cannot be used on transfer routes"
+                      >
+                        No transfers
+                      </span>
+                    )}
                     {!loc.is_active && (
                       <span className={styles.inactiveBadge}>Inactive</span>
                     )}
@@ -792,6 +824,35 @@ function LocationsHome() {
                       </label>
                     </fieldset>
                   </div>
+                  <fieldset className={styles.capabilityFieldset}>
+                    <legend className={styles.capabilityLegend}>
+                      Used for
+                    </legend>
+                    <label className={styles.toggleLabel}>
+                      <input
+                        type="checkbox"
+                        className={styles.toggleCheckbox}
+                        {...locReg('available_for_cruises')}
+                        disabled={isSavingLocation}
+                      />
+                      Yacht cruise pickup
+                    </label>
+                    <label className={styles.toggleLabel}>
+                      <input
+                        type="checkbox"
+                        className={styles.toggleCheckbox}
+                        {...locReg('available_for_transfers')}
+                        disabled={isSavingLocation}
+                      />
+                      Boat transfer routes
+                    </label>
+                    <p className={styles.capabilityHint}>
+                      Some waterfront stops are transfer destinations only.
+                      Turning off cruise pickup hides this jetty from the yacht
+                      cruise dropdown on the customer site and blocks it
+                      server-side, without affecting its transfer routes.
+                    </p>
+                  </fieldset>
                   {locationError && (
                     <p className={styles.submitError}>{locationError}</p>
                   )}

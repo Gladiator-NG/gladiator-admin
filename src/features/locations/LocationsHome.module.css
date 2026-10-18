@@ -221,6 +221,44 @@
   letter-spacing: 0.06em;
 }
 
+/* Capability badges — shown only when a capability is switched off. */
+.capabilityBadge {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.25rem 0.8rem;
+  border-radius: 10rem;
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Capability toggles in the jetty form */
+.capabilityFieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.capabilityLegend {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  padding: 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.capabilityHint {
+  font-size: 1.15rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
 /* ── Route cards ──────────────────────────────────── */
 .routeCard {
   display: flex;

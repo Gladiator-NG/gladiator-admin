@@ -566,6 +566,7 @@ function BookingsHome() {
             watchStartTime: editForm.watchStartTime,
             watchEndTime: editForm.watchEndTime,
             watchReturnPickupTime: editForm.watchReturnPickupTime,
+            editingBookingId: editForm.editingBooking?.id,
           },
         }}
         deleteModal={{

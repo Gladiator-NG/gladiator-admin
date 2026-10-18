@@ -18,6 +18,7 @@ import {
   type BookingBeachHouseOption,
   type BookingBoatOption,
   type BookingFields,
+  formatDate,
   formatTime12,
   latestBoatStartTime,
   subtractTime,
@@ -31,7 +32,11 @@ interface BookingFormFieldsProps {
   disabled?: boolean;
   boats: BookingBoatOption[];
   beachHouses: BookingBeachHouseOption[];
-  locations: { id: string; name: string }[];
+  locations: {
+    id: string;
+    name: string;
+    available_for_cruises?: boolean;
+  }[];
   watchType: BookingType;
   watchTransportType: string;
   watchStatus: BookingStatus;
@@ -55,6 +60,8 @@ interface BookingFormFieldsProps {
   watchEndTime: string;
   watchReturnPickupTime: string;
   minBookingDate?: string;
+  /** Id of the booking being edited, so it cannot link to itself. */
+  editingBookingId?: string;
 }
 
 export function BookingFormFields({
@@ -82,11 +89,28 @@ export function BookingFormFields({
   watchStartDate,
   watchReturnPickupTime,
   minBookingDate,
+  editingBookingId,
 }: BookingFormFieldsProps) {
   const { settings } = useSettings();
   const curfewTime = settings?.boat_curfew_time ?? null;
   const curfewEnabled = settings?.boat_curfew_enabled ?? true;
   const houseBookings = bookings.filter((b) => b.booking_type === 'beach_house');
+  // Cruises only depart from jetties flagged for them. Rows predating the
+  // capability columns read as enabled.
+  const cruisePickupLocations = locations.filter(
+    (l) => l.available_for_cruises !== false,
+  );
+  // Candidate outbound legs a return transfer can be linked to. Newest first,
+  // and a booking can never be its own outbound.
+  const outboundTransferOptions = bookings
+    .filter(
+      (b) =>
+        b.booking_type === 'boat_rental' &&
+        b.rental_type !== 'return' &&
+        b.id !== editingBookingId &&
+        b.status !== 'cancelled',
+    )
+    .slice(0, 50);
   const selectedBoat = boats.find((b) => b.id === watchBoatId);
   const boatMinHours = selectedBoat?.min_booking_hours ?? null;
   const boatMaxHours = selectedBoat?.max_booking_hours ?? null;
@@ -167,7 +191,7 @@ export function BookingFormFields({
             disabled={disabled}
           >
             <option value="">Select a jetty…</option>
-            {locations.map((l) => (
+            {cruisePickupLocations.map((l) => (
               <option key={l.id} value={l.name}>
                 {l.name}
               </option>
@@ -384,6 +408,39 @@ export function BookingFormFields({
             : null}
 
           <input type="hidden" {...formActions.register('rental_type')} />
+
+          {/* Overnight returns are logged as a second booking on the later
+              date, linked back to the outbound leg. */}
+          <div className={styles.linkedStaySection}>
+            <p className={styles.linkedStayHeading}>
+              Is this the return leg of an earlier transfer? (optional)
+            </p>
+            <p className={styles.linkedStayHint}>
+              Overnight returns are two separate bookings — an outbound and a
+              return on the later date. Linking them here keeps both legs
+              connected for operations.
+            </p>
+            <FormInput
+              id="return_of_booking_id"
+              type="select"
+              label="Outbound Transfer"
+              formActions={formActions}
+              disabled={disabled}
+              required={false}
+            >
+              <option value="">Not a return leg</option>
+              {outboundTransferOptions.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.reference_code} · {b.customer_name} ·{' '}
+                  {formatDate(b.start_date)}
+                  {b.pickup_location && b.dropoff_location
+                    ? ` · ${b.pickup_location} → ${b.dropoff_location}`
+                    : ''}
+                </option>
+              ))}
+            </FormInput>
+          </div>
+
           {watchTransportType === 'round_trip' && (
             <p className={styles.transportPricingHint}>
               This is a historical round-trip booking. Existing return details

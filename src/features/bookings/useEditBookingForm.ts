@@ -358,6 +358,7 @@ export function useEditBookingForm({
       status: booking.status,
       payment_status: booking.payment_status,
       payment_reference: booking.payment_reference ?? '',
+      return_of_booking_id: booking.return_of_booking_id ?? '',
       source: booking.source,
       booking_channel: booking.booking_channel ?? '',
       notes: booking.notes ?? '',
@@ -435,6 +436,7 @@ export function useEditBookingForm({
             ? data.beach_house_booking_mode || 'overnight'
             : null,
         parent_beach_house_booking_id: data.parent_beach_house_booking_id || null,
+        return_of_booking_id: data.return_of_booking_id || null,
         rental_type: (data.rental_type as never) || null,
         rental_route_id:
           data.booking_type === 'boat_rental' ? data.rental_route_id || null : null,

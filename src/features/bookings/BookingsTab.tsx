@@ -590,6 +590,21 @@ export function BookingsTab({
                             </p>
                           </div>
                         )}
+                        {b.outbound_booking?.id && (
+                          <div className={styles.detailBlock}>
+                            <p className={styles.detailLabel}>
+                              Return Leg Of
+                            </p>
+                            <p className={styles.detailValue}>
+                              <span className={styles.refCode}>
+                                {b.outbound_booking.reference_code}
+                              </span>
+                            </p>
+                            <p className={styles.detailSub}>
+                              Outbound {formatDate(b.outbound_booking.start_date)}
+                            </p>
+                          </div>
+                        )}
                         {b.notes && (
                           <div
                             className={`${styles.detailBlock} ${styles.detailBlockFull}`}

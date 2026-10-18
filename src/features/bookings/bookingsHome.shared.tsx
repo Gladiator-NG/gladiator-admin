@@ -49,6 +49,8 @@ export interface BookingFields {
   beach_house_id: string;
   beach_house_booking_mode: BeachHouseBookingMode;
   parent_beach_house_booking_id: string;
+  /** Return transfers point at the outbound leg they belong to. */
+  return_of_booking_id: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;

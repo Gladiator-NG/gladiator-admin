@@ -6,6 +6,10 @@ export interface Location {
   name: string;
   description: string | null;
   is_active: boolean;
+  /** Can a yacht cruise depart from here? */
+  available_for_cruises: boolean;
+  /** Can this be an endpoint of a boat transfer route? */
+  available_for_transfers: boolean;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -67,6 +71,8 @@ export async function createLocation(input: {
   name: string;
   description?: string;
   sort_order?: number;
+  available_for_cruises?: boolean;
+  available_for_transfers?: boolean;
 }): Promise<Location> {
   const { data, error } = await supabase
     .from('locations')
@@ -85,6 +91,8 @@ export async function updateLocation(
     description: string;
     is_active: boolean;
     sort_order: number;
+    available_for_cruises: boolean;
+    available_for_transfers: boolean;
   }>,
 ): Promise<Location> {
   const { data, error } = await supabase
