@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import supabase from '../../services/supabase';
 import { backdropAnim, modalAnim } from '../../ui/modalAnimations';
+import Button from '../../ui/Button';
 import styles from './DiscountsHome.module.css';
 
 type Discount = {
@@ -147,7 +148,7 @@ export default function DiscountsHome() {
   return <section className={styles.page}>
     <header className={styles.pageHeader}>
       <div><p className={styles.eyebrow}>Sales tools</p><h1>Discount codes</h1><p className={styles.subtitle}>Manage offers shared with partners, agents and customers.</p></div>
-      <button className={styles.primaryButton} onClick={openCreate}><Plus size={18} />Create discount</button>
+      <Button variant="primary" onClick={openCreate}><Plus size={18} />Create discount</Button>
     </header>
 
     <div className={styles.statsGrid}>
@@ -183,7 +184,7 @@ export default function DiscountsHome() {
       {!isLoading && !error && filteredCodes.length === 0 && <div className={styles.emptyState}>
         <span><TicketPercent size={24} /></span><h2>{data?.codes.length ? 'No matching codes' : 'Create your first discount code'}</h2>
         <p>{data?.codes.length ? 'Try a different search or status filter.' : 'Set up an offer for a partner, agent or customer campaign.'}</p>
-        {!data?.codes.length && <button className={styles.primaryButton} onClick={openCreate}><Plus size={18} />Create discount</button>}
+        {!data?.codes.length && <Button variant="primary" onClick={openCreate}><Plus size={18} />Create discount</Button>}
       </div>}
     </div>
 
@@ -214,7 +215,7 @@ export default function DiscountsHome() {
               <label className={styles.activeToggle}><span><strong>Active</strong><small>Customers can apply this code at checkout.</small></span><input type="checkbox" checked={form.is_active} onChange={(event) => field('is_active', event.target.checked)} /><i /></label>
             </section>
           </div>
-          <div className={styles.modalFooter}><p>Discounts are applied before VAT.</p><div><button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button><button className={styles.primaryButton} disabled={saving}>{saving ? 'Saving…' : editing ? 'Save changes' : 'Create discount'}</button></div></div>
+          <div className={styles.modalFooter}><p>Discounts are applied before VAT.</p><div><Button variant="ghost" type="button" onClick={closeModal} disabled={saving}>Cancel</Button><Button variant="primary" type="submit" disabled={saving}>{saving ? 'Saving…' : editing ? 'Save changes' : 'Create discount'}</Button></div></div>
         </form>
       </motion.div>
     </motion.div>}</AnimatePresence>
