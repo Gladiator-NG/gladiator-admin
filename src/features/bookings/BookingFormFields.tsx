@@ -443,8 +443,10 @@ export function BookingFormFields({
 
           {watchTransportType === 'round_trip' && (
             <p className={styles.transportPricingHint}>
-              This is a historical round-trip booking. Existing return details
-              remain editable, but new round-trip bookings can no longer be created.
+              Historical booking: the return leg was recorded on this same
+              record. Transfers now include a same-day return, and a pickup on
+              a later day is logged as its own booking linked to the outbound
+              leg. Existing return details here remain editable.
             </p>
           )}
 

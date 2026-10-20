@@ -253,9 +253,11 @@ function HelpPage() {
                 <tr>
                   <td>Add or activate a location and route</td>
                   <td>
-                    Customers can use that journey in the transfer planner. A
-                    route is one-way, so the opposite direction needs its own
-                    route when required.
+                    Customers can use that journey in the transfer planner.
+                    Routes are directional, so the opposite direction needs its
+                    own route when required. The price on each route covers the
+                    whole journey, including collecting the customer the same
+                    day.
                   </td>
                 </tr>
                 <tr>

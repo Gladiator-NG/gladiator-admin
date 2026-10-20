@@ -969,7 +969,9 @@ function LocationsHome() {
                   </p>
                   <p className={styles.routeFormHint}>
                     Save the route first, then enter the full transfer price for
-                    each eligible boat from the route list.
+                    each eligible boat from the route list. That price covers
+                    the whole journey, including collecting the customer the
+                    same day.
                   </p>
                   {routeError && (
                     <p className={styles.submitError}>{routeError}</p>
@@ -1050,6 +1052,10 @@ function LocationsHome() {
                 >
                   <label className={styles.priceModalLabel}>
                     Full transfer price
+                    <span className={styles.priceModalHint}>
+                      What the customer pays for the whole journey — taking them
+                      there and collecting them the same day.
+                    </span>
                     <div className={styles.priceField}>
                       <span className={styles.priceFieldPrefix}>₦</span>
                       <input
