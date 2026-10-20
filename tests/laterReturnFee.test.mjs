@@ -25,7 +25,7 @@ async function setup() {
       total_amount numeric not null default 0);
   `);
 
-  await migration(db, '20261020000100_later_return_fee');
+  await migration(db, '20261020000200_later_return_fee');
   return { db, q };
 }
 
