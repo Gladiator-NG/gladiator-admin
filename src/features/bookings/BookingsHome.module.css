@@ -1439,6 +1439,23 @@
   margin: 0;
 }
 
+.inlineCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.inlineCheckbox input {
+  accent-color: var(--color-ocean-blue);
+  width: 1.6rem;
+  height: 1.6rem;
+  flex: 0 0 auto;
+}
+
 /* ── Linked transport date info ───────────────────── */
 .linkedTransportDateBox {
   display: flex;

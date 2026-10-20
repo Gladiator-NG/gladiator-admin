@@ -74,6 +74,8 @@ export function useEditBookingForm({
   const watchStartTime = watch('start_time');
   const watchPickupLocation = watch('pickup_location') ?? '';
   const watchTransportRouteId = watch('rental_route_id') ?? '';
+  const watchHasLaterReturn = watch('has_later_return') ?? false;
+  const watchLaterReturnFee = watch('later_return_fee') ?? 0;
   const watchReturnPickupTime = watch('return_pickup_time') ?? '';
   const watchGuestCount = Number(watch('guest_count')) || 0;
   const watchApplyVat = watch('apply_vat') ?? false;
@@ -122,10 +124,18 @@ export function useEditBookingForm({
         watchTransportRouteId,
         watchBoatId,
       );
-      return routePrice;
+      if (routePrice === null) return null;
+      // A later-day pickup is agreed with the customer directly, so staff type
+      // the amount in and it lands in the same total.
+      const laterReturnFee = watchHasLaterReturn
+        ? Number(watchLaterReturnFee) || 0
+        : 0;
+      return routePrice + laterReturnFee;
     }
     return null;
   }, [
+    watchHasLaterReturn,
+    watchLaterReturnFee,
     beachHouses,
     boats,
     transportRoutes,
@@ -358,7 +368,10 @@ export function useEditBookingForm({
       status: booking.status,
       payment_status: booking.payment_status,
       payment_reference: booking.payment_reference ?? '',
-      return_of_booking_id: booking.return_of_booking_id ?? '',
+      has_later_return: Boolean(booking.later_return_date) ||
+        (booking.later_return_fee ?? 0) > 0,
+      later_return_date: booking.later_return_date ?? '',
+      later_return_fee: booking.later_return_fee ?? 0,
       source: booking.source,
       booking_channel: booking.booking_channel ?? '',
       notes: booking.notes ?? '',
@@ -436,7 +449,12 @@ export function useEditBookingForm({
             ? data.beach_house_booking_mode || 'overnight'
             : null,
         parent_beach_house_booking_id: data.parent_beach_house_booking_id || null,
-        return_of_booking_id: data.return_of_booking_id || null,
+        later_return_date: data.has_later_return
+          ? data.later_return_date || null
+          : null,
+        later_return_fee: data.has_later_return
+          ? Number(data.later_return_fee) || 0
+          : 0,
         rental_type: (data.rental_type as never) || null,
         rental_route_id:
           data.booking_type === 'boat_rental' ? data.rental_route_id || null : null,
@@ -545,6 +563,7 @@ export function useEditBookingForm({
     watchStatus,
     watchStartTime,
     watchTransportRouteId,
+    watchHasLaterReturn,
     watchTransportType,
     watchType,
     watchApplyVat,

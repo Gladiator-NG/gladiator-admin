@@ -513,6 +513,7 @@ function BookingsHome() {
             watchPickupLocation: createForm.watchPickupLocation,
             transportRoutes,
             watchTransportRouteId: createForm.watchTransportRouteId,
+            watchHasLaterReturn: createForm.watchHasLaterReturn,
             bookings,
             pricingBreakdown: createForm.pricingBreakdown,
             discount: createForm.discount,
@@ -566,7 +567,7 @@ function BookingsHome() {
             watchStartTime: editForm.watchStartTime,
             watchEndTime: editForm.watchEndTime,
             watchReturnPickupTime: editForm.watchReturnPickupTime,
-            editingBookingId: editForm.editingBooking?.id,
+            watchHasLaterReturn: editForm.watchHasLaterReturn,
           },
         }}
         deleteModal={{

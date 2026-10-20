@@ -49,8 +49,10 @@ export interface BookingFields {
   beach_house_id: string;
   beach_house_booking_mode: BeachHouseBookingMode;
   parent_beach_house_booking_id: string;
-  /** Return transfers point at the outbound leg they belong to. */
-  return_of_booking_id: string;
+  /** Set when the customer is collected on a day other than the trip date. */
+  has_later_return: boolean;
+  later_return_date: string;
+  later_return_fee: number;
   customer_name: string;
   customer_email: string;
   customer_phone: string;

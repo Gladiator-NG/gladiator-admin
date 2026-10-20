@@ -18,7 +18,6 @@ import {
   type BookingBeachHouseOption,
   type BookingBoatOption,
   type BookingFields,
-  formatDate,
   formatTime12,
   latestBoatStartTime,
   subtractTime,
@@ -60,8 +59,7 @@ interface BookingFormFieldsProps {
   watchEndTime: string;
   watchReturnPickupTime: string;
   minBookingDate?: string;
-  /** Id of the booking being edited, so it cannot link to itself. */
-  editingBookingId?: string;
+  watchHasLaterReturn: boolean;
 }
 
 export function BookingFormFields({
@@ -89,7 +87,7 @@ export function BookingFormFields({
   watchStartDate,
   watchReturnPickupTime,
   minBookingDate,
-  editingBookingId,
+  watchHasLaterReturn,
 }: BookingFormFieldsProps) {
   const { settings } = useSettings();
   const curfewTime = settings?.boat_curfew_time ?? null;
@@ -100,17 +98,6 @@ export function BookingFormFields({
   const cruisePickupLocations = locations.filter(
     (l) => l.available_for_cruises !== false,
   );
-  // Candidate outbound legs a return transfer can be linked to. Newest first,
-  // and a booking can never be its own outbound.
-  const outboundTransferOptions = bookings
-    .filter(
-      (b) =>
-        b.booking_type === 'boat_rental' &&
-        b.rental_type !== 'return' &&
-        b.id !== editingBookingId &&
-        b.status !== 'cancelled',
-    )
-    .slice(0, 50);
   const selectedBoat = boats.find((b) => b.id === watchBoatId);
   const boatMinHours = selectedBoat?.min_booking_hours ?? null;
   const boatMaxHours = selectedBoat?.max_booking_hours ?? null;
@@ -409,36 +396,47 @@ export function BookingFormFields({
 
           <input type="hidden" {...formActions.register('rental_type')} />
 
-          {/* Overnight returns are logged as a second booking on the later
-              date, linked back to the outbound leg. */}
           <div className={styles.linkedStaySection}>
             <p className={styles.linkedStayHeading}>
-              Is this the return leg of an earlier transfer? (optional)
+              Is the return trip booked for a later date?
             </p>
             <p className={styles.linkedStayHint}>
-              Overnight returns are two separate bookings — an outbound and a
-              return on the later date. Linking them here keeps both legs
-              connected for operations.
+              This price already covers taking the customer out and collecting
+              them the same day. Only answer yes if they agreed a pickup on a
+              different day with the team — then enter the amount agreed for it
+              and the total updates.
             </p>
-            <FormInput
-              id="return_of_booking_id"
-              type="select"
-              label="Outbound Transfer"
-              formActions={formActions}
-              disabled={disabled}
-              required={false}
-            >
-              <option value="">Not a return leg</option>
-              {outboundTransferOptions.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.reference_code} · {b.customer_name} ·{' '}
-                  {formatDate(b.start_date)}
-                  {b.pickup_location && b.dropoff_location
-                    ? ` · ${b.pickup_location} → ${b.dropoff_location}`
-                    : ''}
-                </option>
-              ))}
-            </FormInput>
+            <label className={styles.inlineCheckbox}>
+              <input
+                type="checkbox"
+                disabled={disabled}
+                {...formActions.register('has_later_return')}
+              />
+              <span>Yes — they are being collected on a later day</span>
+            </label>
+
+            {watchHasLaterReturn && (
+              <div className={styles.row}>
+                <FormInput
+                  id="later_return_date"
+                  type="date"
+                  label="Return Pickup Date"
+                  formActions={formActions}
+                  disabled={disabled}
+                  required={false}
+                />
+                <FormInput
+                  id="later_return_fee"
+                  type="number"
+                  label="Additional Cost Agreed (₦)"
+                  formActions={formActions}
+                  disabled={disabled}
+                  required={false}
+                  min={0}
+                  placeholder="0"
+                />
+              </div>
+            )}
           </div>
 
           {watchTransportType === 'round_trip' && (

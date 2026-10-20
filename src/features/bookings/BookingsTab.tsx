@@ -590,18 +590,18 @@ export function BookingsTab({
                             </p>
                           </div>
                         )}
-                        {b.outbound_booking?.id && (
+                        {b.later_return_date && (
                           <div className={styles.detailBlock}>
                             <p className={styles.detailLabel}>
-                              Return Leg Of
+                              Return Pickup
                             </p>
                             <p className={styles.detailValue}>
-                              <span className={styles.refCode}>
-                                {b.outbound_booking.reference_code}
-                              </span>
+                              {formatDate(b.later_return_date)}
                             </p>
                             <p className={styles.detailSub}>
-                              Outbound {formatDate(b.outbound_booking.start_date)}
+                              {b.later_return_fee > 0
+                                ? `${formatPrice(b.later_return_fee)} added to the total`
+                                : 'No additional charge recorded'}
                             </p>
                           </div>
                         )}
