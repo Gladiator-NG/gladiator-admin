@@ -1,3 +1,4 @@
+import { rentalEndDate } from '../../utils/rentalEndDate';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Booking, BookingStatus, BookingType } from '../../services/apiBooking';
@@ -301,7 +302,9 @@ export function useEditBookingForm({
         resourceType: 'boat',
         resourceId: watchBoatId,
         startDate: watchStartDate,
-        endDate: watchStartDate,
+        endDate: watchTransportType === 'round_trip'
+          ? watchStartDate
+          : rentalEndDate(watchStartDate, watchStartTime, dur, watchTransportType),
         startTime: watchStartTime,
         endTime: dur
           ? transportEndTime(watchStartTime, dur, watchTransportType)
@@ -318,6 +321,7 @@ export function useEditBookingForm({
     watchEndDate,
     watchEndTime,
     watchHours,
+    watchParentBookingId,
     watchStartDate,
     watchStartTime,
     watchTransportRouteId,
@@ -426,6 +430,7 @@ export function useEditBookingForm({
     }
     if (
       data.booking_type === 'boat_rental' &&
+      (data.rental_type === 'round_trip' || Boolean(data.parent_beach_house_booking_id)) &&
       data.start_date === data.end_date &&
       data.start_time &&
       data.end_time &&
@@ -466,7 +471,16 @@ export function useEditBookingForm({
         guest_count: Number(data.guest_count) || 1,
         start_date: data.start_date,
         end_date:
-          data.booking_type === 'beach_house' &&
+          data.booking_type === 'boat_rental' &&
+          data.rental_type !== 'round_trip' &&
+          !data.parent_beach_house_booking_id
+            ? rentalEndDate(
+                data.start_date,
+                data.start_time || '',
+                findRouteDuration(transportRoutes, data.rental_route_id || ''),
+                data.rental_type || 'outbound',
+              )
+            : data.booking_type === 'beach_house' &&
           data.beach_house_booking_mode === 'day_use'
             ? data.start_date
             : data.end_date,
